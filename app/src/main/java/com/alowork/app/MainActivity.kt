@@ -26,6 +26,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,7 +44,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -67,6 +71,189 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AloworkApp() {
+    WorkerSignUpScreen()
+}
+
+@Composable
+fun WorkerSignUpScreen(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    var fullName by remember { mutableStateOf("Sven de Vries") }
+    var email by remember { mutableStateOf("sven@email.nl") }
+    var companyCode by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("password") }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 80.dp, bottom = 24.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Create account",
+                color = Color(0xFF17171B),
+                fontSize = 22.sp,
+                lineHeight = 27.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Create an account. Your employer approves it before\nyou can start.",
+                color = Color(0xFF73737A),
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            SignUpField(
+                label = "Full name",
+                value = fullName,
+                onValueChange = { fullName = it },
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            SignUpField(
+                label = "Email address",
+                value = email,
+                onValueChange = { email = it },
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            SignUpField(
+                label = "Company code",
+                value = companyCode,
+                onValueChange = { companyCode = it },
+                placeholder = "Received from your employer",
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            SignUpField(
+                label = "Password",
+                value = password,
+                onValueChange = { password = it },
+                isPassword = true,
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Button(
+                onClick = {
+                    val message = when {
+                        fullName.isBlank() -> "Enter your full name"
+                        email.isBlank() -> "Enter your email address"
+                        companyCode.isBlank() -> "Enter your company code"
+                        password.isBlank() -> "Enter a password"
+                        else -> "Account request sent"
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF111116),
+                    contentColor = Color.White,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Text(
+                    text = "Create account",
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Already have an account?",
+                    color = Color(0xFF8C8C91),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+                TextButton(
+                    onClick = {
+                        Toast.makeText(context, "Log in selected", Toast.LENGTH_SHORT).show()
+                    },
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        horizontal = 4.dp,
+                        vertical = 0.dp,
+                    ),
+                ) {
+                    Text(
+                        text = "Log in",
+                        color = Color(0xFF111116),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SignUpField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String = "",
+    isPassword: Boolean = false,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            color = Color(0xFF73737A),
+            fontSize = 11.sp,
+            lineHeight = 14.sp,
+            fontWeight = FontWeight.Medium,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            textStyle = TextStyle(
+                color = Color(0xFF17171B),
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+            ),
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    color = Color(0xFFB5B5B5),
+                    fontSize = 13.sp,
+                    lineHeight = 16.sp,
+                )
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(8.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedBorderColor = Color(0xFFDADAD5),
+                unfocusedBorderColor = Color(0xFFE1E1DC),
+                cursorColor = Color(0xFF111116),
+            ),
+            visualTransformation = if (isPassword) {
+                PasswordVisualTransformation()
+            } else {
+                androidx.compose.ui.text.input.VisualTransformation.None
+            },
+        )
+    }
+}
+
+@Composable
+fun WorkerFlowPreviewScreen() {
     val context = LocalContext.current
     var shiftInProgress by remember {
         mutableStateOf(
