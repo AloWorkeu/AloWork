@@ -71,11 +71,24 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AloworkApp() {
-    WorkerSignUpScreen()
+    var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
+
+    when (screen) {
+        AppScreen.WorkerSignUp -> WorkerSignUpScreen(
+            onAccountCreated = {
+                screen = AppScreen.WorkerAwaitingApproval
+            },
+        )
+
+        AppScreen.WorkerAwaitingApproval -> WorkerAwaitingApprovalScreen()
+    }
 }
 
 @Composable
-fun WorkerSignUpScreen(modifier: Modifier = Modifier) {
+fun WorkerSignUpScreen(
+    modifier: Modifier = Modifier,
+    onAccountCreated: () -> Unit = {},
+) {
     val context = LocalContext.current
     var fullName by remember { mutableStateOf("Sven de Vries") }
     var email by remember { mutableStateOf("sven@email.nl") }
@@ -146,9 +159,13 @@ fun WorkerSignUpScreen(modifier: Modifier = Modifier) {
                         email.isBlank() -> "Enter your email address"
                         companyCode.isBlank() -> "Enter your company code"
                         password.isBlank() -> "Enter a password"
-                        else -> "Account request sent"
+                        else -> null
                     }
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    if (message == null) {
+                        onAccountCreated()
+                    } else {
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -248,6 +265,73 @@ private fun SignUpField(
             } else {
                 androidx.compose.ui.text.input.VisualTransformation.None
             },
+        )
+    }
+}
+
+@Composable
+fun WorkerAwaitingApprovalScreen(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 40.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(y = (-18).dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            AwaitingApprovalIcon(size = 34.dp)
+            Spacer(modifier = Modifier.height(22.dp))
+            Text(
+                text = "Account created",
+                color = Color(0xFF17171B),
+                fontSize = 20.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Your account has been created. Your employer still needs to approve it. You'll be notified once you can start.",
+                color = Color(0xFF73737A),
+                fontSize = 13.sp,
+                lineHeight = 17.sp,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AwaitingApprovalIcon(size: Dp) {
+    Canvas(modifier = Modifier.size(size)) {
+        val strokeWidth = 2.dp.toPx()
+        val iconColor = Color(0xFFE0A12A)
+        val radius = size.toPx() / 2f
+        val center = Offset(radius, radius)
+
+        drawCircle(
+            color = iconColor,
+            center = center,
+            radius = radius - strokeWidth,
+            style = Stroke(width = strokeWidth),
+        )
+        drawLine(
+            color = iconColor,
+            start = center,
+            end = Offset(center.x, center.y - radius * 0.42f),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = iconColor,
+            start = center,
+            end = Offset(center.x + radius * 0.34f, center.y + radius * 0.22f),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round,
         )
     }
 }
@@ -578,11 +662,24 @@ private fun formatCurrency(value: Double): String {
     return "£%.2f".format(Locale.US, value)
 }
 
+private enum class AppScreen {
+    WorkerSignUp,
+    WorkerAwaitingApproval,
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun AloworkAppPreview() {
     AloworkTheme {
         AloworkApp()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerAwaitingApprovalScreenPreview() {
+    AloworkTheme {
+        WorkerAwaitingApprovalScreen()
     }
 }
 
