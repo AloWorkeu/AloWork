@@ -82,7 +82,35 @@ fun AloworkApp() {
 
         AppScreen.WorkerAwaitingApproval -> WorkerAwaitingApprovalScreen()
 
-        AppScreen.WorkerLocationPermission -> WorkerLocationPermissionScreen()
+        AppScreen.WorkerLocationPermission -> WorkerLocationPermissionScreen(
+            onLocationAllowed = {
+                screen = AppScreen.WorkerGpsClockIn
+            },
+            onManualEntry = {
+                screen = AppScreen.WorkerLocationDenied
+            },
+        )
+
+        AppScreen.WorkerGpsClockIn -> GpsClockInScreen(
+            onClockIn = {
+                screen = AppScreen.WorkerShiftInProgress
+            },
+            onManualEntry = {
+                screen = AppScreen.WorkerLocationDenied
+            },
+        )
+
+        AppScreen.WorkerShiftInProgress -> GpsShiftInProgressScreen(
+            onClockOut = {
+                screen = AppScreen.WorkerGpsClockIn
+            },
+        )
+
+        AppScreen.WorkerLocationDenied -> GpsLocationDeniedScreen(
+            onLocationEnabled = {
+                screen = AppScreen.WorkerGpsClockIn
+            },
+        )
     }
 }
 
@@ -515,6 +543,179 @@ fun WorkerFlowPreviewScreen() {
 }
 
 @Composable
+fun GpsClockInScreen(
+    modifier: Modifier = Modifier,
+    onClockIn: () -> Unit = {},
+    onManualEntry: () -> Unit = {},
+) {
+    val context = LocalContext.current
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2)),
+    ) {
+        WorkLocationMapHeader()
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 22.dp)
+                .padding(top = 286.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(134.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE5E5E0)),
+                shadowElevation = 0.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 18.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Spacer(modifier = Modifier.height(22.dp))
+                    Text(
+                        text = "Ready to clock in",
+                        color = Color(0xFF17171B),
+                        fontSize = 18.sp,
+                        lineHeight = 22.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "You are at the work location.",
+                        color = Color(0xFF747474),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Surface(
+                        shape = RoundedCornerShape(5.dp),
+                        color = Color(0xFFE1F7EF),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .background(Color(0xFF18B57F), CircleShape),
+                            )
+                            Spacer(modifier = Modifier.width(7.dp))
+                            Text(
+                                text = "Location confirmed",
+                                color = Color(0xFF167A5B),
+                                fontSize = 10.sp,
+                                lineHeight = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 22.dp)
+                .padding(bottom = 54.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Button(
+                onClick = onClockIn,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF111116),
+                    contentColor = Color.White,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Text(
+                    text = "Clock in",
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            TextButton(
+                onClick = {
+                    onManualEntry()
+                    Toast.makeText(context, "Manual entry selected", Toast.LENGTH_SHORT).show()
+                },
+            ) {
+                Text(
+                    text = "Enter hours manually",
+                    color = Color(0xFF1D1D22),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkLocationMapHeader() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(302.dp)
+            .background(Color(0xFFEAF5EF)),
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawLine(
+                color = Color(0xFFD6E8DE),
+                start = Offset(size.width * 0.18f, 0f),
+                end = Offset(size.width * 0.64f, size.height),
+                strokeWidth = 1.dp.toPx(),
+            )
+            drawLine(
+                color = Color(0xFFD6E8DE),
+                start = Offset(size.width * 0.78f, 0f),
+                end = Offset(size.width * 0.34f, size.height),
+                strokeWidth = 1.dp.toPx(),
+            )
+            drawLine(
+                color = Color(0xFFD6E8DE),
+                start = Offset(0f, size.height * 0.56f),
+                end = Offset(size.width, size.height * 0.32f),
+                strokeWidth = 1.dp.toPx(),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(y = (-12).dp)
+                .size(56.dp)
+                .background(Color(0xFFC4EADF), CircleShape),
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(18.dp)
+                    .background(Color(0xFF69B9E8), CircleShape),
+            )
+        }
+    }
+}
+
+@Composable
 fun GpsLocationDeniedScreen(
     modifier: Modifier = Modifier,
     onLocationEnabled: () -> Unit = {},
@@ -819,6 +1020,9 @@ private enum class AppScreen {
     WorkerSignUp,
     WorkerAwaitingApproval,
     WorkerLocationPermission,
+    WorkerGpsClockIn,
+    WorkerShiftInProgress,
+    WorkerLocationDenied,
 }
 
 @Preview(showBackground = true)
@@ -842,6 +1046,14 @@ private fun WorkerAwaitingApprovalScreenPreview() {
 private fun WorkerLocationPermissionScreenPreview() {
     AloworkTheme {
         WorkerLocationPermissionScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun GpsClockInScreenPreview() {
+    AloworkTheme {
+        GpsClockInScreen()
     }
 }
 
