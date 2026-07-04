@@ -117,6 +117,8 @@ fun AloworkApp() {
         AppScreen.WorkerNotifications -> WorkerNotificationsScreen()
 
         AppScreen.WorkerProfile -> WorkerProfileScreen()
+
+        AppScreen.WorkerHistoryOverview -> WorkerHistoryOverviewScreen()
     }
 }
 
@@ -791,6 +793,267 @@ fun WorkerProfileScreen(modifier: Modifier = Modifier) {
         WorkerBottomNavigation(
             modifier = Modifier.align(Alignment.BottomCenter),
             selected = WorkerTab.Profile,
+        )
+    }
+}
+
+@Composable
+fun WorkerHistoryOverviewScreen(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 52.dp, bottom = 20.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Overview",
+                    color = Color(0xFF17171B),
+                    fontSize = 22.sp,
+                    lineHeight = 27.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+                    shadowElevation = 0.dp,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "June 2026",
+                            color = Color(0xFF17171B),
+                            fontSize = 13.sp,
+                            lineHeight = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "⌄",
+                            color = Color(0xFF73737A),
+                            fontSize = 14.sp,
+                            lineHeight = 14.sp,
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            MonthlySummaryCard()
+            Spacer(modifier = Modifier.height(14.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+                shadowElevation = 0.dp,
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    WeekOverviewRow(
+                        week = "Week 23",
+                        amount = "€608",
+                        detail = "38.0 hrs · 2–6 Jun",
+                        status = WeekStatus.Approved,
+                        onClick = {
+                            Toast.makeText(context, "Week 23 selected", Toast.LENGTH_SHORT)
+                                .show()
+                        },
+                    )
+                    ProfileDivider()
+                    WeekOverviewRow(
+                        week = "Week 24",
+                        amount = "€584",
+                        detail = "36.5 hrs · 9–13 Jun",
+                        status = WeekStatus.Approved,
+                        onClick = {
+                            Toast.makeText(context, "Week 24 selected", Toast.LENGTH_SHORT)
+                                .show()
+                        },
+                    )
+                    ProfileDivider()
+                    WeekOverviewRow(
+                        week = "Week 25",
+                        amount = "€256",
+                        detail = "16.0 hrs · 16–19 Jun",
+                        status = WeekStatus.Pending,
+                        onClick = {
+                            Toast.makeText(context, "Week 25 selected", Toast.LENGTH_SHORT)
+                                .show()
+                        },
+                    )
+                }
+            }
+        }
+
+        WorkerBottomNavigation(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            selected = WorkerTab.History,
+        )
+    }
+}
+
+@Composable
+private fun MonthlySummaryCard(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(184.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(18.dp),
+        ) {
+            Text(
+                text = "June total · net",
+                color = Color(0xFF8C8C91),
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "€1,284",
+                color = Color(0xFF17171B),
+                fontSize = 32.sp,
+                lineHeight = 38.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                SummaryMetricTile(
+                    value = "78.5h",
+                    label = "Hours worked",
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                SummaryMetricTile(
+                    value = "14",
+                    label = "Workdays",
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SummaryMetricTile(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .height(64.dp)
+            .background(Color(0xFFF4F4F0), RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = value,
+            color = Color(0xFF17171B),
+            fontSize = 16.sp,
+            lineHeight = 19.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(
+            text = label,
+            color = Color(0xFF73737A),
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
+        )
+    }
+}
+
+@Composable
+private fun WeekOverviewRow(
+    week: String,
+    amount: String,
+    detail: String,
+    status: WeekStatus,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(72.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = week,
+                color = Color(0xFF17171B),
+                fontSize = 14.sp,
+                lineHeight = 17.sp,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = detail,
+                color = Color(0xFF73737A),
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = amount,
+                color = Color(0xFF17171B),
+                fontSize = 15.sp,
+                lineHeight = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.End,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            WeekStatusPill(status = status)
+        }
+    }
+}
+
+@Composable
+private fun WeekStatusPill(status: WeekStatus) {
+    val label = when (status) {
+        WeekStatus.Approved -> "Approved"
+        WeekStatus.Pending -> "Pending"
+    }
+    val background = when (status) {
+        WeekStatus.Approved -> Color(0xFFE1F7EF)
+        WeekStatus.Pending -> Color(0xFFFFF0DB)
+    }
+    val foreground = when (status) {
+        WeekStatus.Approved -> Color(0xFF1D9D73)
+        WeekStatus.Pending -> Color(0xFF9A6A22)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(5.dp),
+        color = background,
+        shadowElevation = 0.dp,
+    ) {
+        Text(
+            text = label,
+            color = foreground,
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
         )
     }
 }
@@ -1631,6 +1894,7 @@ private enum class AppScreen {
     WorkerLocationDenied,
     WorkerNotifications,
     WorkerProfile,
+    WorkerHistoryOverview,
 }
 
 private enum class NotificationType {
@@ -1644,6 +1908,11 @@ private enum class WorkerTab {
     History,
     Alerts,
     Profile,
+}
+
+private enum class WeekStatus {
+    Approved,
+    Pending,
 }
 
 @Preview(showBackground = true)
@@ -1691,6 +1960,14 @@ private fun WorkerNotificationsScreenPreview() {
 private fun WorkerProfileScreenPreview() {
     AloworkTheme {
         WorkerProfileScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerHistoryOverviewScreenPreview() {
+    AloworkTheme {
+        WorkerHistoryOverviewScreen()
     }
 }
 
