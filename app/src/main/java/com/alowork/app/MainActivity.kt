@@ -111,6 +111,8 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerGpsClockIn
             },
         )
+
+        AppScreen.WorkerNotifications -> WorkerNotificationsScreen()
     }
 }
 
@@ -671,6 +673,375 @@ fun GpsClockInScreen(
 }
 
 @Composable
+fun WorkerNotificationsScreen(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 52.dp, bottom = 20.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Alerts",
+                color = Color(0xFF17171B),
+                fontSize = 22.sp,
+                lineHeight = 27.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            NotificationCard(
+                type = NotificationType.HoursAdjusted,
+                title = "Hours adjusted",
+                body = "Your hours for 5 June were adjusted to 6.0\nhrs.",
+                time = "2 hours ago",
+                unread = true,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            NotificationCard(
+                type = NotificationType.WeekApproved,
+                title = "Week approved",
+                body = "Your hours for week 23 were approved.\n€608.",
+                time = "yesterday",
+                unread = true,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            NotificationCard(
+                type = NotificationType.AccountApproved,
+                title = "Account approved",
+                body = "Welcome! Your employer approved your\naccount.",
+                time = "3 days ago",
+                unread = false,
+            )
+        }
+
+        WorkerBottomNavigation(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            selected = WorkerTab.Alerts,
+        )
+    }
+}
+
+@Composable
+private fun NotificationCard(
+    type: NotificationType,
+    title: String,
+    body: String,
+    time: String,
+    unread: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(96.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 14.dp, top = 15.dp, end = 14.dp),
+        ) {
+            NotificationIcon(type = type, iconSize = 36.dp)
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    color = Color(0xFF17171B),
+                    fontSize = 15.sp,
+                    lineHeight = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = body,
+                    color = Color(0xFF73737A),
+                    fontSize = 13.sp,
+                    lineHeight = 13.sp,
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = time,
+                    color = Color(0xFFB0B0B0),
+                    fontSize = 11.sp,
+                    lineHeight = 13.sp,
+                )
+            }
+            if (unread) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .size(7.dp)
+                        .background(Color(0xFF3D95DD), CircleShape),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotificationIcon(type: NotificationType, iconSize: Dp) {
+    val background = when (type) {
+        NotificationType.HoursAdjusted -> Color(0xFFE7F3FF)
+        NotificationType.WeekApproved -> Color(0xFFE3F8EF)
+        NotificationType.AccountApproved -> Color(0xFFE3F8EF)
+    }
+    val iconColor = when (type) {
+        NotificationType.HoursAdjusted -> Color(0xFF3D95DD)
+        NotificationType.WeekApproved -> Color(0xFF20A977)
+        NotificationType.AccountApproved -> Color(0xFF20A977)
+    }
+
+    Box(
+        modifier = Modifier
+            .size(iconSize)
+            .background(background, CircleShape),
+    ) {
+        Canvas(modifier = Modifier.align(Alignment.Center).size(18.dp)) {
+            val strokeWidth = 2.dp.toPx()
+            val canvasSize = this.size
+            when (type) {
+                NotificationType.HoursAdjusted -> {
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(canvasSize.width * 0.3f, canvasSize.height * 0.72f),
+                        end = Offset(canvasSize.width * 0.72f, canvasSize.height * 0.3f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(canvasSize.width * 0.26f, canvasSize.height * 0.76f),
+                        end = Offset(canvasSize.width * 0.42f, canvasSize.height * 0.72f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(canvasSize.width * 0.62f, canvasSize.height * 0.22f),
+                        end = Offset(canvasSize.width * 0.78f, canvasSize.height * 0.38f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                }
+
+                NotificationType.WeekApproved -> {
+                    drawCircle(
+                        color = iconColor,
+                        style = Stroke(width = strokeWidth),
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(canvasSize.width * 0.3f, canvasSize.height * 0.52f),
+                        end = Offset(canvasSize.width * 0.44f, canvasSize.height * 0.66f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(canvasSize.width * 0.44f, canvasSize.height * 0.66f),
+                        end = Offset(canvasSize.width * 0.72f, canvasSize.height * 0.36f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                }
+
+                NotificationType.AccountApproved -> {
+                    drawCircle(
+                        color = iconColor,
+                        center = Offset(canvasSize.width * 0.42f, canvasSize.height * 0.32f),
+                        radius = canvasSize.width * 0.16f,
+                        style = Stroke(width = strokeWidth),
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(canvasSize.width * 0.18f, canvasSize.height * 0.78f),
+                        end = Offset(canvasSize.width * 0.42f, canvasSize.height * 0.58f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(canvasSize.width * 0.42f, canvasSize.height * 0.58f),
+                        end = Offset(canvasSize.width * 0.58f, canvasSize.height * 0.74f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(canvasSize.width * 0.62f, canvasSize.height * 0.34f),
+                        end = Offset(canvasSize.width * 0.72f, canvasSize.height * 0.44f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(canvasSize.width * 0.72f, canvasSize.height * 0.44f),
+                        end = Offset(canvasSize.width * 0.86f, canvasSize.height * 0.26f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkerBottomNavigation(
+    selected: WorkerTab,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(62.dp),
+        shape = RoundedCornerShape(18.dp),
+        color = Color(0xFF111116),
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 28.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            WorkerNavItem(
+                tab = WorkerTab.Home,
+                selected = selected == WorkerTab.Home,
+                modifier = Modifier.weight(1f),
+            )
+            WorkerNavItem(
+                tab = WorkerTab.History,
+                selected = selected == WorkerTab.History,
+                modifier = Modifier.weight(1f),
+            )
+            WorkerNavItem(
+                tab = WorkerTab.Alerts,
+                selected = selected == WorkerTab.Alerts,
+                modifier = Modifier.weight(1f),
+            )
+            WorkerNavItem(
+                tab = WorkerTab.Profile,
+                selected = selected == WorkerTab.Profile,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun WorkerNavItem(
+    tab: WorkerTab,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        val iconColor = if (selected) Color.White else Color(0xFF7B7B81)
+        Canvas(modifier = Modifier.size(22.dp)) {
+            val strokeWidth = 2.dp.toPx()
+            when (tab) {
+                WorkerTab.Home -> {
+                    drawCircle(
+                        color = iconColor,
+                        center = Offset(size.width * 0.5f, size.height * 0.5f),
+                        radius = size.width * 0.28f,
+                        style = Stroke(width = strokeWidth),
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(size.width * 0.5f, size.height * 0.23f),
+                        end = Offset(size.width * 0.5f, size.height * 0.08f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                }
+
+                WorkerTab.History -> {
+                    drawCircle(
+                        color = iconColor,
+                        radius = size.width * 0.38f,
+                        style = Stroke(width = strokeWidth),
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(size.width * 0.5f, size.height * 0.5f),
+                        end = Offset(size.width * 0.5f, size.height * 0.28f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(size.width * 0.5f, size.height * 0.5f),
+                        end = Offset(size.width * 0.68f, size.height * 0.58f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                }
+
+                WorkerTab.Alerts -> {
+                    drawCircle(
+                        color = iconColor,
+                        center = Offset(size.width * 0.5f, size.height * 0.84f),
+                        radius = size.width * 0.06f,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(size.width * 0.22f, size.height * 0.68f),
+                        end = Offset(size.width * 0.78f, size.height * 0.68f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(size.width * 0.3f, size.height * 0.68f),
+                        end = Offset(size.width * 0.36f, size.height * 0.26f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(size.width * 0.7f, size.height * 0.68f),
+                        end = Offset(size.width * 0.64f, size.height * 0.26f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                }
+
+                WorkerTab.Profile -> {
+                    drawCircle(
+                        color = iconColor,
+                        center = Offset(size.width * 0.5f, size.height * 0.34f),
+                        radius = size.width * 0.18f,
+                        style = Stroke(width = strokeWidth),
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(size.width * 0.22f, size.height * 0.82f),
+                        end = Offset(size.width * 0.5f, size.height * 0.6f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(size.width * 0.5f, size.height * 0.6f),
+                        end = Offset(size.width * 0.78f, size.height * 0.82f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun WorkLocationMapHeader() {
     Box(
         modifier = Modifier
@@ -1023,6 +1394,20 @@ private enum class AppScreen {
     WorkerGpsClockIn,
     WorkerShiftInProgress,
     WorkerLocationDenied,
+    WorkerNotifications,
+}
+
+private enum class NotificationType {
+    HoursAdjusted,
+    WeekApproved,
+    AccountApproved,
+}
+
+private enum class WorkerTab {
+    Home,
+    History,
+    Alerts,
+    Profile,
 }
 
 @Preview(showBackground = true)
@@ -1054,6 +1439,14 @@ private fun WorkerLocationPermissionScreenPreview() {
 private fun GpsClockInScreenPreview() {
     AloworkTheme {
         GpsClockInScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerNotificationsScreenPreview() {
+    AloworkTheme {
+        WorkerNotificationsScreen()
     }
 }
 
