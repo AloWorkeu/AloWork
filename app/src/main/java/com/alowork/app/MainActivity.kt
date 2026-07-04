@@ -11,8 +11,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -113,6 +115,8 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerNotifications -> WorkerNotificationsScreen()
+
+        AppScreen.WorkerProfile -> WorkerProfileScreen()
     }
 }
 
@@ -720,6 +724,237 @@ fun WorkerNotificationsScreen(modifier: Modifier = Modifier) {
             selected = WorkerTab.Alerts,
         )
     }
+}
+
+@Composable
+fun WorkerProfileScreen(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 52.dp, bottom = 20.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Profile",
+                color = Color(0xFF17171B),
+                fontSize = 22.sp,
+                lineHeight = 27.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            ProfileHeaderCard()
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Pay (set by employer)",
+                color = Color(0xFF73737A),
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            ProfileSectionCard {
+                ProfileInfoRow(label = "Hourly rate", value = "€16.00")
+                ProfileDivider()
+                ProfileInfoRow(label = "Payout", value = "Net")
+                ProfileDivider()
+                ProfileInfoRow(label = "Weekend premium", value = "1.5× (Sunday)")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            ProfileSectionCard {
+                ProfileActionRow(
+                    label = "Language",
+                    onClick = {
+                        Toast.makeText(context, "Language selected", Toast.LENGTH_SHORT).show()
+                    },
+                )
+                ProfileDivider()
+                ProfileActionRow(
+                    label = "Change password",
+                    onClick = {
+                        Toast.makeText(context, "Change password selected", Toast.LENGTH_SHORT)
+                            .show()
+                    },
+                )
+                ProfileDivider()
+                ProfileActionRow(
+                    label = "Log out",
+                    onClick = {
+                        Toast.makeText(context, "Logged out", Toast.LENGTH_SHORT).show()
+                    },
+                )
+            }
+        }
+
+        WorkerBottomNavigation(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            selected = WorkerTab.Profile,
+        )
+    }
+}
+
+@Composable
+private fun ProfileHeaderCard(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(82.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ProfileAvatar(avatarSize = 52.dp)
+            Spacer(modifier = Modifier.width(14.dp))
+            Column {
+                Text(
+                    text = "Sven de Vries",
+                    color = Color(0xFF17171B),
+                    fontSize = 17.sp,
+                    lineHeight = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "sven@email.nl",
+                    color = Color(0xFF73737A),
+                    fontSize = 13.sp,
+                    lineHeight = 16.sp,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileAvatar(avatarSize: Dp) {
+    Box(
+        modifier = Modifier
+            .size(avatarSize)
+            .background(Color(0xFFE2EDFF), CircleShape),
+    ) {
+        Canvas(modifier = Modifier.align(Alignment.Center).size(24.dp)) {
+            val strokeWidth = 2.dp.toPx()
+            val iconColor = Color(0xFF68758A)
+            val canvasSize = this.size
+            drawCircle(
+                color = iconColor,
+                center = Offset(canvasSize.width * 0.5f, canvasSize.height * 0.34f),
+                radius = canvasSize.width * 0.18f,
+                style = Stroke(width = strokeWidth),
+            )
+            drawLine(
+                color = iconColor,
+                start = Offset(canvasSize.width * 0.22f, canvasSize.height * 0.82f),
+                end = Offset(canvasSize.width * 0.5f, canvasSize.height * 0.6f),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round,
+            )
+            drawLine(
+                color = iconColor,
+                start = Offset(canvasSize.width * 0.5f, canvasSize.height * 0.6f),
+                end = Offset(canvasSize.width * 0.78f, canvasSize.height * 0.82f),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProfileSectionCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+        shadowElevation = 0.dp,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth(), content = content)
+    }
+}
+
+@Composable
+private fun ProfileInfoRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = Color(0xFF73737A),
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            color = Color(0xFF17171B),
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.End,
+        )
+    }
+}
+
+@Composable
+private fun ProfileActionRow(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = Color(0xFF17171B),
+            fontSize = 14.sp,
+            lineHeight = 17.sp,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = "›",
+            color = Color(0xFF8C8C91),
+            fontSize = 18.sp,
+            lineHeight = 18.sp,
+            textAlign = TextAlign.End,
+        )
+    }
+}
+
+@Composable
+private fun ProfileDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(Color(0xFFE8E8E3)),
+    )
 }
 
 @Composable
@@ -1395,6 +1630,7 @@ private enum class AppScreen {
     WorkerShiftInProgress,
     WorkerLocationDenied,
     WorkerNotifications,
+    WorkerProfile,
 }
 
 private enum class NotificationType {
@@ -1447,6 +1683,14 @@ private fun GpsClockInScreenPreview() {
 private fun WorkerNotificationsScreenPreview() {
     AloworkTheme {
         WorkerNotificationsScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerProfileScreenPreview() {
+    AloworkTheme {
+        WorkerProfileScreen()
     }
 }
 
