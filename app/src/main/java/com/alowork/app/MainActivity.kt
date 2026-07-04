@@ -75,6 +75,15 @@ class MainActivity : ComponentActivity() {
 fun AloworkApp() {
     var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
 
+    fun openWorkerTab(tab: WorkerTab) {
+        screen = when (tab) {
+            WorkerTab.Home -> AppScreen.WorkerGpsClockIn
+            WorkerTab.History -> AppScreen.WorkerHistoryOverview
+            WorkerTab.Alerts -> AppScreen.WorkerNotifications
+            WorkerTab.Profile -> AppScreen.WorkerProfile
+        }
+    }
+
     when (screen) {
         AppScreen.WorkerSignUp -> WorkerSignUpScreen(
             onAccountCreated = {
@@ -82,7 +91,12 @@ fun AloworkApp() {
             },
         )
 
-        AppScreen.WorkerAwaitingApproval -> WorkerAwaitingApprovalScreen()
+        AppScreen.WorkerAwaitingApproval -> WorkerAwaitingApprovalScreen(
+            autoContinue = true,
+            onApprovalReceived = {
+                screen = AppScreen.WorkerLocationPermission
+            },
+        )
 
         AppScreen.WorkerLocationPermission -> WorkerLocationPermissionScreen(
             onLocationAllowed = {
@@ -114,11 +128,17 @@ fun AloworkApp() {
             },
         )
 
-        AppScreen.WorkerNotifications -> WorkerNotificationsScreen()
+        AppScreen.WorkerNotifications -> WorkerNotificationsScreen(
+            onTabSelected = ::openWorkerTab,
+        )
 
-        AppScreen.WorkerProfile -> WorkerProfileScreen()
+        AppScreen.WorkerProfile -> WorkerProfileScreen(
+            onTabSelected = ::openWorkerTab,
+        )
 
-        AppScreen.WorkerHistoryOverview -> WorkerHistoryOverviewScreen()
+        AppScreen.WorkerHistoryOverview -> WorkerHistoryOverviewScreen(
+            onTabSelected = ::openWorkerTab,
+        )
     }
 }
 
@@ -308,7 +328,18 @@ private fun SignUpField(
 }
 
 @Composable
-fun WorkerAwaitingApprovalScreen(modifier: Modifier = Modifier) {
+fun WorkerAwaitingApprovalScreen(
+    modifier: Modifier = Modifier,
+    autoContinue: Boolean = false,
+    onApprovalReceived: () -> Unit = {},
+) {
+    if (autoContinue) {
+        LaunchedEffect(Unit) {
+            delay(1800)
+            onApprovalReceived()
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -679,7 +710,10 @@ fun GpsClockInScreen(
 }
 
 @Composable
-fun WorkerNotificationsScreen(modifier: Modifier = Modifier) {
+fun WorkerNotificationsScreen(
+    modifier: Modifier = Modifier,
+    onTabSelected: (WorkerTab) -> Unit = {},
+) {
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -724,12 +758,16 @@ fun WorkerNotificationsScreen(modifier: Modifier = Modifier) {
         WorkerBottomNavigation(
             modifier = Modifier.align(Alignment.BottomCenter),
             selected = WorkerTab.Alerts,
+            onTabSelected = onTabSelected,
         )
     }
 }
 
 @Composable
-fun WorkerProfileScreen(modifier: Modifier = Modifier) {
+fun WorkerProfileScreen(
+    modifier: Modifier = Modifier,
+    onTabSelected: (WorkerTab) -> Unit = {},
+) {
     val context = LocalContext.current
 
     Box(
@@ -793,12 +831,16 @@ fun WorkerProfileScreen(modifier: Modifier = Modifier) {
         WorkerBottomNavigation(
             modifier = Modifier.align(Alignment.BottomCenter),
             selected = WorkerTab.Profile,
+            onTabSelected = onTabSelected,
         )
     }
 }
 
 @Composable
-fun WorkerHistoryOverviewScreen(modifier: Modifier = Modifier) {
+fun WorkerHistoryOverviewScreen(
+    modifier: Modifier = Modifier,
+    onTabSelected: (WorkerTab) -> Unit = {},
+) {
     val context = LocalContext.current
 
     Box(
@@ -898,6 +940,7 @@ fun WorkerHistoryOverviewScreen(modifier: Modifier = Modifier) {
         WorkerBottomNavigation(
             modifier = Modifier.align(Alignment.BottomCenter),
             selected = WorkerTab.History,
+            onTabSelected = onTabSelected,
         )
     }
 }
@@ -1392,6 +1435,7 @@ private fun NotificationIcon(type: NotificationType, iconSize: Dp) {
 private fun WorkerBottomNavigation(
     selected: WorkerTab,
     modifier: Modifier = Modifier,
+    onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     Surface(
         modifier = modifier
@@ -1410,21 +1454,25 @@ private fun WorkerBottomNavigation(
             WorkerNavItem(
                 tab = WorkerTab.Home,
                 selected = selected == WorkerTab.Home,
+                onClick = onTabSelected,
                 modifier = Modifier.weight(1f),
             )
             WorkerNavItem(
                 tab = WorkerTab.History,
                 selected = selected == WorkerTab.History,
+                onClick = onTabSelected,
                 modifier = Modifier.weight(1f),
             )
             WorkerNavItem(
                 tab = WorkerTab.Alerts,
                 selected = selected == WorkerTab.Alerts,
+                onClick = onTabSelected,
                 modifier = Modifier.weight(1f),
             )
             WorkerNavItem(
                 tab = WorkerTab.Profile,
                 selected = selected == WorkerTab.Profile,
+                onClick = onTabSelected,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -1435,10 +1483,13 @@ private fun WorkerBottomNavigation(
 private fun WorkerNavItem(
     tab: WorkerTab,
     selected: Boolean,
+    onClick: (WorkerTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .clickable { onClick(tab) },
         contentAlignment = Alignment.Center,
     ) {
         val iconColor = if (selected) Color.White else Color(0xFF7B7B81)
@@ -1903,7 +1954,7 @@ private enum class NotificationType {
     AccountApproved,
 }
 
-private enum class WorkerTab {
+enum class WorkerTab {
     Home,
     History,
     Alerts,
