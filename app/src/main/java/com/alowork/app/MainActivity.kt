@@ -81,6 +81,8 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerAwaitingApproval -> WorkerAwaitingApprovalScreen()
+
+        AppScreen.WorkerLocationPermission -> WorkerLocationPermissionScreen()
     }
 }
 
@@ -330,6 +332,157 @@ private fun AwaitingApprovalIcon(size: Dp) {
             color = iconColor,
             start = center,
             end = Offset(center.x + radius * 0.34f, center.y + radius * 0.22f),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+@Composable
+fun WorkerLocationPermissionScreen(
+    modifier: Modifier = Modifier,
+    onLocationAllowed: () -> Unit = {},
+    onManualEntry: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    val permissions = remember {
+        arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { grants ->
+        val granted = grants.values.any { it }
+        if (granted) {
+            onLocationAllowed()
+        } else {
+            Toast.makeText(
+                context,
+                "Location access is required to clock in",
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 32.dp)
+            .padding(top = 16.dp, bottom = 20.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(y = (-56).dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            LocationPermissionIcon(size = 28.dp)
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Enable location",
+                color = Color(0xFF17171B),
+                fontSize = 18.sp,
+                lineHeight = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "To clock in at the workplace we need your\nlocation. It's only used to confirm your shift, not\nto track you.",
+                color = Color(0xFF747474),
+                fontSize = 10.sp,
+                lineHeight = 13.sp,
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 34.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Button(
+                onClick = {
+                    if (hasAnyLocationPermission(context)) {
+                        onLocationAllowed()
+                    } else {
+                        permissionLauncher.launch(permissions)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF111116),
+                    contentColor = Color.White,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Text(
+                    text = "Allow location",
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            TextButton(
+                onClick = {
+                    onManualEntry()
+                    Toast.makeText(context, "Manual entry selected", Toast.LENGTH_SHORT).show()
+                },
+            ) {
+                Text(
+                    text = "Prefer to enter hours manually",
+                    color = Color(0xFF1D1D22),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocationPermissionIcon(size: Dp) {
+    Canvas(modifier = Modifier.size(size)) {
+        val strokeWidth = 2.dp.toPx()
+        val iconColor = Color(0xFF2B7DBF)
+        val width = size.toPx()
+        val height = size.toPx()
+        val center = Offset(width / 2f, height * 0.38f)
+
+        drawCircle(
+            color = iconColor,
+            center = center,
+            radius = width * 0.23f,
+            style = Stroke(width = strokeWidth),
+        )
+        drawLine(
+            color = iconColor,
+            start = Offset(width * 0.5f, height * 0.62f),
+            end = Offset(width * 0.5f, height * 0.88f),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = iconColor,
+            start = Offset(width * 0.34f, height * 0.62f),
+            end = Offset(width * 0.5f, height * 0.88f),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = iconColor,
+            start = Offset(width * 0.66f, height * 0.62f),
+            end = Offset(width * 0.5f, height * 0.88f),
             strokeWidth = strokeWidth,
             cap = StrokeCap.Round,
         )
@@ -665,6 +818,7 @@ private fun formatCurrency(value: Double): String {
 private enum class AppScreen {
     WorkerSignUp,
     WorkerAwaitingApproval,
+    WorkerLocationPermission,
 }
 
 @Preview(showBackground = true)
@@ -680,6 +834,14 @@ private fun AloworkAppPreview() {
 private fun WorkerAwaitingApprovalScreenPreview() {
     AloworkTheme {
         WorkerAwaitingApprovalScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerLocationPermissionScreenPreview() {
+    AloworkTheme {
+        WorkerLocationPermissionScreen()
     }
 }
 
