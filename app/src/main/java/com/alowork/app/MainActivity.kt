@@ -103,7 +103,7 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerGpsClockIn
             },
             onManualEntry = {
-                screen = AppScreen.WorkerLocationDenied
+                screen = AppScreen.WorkerLogHoursDayDetail
             },
         )
 
@@ -112,7 +112,7 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerShiftInProgress
             },
             onManualEntry = {
-                screen = AppScreen.WorkerLocationDenied
+                screen = AppScreen.WorkerLogHoursDayDetail
             },
         )
 
@@ -125,6 +125,9 @@ fun AloworkApp() {
         AppScreen.WorkerLocationDenied -> GpsLocationDeniedScreen(
             onLocationEnabled = {
                 screen = AppScreen.WorkerGpsClockIn
+            },
+            onManualEntry = {
+                screen = AppScreen.WorkerLogHoursDayDetail
             },
         )
 
@@ -145,6 +148,16 @@ fun AloworkApp() {
 
         AppScreen.WorkerDayViewAdjusted -> WorkerDayViewAdjustedScreen(
             onBack = {
+                screen = AppScreen.WorkerHistoryOverview
+            },
+            onTabSelected = ::openWorkerTab,
+        )
+
+        AppScreen.WorkerLogHoursDayDetail -> WorkerLogHoursDayDetailScreen(
+            onBack = {
+                screen = AppScreen.WorkerGpsClockIn
+            },
+            onSubmitted = {
                 screen = AppScreen.WorkerHistoryOverview
             },
             onTabSelected = ::openWorkerTab,
@@ -1110,6 +1123,256 @@ fun WorkerDayViewAdjustedScreen(
 }
 
 @Composable
+fun WorkerLogHoursDayDetailScreen(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
+    onSubmitted: () -> Unit = {},
+    onTabSelected: (WorkerTab) -> Unit = {},
+) {
+    val context = LocalContext.current
+    var clockIn by remember { mutableStateOf("08:00") }
+    var clockOut by remember { mutableStateOf("16:30") }
+    var breakMinutes by remember { mutableStateOf("30") }
+    var note by remember { mutableStateOf("") }
+    val totalHours = calculateManualHours(clockIn, clockOut, breakMinutes)
+    val estimatedPay = totalHours * 16.0
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 48.dp, bottom = 20.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 84.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "‹",
+                    color = Color(0xFF17171B),
+                    fontSize = 30.sp,
+                    lineHeight = 30.sp,
+                    modifier = Modifier
+                        .width(30.dp)
+                        .clickable(onClick = onBack),
+                )
+                Text(
+                    text = "Log hours",
+                    color = Color(0xFF17171B),
+                    fontSize = 22.sp,
+                    lineHeight = 27.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFFEAF5EF),
+                ) {
+                    Text(
+                        text = "Manual",
+                        color = Color(0xFF2F8F63),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(132.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+                shadowElevation = 0.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(18.dp),
+                ) {
+                    Text(
+                        text = "Tue 17 Jun",
+                        color = Color(0xFF8C8C91),
+                        fontSize = 12.sp,
+                        lineHeight = 15.sp,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Bottom,
+                    ) {
+                        Text(
+                            text = formatHours(totalHours),
+                            color = Color(0xFF17171B),
+                            fontSize = 34.sp,
+                            lineHeight = 38.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = formatEuro(estimatedPay),
+                            color = Color(0xFF17171B),
+                            fontSize = 20.sp,
+                            lineHeight = 24.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.End,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Estimated with €16.00 hourly rate",
+                        color = Color(0xFF73737A),
+                        fontSize = 12.sp,
+                        lineHeight = 15.sp,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+                shadowElevation = 0.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                ) {
+                    LogHoursField(
+                        label = "Clock in",
+                        value = clockIn,
+                        onValueChange = { clockIn = it },
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LogHoursField(
+                        label = "Clock out",
+                        value = clockOut,
+                        onValueChange = { clockOut = it },
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LogHoursField(
+                        label = "Break",
+                        value = breakMinutes,
+                        onValueChange = { breakMinutes = it },
+                        helper = "minutes",
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LogHoursField(
+                        label = "Note",
+                        value = note,
+                        onValueChange = { note = it },
+                        placeholder = "Optional",
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = {
+                    if (totalHours <= 0.0) {
+                        Toast.makeText(context, "Check your start and end time", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Hours submitted", Toast.LENGTH_SHORT).show()
+                        onSubmitted()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF111116),
+                    contentColor = Color.White,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Text(
+                    text = "Submit hours",
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+
+        WorkerBottomNavigation(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            selected = WorkerTab.History,
+            onTabSelected = onTabSelected,
+        )
+    }
+}
+
+@Composable
+private fun LogHoursField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String = "",
+    helper: String = "",
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = label,
+            color = Color(0xFF73737A),
+            fontSize = 12.sp,
+            lineHeight = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    color = Color(0xFFB8B8BC),
+                    fontSize = 14.sp,
+                )
+            },
+            textStyle = TextStyle(
+                color = Color(0xFF17171B),
+                fontSize = 14.sp,
+                lineHeight = 18.sp,
+            ),
+            singleLine = true,
+            shape = RoundedCornerShape(10.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF111116),
+                unfocusedBorderColor = Color(0xFFE4E4DF),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                cursorColor = Color(0xFF111116),
+            ),
+            trailingIcon = {
+                if (helper.isNotBlank()) {
+                    Text(
+                        text = helper,
+                        color = Color(0xFF8C8C91),
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                }
+            },
+        )
+    }
+}
+
+@Composable
 private fun DayInfoRow(
     label: String,
     value: String,
@@ -1837,6 +2100,7 @@ private fun WorkLocationMapHeader() {
 fun GpsLocationDeniedScreen(
     modifier: Modifier = Modifier,
     onLocationEnabled: () -> Unit = {},
+    onManualEntry: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val permissions = remember {
@@ -1928,6 +2192,7 @@ fun GpsLocationDeniedScreen(
             Spacer(modifier = Modifier.height(10.dp))
             TextButton(
                 onClick = {
+                    onManualEntry()
                     Toast.makeText(context, "Manual entry selected", Toast.LENGTH_SHORT).show()
                 },
             ) {
@@ -2134,6 +2399,37 @@ private fun formatCurrency(value: Double): String {
     return "£%.2f".format(Locale.US, value)
 }
 
+private fun calculateManualHours(
+    clockIn: String,
+    clockOut: String,
+    breakMinutes: String,
+): Double {
+    val start = parseTimeMinutes(clockIn) ?: return 0.0
+    val end = parseTimeMinutes(clockOut) ?: return 0.0
+    val breakValue = breakMinutes.toIntOrNull()?.coerceAtLeast(0) ?: 0
+    val workedMinutes = (end - start - breakValue).coerceAtLeast(0)
+    return workedMinutes / 60.0
+}
+
+private fun parseTimeMinutes(value: String): Int? {
+    val parts = value.trim().split(":")
+    if (parts.size != 2) return null
+
+    val hours = parts[0].toIntOrNull() ?: return null
+    val minutes = parts[1].toIntOrNull() ?: return null
+    if (hours !in 0..23 || minutes !in 0..59) return null
+
+    return hours * 60 + minutes
+}
+
+private fun formatHours(value: Double): String {
+    return "%.1fh".format(Locale.US, value)
+}
+
+private fun formatEuro(value: Double): String {
+    return "\u20AC%.2f".format(Locale.US, value)
+}
+
 private enum class AppScreen {
     WorkerSignUp,
     WorkerAwaitingApproval,
@@ -2145,6 +2441,7 @@ private enum class AppScreen {
     WorkerProfile,
     WorkerHistoryOverview,
     WorkerDayViewAdjusted,
+    WorkerLogHoursDayDetail,
 }
 
 private enum class NotificationType {
@@ -2227,6 +2524,14 @@ private fun WorkerHistoryOverviewScreenPreview() {
 private fun WorkerDayViewAdjustedScreenPreview() {
     AloworkTheme {
         WorkerDayViewAdjustedScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerLogHoursDayDetailScreenPreview() {
+    AloworkTheme {
+        WorkerLogHoursDayDetailScreen()
     }
 }
 
