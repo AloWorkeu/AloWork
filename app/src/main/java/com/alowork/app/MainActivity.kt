@@ -137,6 +137,16 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerHistoryOverview -> WorkerHistoryOverviewScreen(
+            onDaySelected = {
+                screen = AppScreen.WorkerDayViewAdjusted
+            },
+            onTabSelected = ::openWorkerTab,
+        )
+
+        AppScreen.WorkerDayViewAdjusted -> WorkerDayViewAdjustedScreen(
+            onBack = {
+                screen = AppScreen.WorkerHistoryOverview
+            },
             onTabSelected = ::openWorkerTab,
         )
     }
@@ -839,6 +849,7 @@ fun WorkerProfileScreen(
 @Composable
 fun WorkerHistoryOverviewScreen(
     modifier: Modifier = Modifier,
+    onDaySelected: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -906,10 +917,7 @@ fun WorkerHistoryOverviewScreen(
                         amount = "€608",
                         detail = "38.0 hrs · 2–6 Jun",
                         status = WeekStatus.Approved,
-                        onClick = {
-                            Toast.makeText(context, "Week 23 selected", Toast.LENGTH_SHORT)
-                                .show()
-                        },
+                        onClick = onDaySelected,
                     )
                     ProfileDivider()
                     WeekOverviewRow(
@@ -917,10 +925,7 @@ fun WorkerHistoryOverviewScreen(
                         amount = "€584",
                         detail = "36.5 hrs · 9–13 Jun",
                         status = WeekStatus.Approved,
-                        onClick = {
-                            Toast.makeText(context, "Week 24 selected", Toast.LENGTH_SHORT)
-                                .show()
-                        },
+                        onClick = onDaySelected,
                     )
                     ProfileDivider()
                     WeekOverviewRow(
@@ -928,10 +933,7 @@ fun WorkerHistoryOverviewScreen(
                         amount = "€256",
                         detail = "16.0 hrs · 16–19 Jun",
                         status = WeekStatus.Pending,
-                        onClick = {
-                            Toast.makeText(context, "Week 25 selected", Toast.LENGTH_SHORT)
-                                .show()
-                        },
+                        onClick = onDaySelected,
                     )
                 }
             }
@@ -941,6 +943,199 @@ fun WorkerHistoryOverviewScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
             selected = WorkerTab.History,
             onTabSelected = onTabSelected,
+        )
+    }
+}
+
+@Composable
+fun WorkerDayViewAdjustedScreen(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
+    onTabSelected: (WorkerTab) -> Unit = {},
+) {
+    val context = LocalContext.current
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 48.dp, bottom = 20.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "‹",
+                    color = Color(0xFF17171B),
+                    fontSize = 30.sp,
+                    lineHeight = 30.sp,
+                    modifier = Modifier
+                        .width(30.dp)
+                        .clickable(onClick = onBack),
+                )
+                Text(
+                    text = "Tue 3 Jun",
+                    color = Color(0xFF17171B),
+                    fontSize = 22.sp,
+                    lineHeight = 27.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                WeekStatusPill(status = WeekStatus.Adjusted)
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(126.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+                shadowElevation = 0.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(18.dp),
+                ) {
+                    Text(
+                        text = "Total",
+                        color = Color(0xFF8C8C91),
+                        fontSize = 12.sp,
+                        lineHeight = 15.sp,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Bottom,
+                    ) {
+                        Text(
+                            text = "6.0h",
+                            color = Color(0xFF17171B),
+                            fontSize = 34.sp,
+                            lineHeight = 38.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = "€96.00",
+                            color = Color(0xFF17171B),
+                            fontSize = 20.sp,
+                            lineHeight = 24.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.End,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Adjusted from 7.5h by your employer",
+                        color = Color(0xFFE0A12A),
+                        fontSize = 12.sp,
+                        lineHeight = 15.sp,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            ProfileSectionCard {
+                DayInfoRow(label = "Clock in", value = "08:00")
+                ProfileDivider()
+                DayInfoRow(label = "Clock out", value = "14:00")
+                ProfileDivider()
+                DayInfoRow(label = "Break", value = "0 min")
+                ProfileDivider()
+                DayInfoRow(label = "Hourly rate", value = "€16.00")
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+                shadowElevation = 0.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                ) {
+                    Text(
+                        text = "Adjustment note",
+                        color = Color(0xFF17171B),
+                        fontSize = 14.sp,
+                        lineHeight = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Your employer adjusted this day to match the approved schedule.",
+                        color = Color(0xFF73737A),
+                        fontSize = 13.sp,
+                        lineHeight = 17.sp,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = {
+                    Toast.makeText(context, "Question sent", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF111116),
+                    contentColor = Color.White,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Text(
+                    text = "Ask about this adjustment",
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+
+        WorkerBottomNavigation(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            selected = WorkerTab.History,
+            onTabSelected = onTabSelected,
+        )
+    }
+}
+
+@Composable
+private fun DayInfoRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(46.dp)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = Color(0xFF73737A),
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            color = Color(0xFF17171B),
+            fontSize = 14.sp,
+            lineHeight = 17.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.End,
         )
     }
 }
@@ -1075,14 +1270,17 @@ private fun WeekStatusPill(status: WeekStatus) {
     val label = when (status) {
         WeekStatus.Approved -> "Approved"
         WeekStatus.Pending -> "Pending"
+        WeekStatus.Adjusted -> "Adjusted"
     }
     val background = when (status) {
         WeekStatus.Approved -> Color(0xFFE1F7EF)
         WeekStatus.Pending -> Color(0xFFFFF0DB)
+        WeekStatus.Adjusted -> Color(0xFFFFF0DB)
     }
     val foreground = when (status) {
         WeekStatus.Approved -> Color(0xFF1D9D73)
         WeekStatus.Pending -> Color(0xFF9A6A22)
+        WeekStatus.Adjusted -> Color(0xFF9A6A22)
     }
 
     Surface(
@@ -1946,6 +2144,7 @@ private enum class AppScreen {
     WorkerNotifications,
     WorkerProfile,
     WorkerHistoryOverview,
+    WorkerDayViewAdjusted,
 }
 
 private enum class NotificationType {
@@ -1964,6 +2163,7 @@ enum class WorkerTab {
 private enum class WeekStatus {
     Approved,
     Pending,
+    Adjusted,
 }
 
 @Preview(showBackground = true)
@@ -2019,6 +2219,14 @@ private fun WorkerProfileScreenPreview() {
 private fun WorkerHistoryOverviewScreenPreview() {
     AloworkTheme {
         WorkerHistoryOverviewScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerDayViewAdjustedScreenPreview() {
+    AloworkTheme {
+        WorkerDayViewAdjustedScreen()
     }
 }
 
