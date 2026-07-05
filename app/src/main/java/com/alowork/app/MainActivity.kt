@@ -136,6 +136,9 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerProfile -> WorkerProfileScreen(
+            onAddEmployer = {
+                screen = AppScreen.WorkerAddEmployer
+            },
             onTabSelected = ::openWorkerTab,
         )
 
@@ -161,6 +164,15 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerHistoryOverview
             },
             onTabSelected = ::openWorkerTab,
+        )
+
+        AppScreen.WorkerAddEmployer -> WorkerAddEmployerScreen(
+            onBack = {
+                screen = AppScreen.WorkerProfile
+            },
+            onCompanyAdded = {
+                screen = AppScreen.WorkerProfile
+            },
         )
     }
 }
@@ -789,6 +801,7 @@ fun WorkerNotificationsScreen(
 @Composable
 fun WorkerProfileScreen(
     modifier: Modifier = Modifier,
+    onAddEmployer: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -827,6 +840,11 @@ fun WorkerProfileScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
             ProfileSectionCard {
+                ProfileActionRow(
+                    label = "Add company",
+                    onClick = onAddEmployer,
+                )
+                ProfileDivider()
                 ProfileActionRow(
                     label = "Language",
                     onClick = {
@@ -1310,6 +1328,150 @@ fun WorkerLogHoursDayDetailScreen(
             selected = WorkerTab.History,
             onTabSelected = onTabSelected,
         )
+    }
+}
+
+@Composable
+fun WorkerAddEmployerScreen(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
+    onCompanyAdded: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    var companyCode by remember { mutableStateOf("JANS26") }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 16.dp, bottom = 20.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "‹",
+                    color = Color(0xFF17171B),
+                    fontSize = 28.sp,
+                    lineHeight = 28.sp,
+                    modifier = Modifier
+                        .width(26.dp)
+                        .clickable(onClick = onBack),
+                )
+                Text(
+                    text = "Add company",
+                    color = Color(0xFF17171B),
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Enter the company code you received from your\nemployer.",
+                color = Color(0xFF73737A),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+                shadowElevation = 0.dp,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                ) {
+                    Text(
+                        text = "Company code",
+                        color = Color(0xFF73737A),
+                        fontSize = 12.sp,
+                        lineHeight = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = companyCode,
+                        onValueChange = { value ->
+                            companyCode = value
+                                .filter { it.isLetterOrDigit() }
+                                .uppercase(Locale.US)
+                                .take(6)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(58.dp),
+                        textStyle = TextStyle(
+                            color = Color(0xFF17171B),
+                            fontSize = 21.sp,
+                            lineHeight = 25.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 13.sp,
+                            textAlign = TextAlign.Center,
+                        ),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFE4E4DF),
+                            unfocusedBorderColor = Color(0xFFE4E4DF),
+                            focusedContainerColor = Color(0xFFF9F9F6),
+                            unfocusedContainerColor = Color(0xFFF9F9F6),
+                            cursorColor = Color(0xFF111116),
+                        ),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFE9F2FF),
+                shadowElevation = 0.dp,
+            ) {
+                Text(
+                    text = "After adding, the employer still needs to approve you.",
+                    color = Color(0xFF4973A9),
+                    fontSize = 12.sp,
+                    lineHeight = 15.sp,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
+                )
+            }
+        }
+
+        Button(
+            onClick = {
+                if (companyCode.length < 6) {
+                    Toast.makeText(context, "Enter the 6-character company code", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Company request sent", Toast.LENGTH_SHORT).show()
+                    onCompanyAdded()
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF111116),
+                contentColor = Color.White,
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+        ) {
+            Text(
+                text = "Add company",
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
     }
 }
 
@@ -2442,6 +2604,7 @@ private enum class AppScreen {
     WorkerHistoryOverview,
     WorkerDayViewAdjusted,
     WorkerLogHoursDayDetail,
+    WorkerAddEmployer,
 }
 
 private enum class NotificationType {
@@ -2532,6 +2695,14 @@ private fun WorkerDayViewAdjustedScreenPreview() {
 private fun WorkerLogHoursDayDetailScreenPreview() {
     AloworkTheme {
         WorkerLogHoursDayDetailScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerAddEmployerScreenPreview() {
+    AloworkTheme {
+        WorkerAddEmployerScreen()
     }
 }
 
