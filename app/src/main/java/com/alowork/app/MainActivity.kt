@@ -136,6 +136,9 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerProfile -> WorkerProfileScreen(
+            onSwitchEmployer = {
+                screen = AppScreen.WorkerSwitchEmployer
+            },
             onAddEmployer = {
                 screen = AppScreen.WorkerAddEmployer
             },
@@ -168,10 +171,19 @@ fun AloworkApp() {
 
         AppScreen.WorkerAddEmployer -> WorkerAddEmployerScreen(
             onBack = {
-                screen = AppScreen.WorkerProfile
+                screen = AppScreen.WorkerSwitchEmployer
             },
             onCompanyAdded = {
                 screen = AppScreen.WorkerProfile
+            },
+        )
+
+        AppScreen.WorkerSwitchEmployer -> WorkerSwitchEmployerScreen(
+            onBack = {
+                screen = AppScreen.WorkerProfile
+            },
+            onAddCompany = {
+                screen = AppScreen.WorkerAddEmployer
             },
         )
     }
@@ -801,6 +813,7 @@ fun WorkerNotificationsScreen(
 @Composable
 fun WorkerProfileScreen(
     modifier: Modifier = Modifier,
+    onSwitchEmployer: () -> Unit = {},
     onAddEmployer: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
@@ -840,6 +853,11 @@ fun WorkerProfileScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
             ProfileSectionCard {
+                ProfileActionRow(
+                    label = "Switch company",
+                    onClick = onSwitchEmployer,
+                )
+                ProfileDivider()
                 ProfileActionRow(
                     label = "Add company",
                     onClick = onAddEmployer,
@@ -1472,6 +1490,151 @@ fun WorkerAddEmployerScreen(
                 fontWeight = FontWeight.Medium,
             )
         }
+    }
+}
+
+@Composable
+fun WorkerSwitchEmployerScreen(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
+    onAddCompany: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    var selectedEmployer by remember { mutableStateOf("Bakkerij Jansen") }
+    val employers = remember {
+        listOf(
+            WorkerEmployer("Bakkerij Jansen", "Shift worker", "\u20AC16.00/hr"),
+            WorkerEmployer("Cafe De Hoek", "Service", "\u20AC14.50/hr"),
+            WorkerEmployer("Tuincentrum Bos", "Weekend help", "\u20AC13.00/hr"),
+        )
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 16.dp, bottom = 20.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "‹",
+                    color = Color(0xFF17171B),
+                    fontSize = 28.sp,
+                    lineHeight = 28.sp,
+                    modifier = Modifier
+                        .width(26.dp)
+                        .clickable(onClick = onBack),
+                )
+                Text(
+                    text = "Switch employer",
+                    color = Color(0xFF17171B),
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "You work for several companies. Choose which one to\nuse.",
+                color = Color(0xFF73737A),
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            employers.forEach { employer ->
+                EmployerChoiceRow(
+                    employer = employer,
+                    selected = selectedEmployer == employer.name,
+                    onClick = {
+                        selectedEmployer = employer.name
+                        Toast.makeText(context, "Switched to ${employer.name}", Toast.LENGTH_SHORT).show()
+                    },
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+        }
+
+        TextButton(
+            onClick = onAddCompany,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .height(48.dp),
+        ) {
+            Text(
+                text = "+ Add company",
+                color = Color(0xFF17171B),
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmployerChoiceRow(
+    employer: WorkerEmployer,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        border = BorderStroke(
+            width = if (selected) 1.5.dp else 1.dp,
+            color = if (selected) Color(0xFF111116) else Color(0xFFE4E4DF),
+        ),
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = employer.name,
+                    color = Color(0xFF17171B),
+                    fontSize = 14.sp,
+                    lineHeight = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = "${employer.role} · ${employer.rate}",
+                    color = Color(0xFF73737A),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+            }
+            EmployerSelectionIndicator(selected = selected)
+        }
+    }
+}
+
+@Composable
+private fun EmployerSelectionIndicator(
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier.size(18.dp)) {
+        val strokeWidth = 1.5.dp.toPx()
+        drawCircle(
+            color = if (selected) Color(0xFF111116) else Color(0xFFE4E4DF),
+            radius = size.minDimension * 0.45f,
+            style = if (selected) androidx.compose.ui.graphics.drawscope.Fill else Stroke(width = strokeWidth),
+        )
     }
 }
 
@@ -2605,7 +2768,14 @@ private enum class AppScreen {
     WorkerDayViewAdjusted,
     WorkerLogHoursDayDetail,
     WorkerAddEmployer,
+    WorkerSwitchEmployer,
 }
+
+private data class WorkerEmployer(
+    val name: String,
+    val role: String,
+    val rate: String,
+)
 
 private enum class NotificationType {
     HoursAdjusted,
@@ -2703,6 +2873,14 @@ private fun WorkerLogHoursDayDetailScreenPreview() {
 private fun WorkerAddEmployerScreenPreview() {
     AloworkTheme {
         WorkerAddEmployerScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerSwitchEmployerScreenPreview() {
+    AloworkTheme {
+        WorkerSwitchEmployerScreen()
     }
 }
 
