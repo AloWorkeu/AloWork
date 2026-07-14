@@ -186,6 +186,8 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerAddEmployer
             },
         )
+
+        AppScreen.WebRegisterCompanyDetails -> WebRegisterCompanyDetailsScreen()
     }
 }
 
@@ -370,6 +372,172 @@ private fun SignUpField(
             } else {
                 androidx.compose.ui.text.input.VisualTransformation.None
             },
+        )
+    }
+}
+
+@Composable
+fun WebRegisterCompanyDetailsScreen(
+    modifier: Modifier = Modifier,
+    onContinue: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    var companyName by remember { mutableStateOf("Bakkerij Jansen") }
+    var industry by remember { mutableStateOf("Bakery") }
+    var email by remember { mutableStateOf("admin@bakkerijjansen.nl") }
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2)),
+    ) {
+        WebRegisterSidePanel(modifier = Modifier.width(132.dp))
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .padding(horizontal = 18.dp)
+                .padding(top = 44.dp, bottom = 22.dp),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Register your company",
+                    color = Color(0xFF17171B),
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Start with your company details.",
+                    color = Color(0xFF73737A),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                SignUpField(
+                    label = "Company name",
+                    value = companyName,
+                    onValueChange = { companyName = it },
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                SignUpField(
+                    label = "Industry",
+                    value = industry,
+                    onValueChange = { industry = it },
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                SignUpField(
+                    label = "Work email",
+                    value = email,
+                    onValueChange = { email = it },
+                )
+            }
+
+            Button(
+                onClick = {
+                    val message = when {
+                        companyName.isBlank() -> "Enter your company name"
+                        industry.isBlank() -> "Enter your industry"
+                        email.isBlank() -> "Enter your work email"
+                        else -> null
+                    }
+                    if (message == null) {
+                        Toast.makeText(context, "Company details saved", Toast.LENGTH_SHORT).show()
+                        onContinue()
+                    } else {
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(7.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF111116),
+                    contentColor = Color.White,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Text(
+                    text = "Continue",
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WebRegisterSidePanel(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFF111116))
+            .padding(horizontal = 14.dp, vertical = 22.dp),
+    ) {
+        Column(modifier = Modifier.align(Alignment.TopStart)) {
+            Text(
+                text = "alowork",
+                color = Color.White,
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(72.dp))
+            Text(
+                text = "Track hours and salaries, without the spreadsheet.",
+                color = Color.White,
+                fontSize = 15.sp,
+                lineHeight = 19.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Create your account and invite workers with one company code.",
+                color = Color(0xFFA8A8AD),
+                fontSize = 9.sp,
+                lineHeight = 12.sp,
+            )
+        }
+
+        Column(modifier = Modifier.align(Alignment.BottomStart)) {
+            WebRegisterStep(active = true, label = "Company")
+            Spacer(modifier = Modifier.height(8.dp))
+            WebRegisterStep(active = false, label = "Plan")
+            Spacer(modifier = Modifier.height(8.dp))
+            WebRegisterStep(active = false, label = "Admin")
+        }
+    }
+}
+
+@Composable
+private fun WebRegisterStep(
+    active: Boolean,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .background(
+                    color = if (active) Color(0xFF1D9D73) else Color(0xFF5B5B61),
+                    shape = CircleShape,
+                ),
+        )
+        Spacer(modifier = Modifier.width(7.dp))
+        Text(
+            text = label,
+            color = if (active) Color.White else Color(0xFFA8A8AD),
+            fontSize = 9.sp,
+            lineHeight = 12.sp,
         )
     }
 }
@@ -2769,6 +2937,7 @@ private enum class AppScreen {
     WorkerLogHoursDayDetail,
     WorkerAddEmployer,
     WorkerSwitchEmployer,
+    WebRegisterCompanyDetails,
 }
 
 private data class WorkerEmployer(
@@ -2881,6 +3050,14 @@ private fun WorkerAddEmployerScreenPreview() {
 private fun WorkerSwitchEmployerScreenPreview() {
     AloworkTheme {
         WorkerSwitchEmployerScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WebRegisterCompanyDetailsScreenPreview() {
+    AloworkTheme {
+        WebRegisterCompanyDetailsScreen()
     }
 }
 
