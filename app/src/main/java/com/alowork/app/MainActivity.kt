@@ -15,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -211,7 +212,13 @@ fun AloworkApp() {
             },
         )
 
-        AppScreen.AdminDashboardHome -> AdminDashboardHomeScreen()
+        AppScreen.AdminDashboardHome -> AdminDashboardHomeScreen(
+            onOpenApprovalQueue = {
+                screen = AppScreen.AdminHoursApprovalQueue
+            },
+        )
+
+        AppScreen.AdminHoursApprovalQueue -> AdminHoursApprovalQueueScreen()
     }
 }
 
@@ -799,6 +806,7 @@ fun WebRegisterSuccessCodeScreen(
 @Composable
 fun AdminDashboardHomeScreen(
     modifier: Modifier = Modifier,
+    onOpenApprovalQueue: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -807,7 +815,7 @@ fun AdminDashboardHomeScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F5F2)),
     ) {
-        AdminWebSidebar(modifier = Modifier.width(82.dp))
+        AdminWebSidebar(activeItem = "Home", modifier = Modifier.width(82.dp))
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -906,6 +914,7 @@ fun AdminDashboardHomeScreen(
                         amount = "\u20AC256",
                         onClick = {
                             Toast.makeText(context, "Review Sven selected", Toast.LENGTH_SHORT).show()
+                            onOpenApprovalQueue()
                         },
                     )
                     ProfileDivider()
@@ -915,6 +924,7 @@ fun AdminDashboardHomeScreen(
                         amount = "\u20AC200",
                         onClick = {
                             Toast.makeText(context, "Review Mila selected", Toast.LENGTH_SHORT).show()
+                            onOpenApprovalQueue()
                         },
                     )
                     ProfileDivider()
@@ -923,6 +933,117 @@ fun AdminDashboardHomeScreen(
                         detail = "Week 25 · adjusted",
                         amount = "\u20AC176",
                         onClick = {
+                            Toast.makeText(context, "Review Noah selected", Toast.LENGTH_SHORT).show()
+                            onOpenApprovalQueue()
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminHoursApprovalQueueScreen(
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2)),
+    ) {
+        AdminWebSidebar(activeItem = "Hours", modifier = Modifier.width(82.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+                .padding(top = 34.dp, bottom = 18.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Hours approval",
+                        color = Color(0xFF17171B),
+                        fontSize = 20.sp,
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Review submitted hours before payroll",
+                        color = Color(0xFF73737A),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
+                    shadowElevation = 0.dp,
+                ) {
+                    Text(
+                        text = "3 pending",
+                        color = Color(0xFF17171B),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                AdminQueueFilter(label = "Pending", active = true, modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(8.dp))
+                AdminQueueFilter(label = "Approved", active = false, modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(8.dp))
+                AdminQueueFilter(label = "All", active = false, modifier = Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
+                shadowElevation = 0.dp,
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    AdminApprovalQueueRow(
+                        name = "Sven de Vries",
+                        period = "Week 25",
+                        hours = "16.0h",
+                        pay = "\u20AC256",
+                        status = "Submitted",
+                        onReview = {
+                            Toast.makeText(context, "Review Sven selected", Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                    ProfileDivider()
+                    AdminApprovalQueueRow(
+                        name = "Mila Bakker",
+                        period = "Week 25",
+                        hours = "12.5h",
+                        pay = "\u20AC200",
+                        status = "Submitted",
+                        onReview = {
+                            Toast.makeText(context, "Review Mila selected", Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                    ProfileDivider()
+                    AdminApprovalQueueRow(
+                        name = "Noah Visser",
+                        period = "Week 25",
+                        hours = "11.0h",
+                        pay = "\u20AC176",
+                        status = "Adjusted",
+                        onReview = {
                             Toast.makeText(context, "Review Noah selected", Toast.LENGTH_SHORT).show()
                         },
                     )
@@ -933,7 +1054,10 @@ fun AdminDashboardHomeScreen(
 }
 
 @Composable
-private fun AdminWebSidebar(modifier: Modifier = Modifier) {
+private fun AdminWebSidebar(
+    activeItem: String,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -949,13 +1073,13 @@ private fun AdminWebSidebar(modifier: Modifier = Modifier) {
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(46.dp))
-            AdminNavItem(label = "Home", active = true)
+            AdminNavItem(label = "Home", active = activeItem == "Home")
             Spacer(modifier = Modifier.height(10.dp))
-            AdminNavItem(label = "Hours", active = false)
+            AdminNavItem(label = "Hours", active = activeItem == "Hours")
             Spacer(modifier = Modifier.height(10.dp))
-            AdminNavItem(label = "Team", active = false)
+            AdminNavItem(label = "Team", active = activeItem == "Team")
             Spacer(modifier = Modifier.height(10.dp))
-            AdminNavItem(label = "Places", active = false)
+            AdminNavItem(label = "Places", active = activeItem == "Places")
         }
 
         Text(
@@ -998,6 +1122,31 @@ private fun AdminNavItem(
 }
 
 @Composable
+private fun AdminQueueFilter(
+    label: String,
+    active: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.height(34.dp),
+        shape = RoundedCornerShape(7.dp),
+        color = if (active) Color(0xFF111116) else Color.White,
+        border = BorderStroke(1.dp, if (active) Color(0xFF111116) else Color(0xFFE1E1DC)),
+        shadowElevation = 0.dp,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = label,
+                color = if (active) Color.White else Color(0xFF73737A),
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+@Composable
 private fun AdminMetricCard(
     label: String,
     value: String,
@@ -1036,6 +1185,79 @@ private fun AdminMetricCard(
                 color = Color(0xFF8C8C91),
                 fontSize = 9.sp,
                 lineHeight = 12.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdminApprovalQueueRow(
+    name: String,
+    period: String,
+    hours: String,
+    pay: String,
+    status: String,
+    onReview: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(74.dp)
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                color = Color(0xFF17171B),
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "$period · $status",
+                color = Color(0xFF73737A),
+                fontSize = 10.sp,
+                lineHeight = 13.sp,
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = hours,
+                color = Color(0xFF17171B),
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = pay,
+                color = Color(0xFF73737A),
+                fontSize = 10.sp,
+                lineHeight = 13.sp,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Button(
+            onClick = onReview,
+            modifier = Modifier
+                .width(66.dp)
+                .height(34.dp),
+            shape = RoundedCornerShape(7.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF111116),
+                contentColor = Color.White,
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            contentPadding = PaddingValues(0.dp),
+        ) {
+            Text(
+                text = "Review",
+                fontSize = 10.sp,
+                lineHeight = 12.sp,
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }
@@ -3618,6 +3840,7 @@ private enum class AppScreen {
     WebRegisterAdminAccount,
     WebRegisterSuccessCode,
     AdminDashboardHome,
+    AdminHoursApprovalQueue,
 }
 
 private data class WorkerEmployer(
@@ -3770,6 +3993,14 @@ private fun WebRegisterSuccessCodeScreenPreview() {
 private fun AdminDashboardHomeScreenPreview() {
     AloworkTheme {
         AdminDashboardHomeScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AdminHoursApprovalQueueScreenPreview() {
+    AloworkTheme {
+        AdminHoursApprovalQueueScreen()
     }
 }
 
