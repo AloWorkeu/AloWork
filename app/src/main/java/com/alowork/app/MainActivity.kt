@@ -948,107 +948,125 @@ fun AdminHoursApprovalQueueScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    var selectedWorker by remember { mutableStateOf<String?>(null) }
 
-    Row(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFF5F5F2)),
     ) {
-        AdminWebSidebar(activeItem = "Hours", modifier = Modifier.width(82.dp))
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-                .padding(top = 34.dp, bottom = 18.dp),
+        Row(
+            modifier = Modifier.fillMaxSize(),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+            AdminWebSidebar(activeItem = "Hours", modifier = Modifier.width(82.dp))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 34.dp, bottom = 18.dp),
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Hours approval",
-                        color = Color(0xFF17171B),
-                        fontSize = 20.sp,
-                        lineHeight = 24.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Review submitted hours before payroll",
-                        color = Color(0xFF73737A),
-                        fontSize = 11.sp,
-                        lineHeight = 14.sp,
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Hours approval",
+                            color = Color(0xFF17171B),
+                            fontSize = 20.sp,
+                            lineHeight = 24.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Review submitted hours before payroll",
+                            color = Color(0xFF73737A),
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
+                        shadowElevation = 0.dp,
+                    ) {
+                        Text(
+                            text = "3 pending",
+                            color = Color(0xFF17171B),
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        )
+                    }
                 }
+                Spacer(modifier = Modifier.height(18.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    AdminQueueFilter(label = "Pending", active = true, modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    AdminQueueFilter(label = "Approved", active = false, modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    AdminQueueFilter(label = "All", active = false, modifier = Modifier.weight(1f))
+                }
+                Spacer(modifier = Modifier.height(14.dp))
                 Surface(
-                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
                     color = Color.White,
                     border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
                     shadowElevation = 0.dp,
                 ) {
-                    Text(
-                        text = "3 pending",
-                        color = Color(0xFF17171B),
-                        fontSize = 11.sp,
-                        lineHeight = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                    )
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        AdminApprovalQueueRow(
+                            name = "Sven de Vries",
+                            period = "Week 25",
+                            hours = "16.0h",
+                            pay = "\u20AC256",
+                            status = "Submitted",
+                            onReview = {
+                                selectedWorker = "Sven de Vries"
+                            },
+                        )
+                        ProfileDivider()
+                        AdminApprovalQueueRow(
+                            name = "Mila Bakker",
+                            period = "Week 25",
+                            hours = "12.5h",
+                            pay = "\u20AC200",
+                            status = "Submitted",
+                            onReview = {
+                                selectedWorker = "Mila Bakker"
+                            },
+                        )
+                        ProfileDivider()
+                        AdminApprovalQueueRow(
+                            name = "Noah Visser",
+                            period = "Week 25",
+                            hours = "11.0h",
+                            pay = "\u20AC176",
+                            status = "Adjusted",
+                            onReview = {
+                                selectedWorker = "Noah Visser"
+                            },
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(18.dp))
-            Row(modifier = Modifier.fillMaxWidth()) {
-                AdminQueueFilter(label = "Pending", active = true, modifier = Modifier.weight(1f))
-                Spacer(modifier = Modifier.width(8.dp))
-                AdminQueueFilter(label = "Approved", active = false, modifier = Modifier.weight(1f))
-                Spacer(modifier = Modifier.width(8.dp))
-                AdminQueueFilter(label = "All", active = false, modifier = Modifier.weight(1f))
-            }
-            Spacer(modifier = Modifier.height(14.dp))
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
-                shadowElevation = 0.dp,
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    AdminApprovalQueueRow(
-                        name = "Sven de Vries",
-                        period = "Week 25",
-                        hours = "16.0h",
-                        pay = "\u20AC256",
-                        status = "Submitted",
-                        onReview = {
-                            Toast.makeText(context, "Review Sven selected", Toast.LENGTH_SHORT).show()
-                        },
-                    )
-                    ProfileDivider()
-                    AdminApprovalQueueRow(
-                        name = "Mila Bakker",
-                        period = "Week 25",
-                        hours = "12.5h",
-                        pay = "\u20AC200",
-                        status = "Submitted",
-                        onReview = {
-                            Toast.makeText(context, "Review Mila selected", Toast.LENGTH_SHORT).show()
-                        },
-                    )
-                    ProfileDivider()
-                    AdminApprovalQueueRow(
-                        name = "Noah Visser",
-                        period = "Week 25",
-                        hours = "11.0h",
-                        pay = "\u20AC176",
-                        status = "Adjusted",
-                        onReview = {
-                            Toast.makeText(context, "Review Noah selected", Toast.LENGTH_SHORT).show()
-                        },
-                    )
-                }
-            }
+        }
+
+        selectedWorker?.let { workerName ->
+            AdminAdjustHoursModal(
+                workerName = workerName,
+                onDismiss = {
+                    selectedWorker = null
+                },
+                onSave = {
+                    Toast.makeText(context, "Hours updated for $workerName", Toast.LENGTH_SHORT).show()
+                    selectedWorker = null
+                },
+            )
         }
     }
 }
@@ -1143,6 +1161,169 @@ private fun AdminQueueFilter(
                 fontWeight = FontWeight.SemiBold,
             )
         }
+    }
+}
+
+@Composable
+private fun AdminAdjustHoursModal(
+    workerName: String,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var clockIn by remember(workerName) { mutableStateOf("09:00") }
+    var clockOut by remember(workerName) { mutableStateOf("17:30") }
+    var breakMinutes by remember(workerName) { mutableStateOf("30") }
+    var note by remember(workerName) { mutableStateOf("Adjusted after manager review") }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0x99000000))
+            .padding(horizontal = 24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            color = Color.White,
+            shadowElevation = 0.dp,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            ) {
+                Text(
+                    text = "Adjust hours",
+                    color = Color(0xFF17171B),
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$workerName · Week 25",
+                    color = Color(0xFF73737A),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    AdminAdjustField(
+                        label = "Clock in",
+                        value = clockIn,
+                        onValueChange = { clockIn = it },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    AdminAdjustField(
+                        label = "Clock out",
+                        value = clockOut,
+                        onValueChange = { clockOut = it },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                AdminAdjustField(
+                    label = "Break minutes",
+                    value = breakMinutes,
+                    onValueChange = { breakMinutes = it },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                AdminAdjustField(
+                    label = "Note",
+                    value = note,
+                    onValueChange = { note = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = false,
+                    minHeight = 84.dp,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.height(42.dp),
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            color = Color(0xFF73737A),
+                            fontSize = 12.sp,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Button(
+                        onClick = onSave,
+                        modifier = Modifier
+                            .width(112.dp)
+                            .height(42.dp),
+                        shape = RoundedCornerShape(7.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF111116),
+                            contentColor = Color.White,
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                        contentPadding = PaddingValues(0.dp),
+                    ) {
+                        Text(
+                            text = "Save changes",
+                            fontSize = 12.sp,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdminAdjustField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    singleLine: Boolean = true,
+    minHeight: Dp = 54.dp,
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            color = Color(0xFF73737A),
+            fontSize = 10.sp,
+            lineHeight = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(minHeight),
+            singleLine = singleLine,
+            textStyle = TextStyle(
+                color = Color(0xFF17171B),
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.Medium,
+            ),
+            shape = RoundedCornerShape(7.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF111116),
+                unfocusedBorderColor = Color(0xFFE1E1DC),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                cursorColor = Color(0xFF111116),
+            ),
+        )
     }
 }
 
