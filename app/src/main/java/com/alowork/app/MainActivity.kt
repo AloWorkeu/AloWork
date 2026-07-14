@@ -216,9 +216,18 @@ fun AloworkApp() {
             onOpenApprovalQueue = {
                 screen = AppScreen.AdminHoursApprovalQueue
             },
+            onOpenWorkLocations = {
+                screen = AppScreen.AdminWorkLocations
+            },
         )
 
-        AppScreen.AdminHoursApprovalQueue -> AdminHoursApprovalQueueScreen()
+        AppScreen.AdminHoursApprovalQueue -> AdminHoursApprovalQueueScreen(
+            onOpenWorkLocations = {
+                screen = AppScreen.AdminWorkLocations
+            },
+        )
+
+        AppScreen.AdminWorkLocations -> AdminWorkLocationsScreen()
     }
 }
 
@@ -807,6 +816,7 @@ fun WebRegisterSuccessCodeScreen(
 fun AdminDashboardHomeScreen(
     modifier: Modifier = Modifier,
     onOpenApprovalQueue: () -> Unit = {},
+    onOpenWorkLocations: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -815,7 +825,11 @@ fun AdminDashboardHomeScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F5F2)),
     ) {
-        AdminWebSidebar(activeItem = "Home", modifier = Modifier.width(82.dp))
+        AdminWebSidebar(
+            activeItem = "Home",
+            onPlacesClick = onOpenWorkLocations,
+            modifier = Modifier.width(82.dp),
+        )
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -946,6 +960,7 @@ fun AdminDashboardHomeScreen(
 @Composable
 fun AdminHoursApprovalQueueScreen(
     modifier: Modifier = Modifier,
+    onOpenWorkLocations: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var selectedWorker by remember { mutableStateOf<String?>(null) }
@@ -958,7 +973,11 @@ fun AdminHoursApprovalQueueScreen(
         Row(
             modifier = Modifier.fillMaxSize(),
         ) {
-            AdminWebSidebar(activeItem = "Hours", modifier = Modifier.width(82.dp))
+            AdminWebSidebar(
+                activeItem = "Hours",
+                onPlacesClick = onOpenWorkLocations,
+                modifier = Modifier.width(82.dp),
+            )
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -1072,8 +1091,180 @@ fun AdminHoursApprovalQueueScreen(
 }
 
 @Composable
+fun AdminWorkLocationsScreen(
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    var selectedLocation by remember { mutableStateOf("Bakery floor") }
+    var locationName by remember { mutableStateOf("Bakery floor") }
+    var address by remember { mutableStateOf("Lijnbaan 24") }
+    var radius by remember { mutableStateOf("120") }
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2)),
+    ) {
+        AdminWebSidebar(activeItem = "Places", modifier = Modifier.width(82.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+                .padding(top = 34.dp, bottom = 18.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Work locations",
+                        color = Color(0xFF17171B),
+                        fontSize = 20.sp,
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Set where workers can clock in",
+                        color = Color(0xFF73737A),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                    )
+                }
+                Button(
+                    onClick = {
+                        Toast.makeText(context, "New location started", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .width(94.dp)
+                        .height(34.dp),
+                    shape = RoundedCornerShape(7.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF111116),
+                        contentColor = Color.White,
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                    contentPadding = PaddingValues(0.dp),
+                ) {
+                    Text(
+                        text = "Add place",
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.weight(0.9f)) {
+                    AdminLocationListItem(
+                        name = "Bakery floor",
+                        detail = "Lijnbaan 24 · 120m",
+                        active = selectedLocation == "Bakery floor",
+                        onClick = {
+                            selectedLocation = "Bakery floor"
+                            locationName = "Bakery floor"
+                            address = "Lijnbaan 24"
+                            radius = "120"
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    AdminLocationListItem(
+                        name = "Market stall",
+                        detail = "Binnenrotte · 80m",
+                        active = selectedLocation == "Market stall",
+                        onClick = {
+                            selectedLocation = "Market stall"
+                            locationName = "Market stall"
+                            address = "Binnenrotte 101"
+                            radius = "80"
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    AdminLocationListItem(
+                        name = "Warehouse",
+                        detail = "Schuttevaerweg · 160m",
+                        active = selectedLocation == "Warehouse",
+                        onClick = {
+                            selectedLocation = "Warehouse"
+                            locationName = "Warehouse"
+                            address = "Schuttevaerweg 12"
+                            radius = "160"
+                        },
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1.25f)) {
+                    AdminLocationMapCard(locationName = selectedLocation)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
+                        shadowElevation = 0.dp,
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            AdminAdjustField(
+                                label = "Location name",
+                                value = locationName,
+                                onValueChange = { locationName = it },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            AdminAdjustField(
+                                label = "Address",
+                                value = address,
+                                onValueChange = { address = it },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            AdminAdjustField(
+                                label = "Clock-in radius metres",
+                                value = radius,
+                                onValueChange = { radius = it },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Button(
+                                onClick = {
+                                    Toast.makeText(context, "$locationName saved", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(42.dp),
+                                shape = RoundedCornerShape(7.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF111116),
+                                    contentColor = Color.White,
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                            ) {
+                                Text(
+                                    text = "Save location",
+                                    fontSize = 12.sp,
+                                    lineHeight = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun AdminWebSidebar(
     activeItem: String,
+    onHomeClick: () -> Unit = {},
+    onHoursClick: () -> Unit = {},
+    onPlacesClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -1091,13 +1282,13 @@ private fun AdminWebSidebar(
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(46.dp))
-            AdminNavItem(label = "Home", active = activeItem == "Home")
+            AdminNavItem(label = "Home", active = activeItem == "Home", onClick = onHomeClick)
             Spacer(modifier = Modifier.height(10.dp))
-            AdminNavItem(label = "Hours", active = activeItem == "Hours")
+            AdminNavItem(label = "Hours", active = activeItem == "Hours", onClick = onHoursClick)
             Spacer(modifier = Modifier.height(10.dp))
             AdminNavItem(label = "Team", active = activeItem == "Team")
             Spacer(modifier = Modifier.height(10.dp))
-            AdminNavItem(label = "Places", active = activeItem == "Places")
+            AdminNavItem(label = "Places", active = activeItem == "Places", onClick = onPlacesClick)
         }
 
         Text(
@@ -1121,9 +1312,12 @@ private fun AdminNavItem(
     label: String,
     active: Boolean,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(6.dp),
         color = if (active) Color(0xFF24242A) else Color.Transparent,
         shadowElevation = 0.dp,
@@ -1324,6 +1518,126 @@ private fun AdminAdjustField(
                 cursorColor = Color(0xFF111116),
             ),
         )
+    }
+}
+
+@Composable
+private fun AdminLocationListItem(
+    name: String,
+    detail: String,
+    active: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(78.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(10.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, if (active) Color(0xFF111116) else Color(0xFFE1E1DC)),
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp, vertical = 11.dp),
+        ) {
+            Text(
+                text = name,
+                color = Color(0xFF17171B),
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(5.dp))
+            Text(
+                text = detail,
+                color = Color(0xFF73737A),
+                fontSize = 10.sp,
+                lineHeight = 13.sp,
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = if (active) "Selected" else "Tap to edit",
+                color = if (active) Color(0xFF2F8F63) else Color(0xFF8C8C91),
+                fontSize = 9.sp,
+                lineHeight = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdminLocationMapCard(
+    locationName: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(176.dp),
+        shape = RoundedCornerShape(10.dp),
+        color = Color(0xFFEAF0E9),
+        border = BorderStroke(1.dp, Color(0xFFD9DFD7)),
+        shadowElevation = 0.dp,
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val road = Color(0xFFCAD3C8)
+                val thinRoad = Color(0xFFDDE4DA)
+                drawLine(
+                    color = road,
+                    start = Offset(size.width * 0.08f, size.height * 0.22f),
+                    end = Offset(size.width * 0.92f, size.height * 0.36f),
+                    strokeWidth = 8.dp.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = road,
+                    start = Offset(size.width * 0.23f, size.height * 0.08f),
+                    end = Offset(size.width * 0.62f, size.height * 0.92f),
+                    strokeWidth = 7.dp.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = thinRoad,
+                    start = Offset(size.width * 0.05f, size.height * 0.68f),
+                    end = Offset(size.width * 0.95f, size.height * 0.58f),
+                    strokeWidth = 5.dp.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawCircle(
+                    color = Color(0x332F8F63),
+                    radius = size.minDimension * 0.24f,
+                    center = Offset(size.width * 0.56f, size.height * 0.48f),
+                )
+                drawCircle(
+                    color = Color(0xFF2F8F63),
+                    radius = 10.dp.toPx(),
+                    center = Offset(size.width * 0.56f, size.height * 0.48f),
+                )
+            }
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp),
+                shape = RoundedCornerShape(7.dp),
+                color = Color.White,
+                shadowElevation = 0.dp,
+            ) {
+                Text(
+                    text = locationName,
+                    color = Color(0xFF17171B),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                )
+            }
+        }
     }
 }
 
@@ -4022,6 +4336,7 @@ private enum class AppScreen {
     WebRegisterSuccessCode,
     AdminDashboardHome,
     AdminHoursApprovalQueue,
+    AdminWorkLocations,
 }
 
 private data class WorkerEmployer(
@@ -4182,6 +4497,14 @@ private fun AdminDashboardHomeScreenPreview() {
 private fun AdminHoursApprovalQueueScreenPreview() {
     AloworkTheme {
         AdminHoursApprovalQueueScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AdminWorkLocationsScreenPreview() {
+    AloworkTheme {
+        AdminWorkLocationsScreen()
     }
 }
 
