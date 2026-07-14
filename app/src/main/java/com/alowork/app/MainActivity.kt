@@ -199,7 +199,13 @@ fun AloworkApp() {
             },
         )
 
-        AppScreen.WebRegisterAdminAccount -> WebRegisterAdminAccountScreen()
+        AppScreen.WebRegisterAdminAccount -> WebRegisterAdminAccountScreen(
+            onAccountCreated = {
+                screen = AppScreen.WebRegisterSuccessCode
+            },
+        )
+
+        AppScreen.WebRegisterSuccessCode -> WebRegisterSuccessCodeScreen()
     }
 }
 
@@ -660,6 +666,119 @@ fun WebRegisterAdminAccountScreen(
             ) {
                 Text(
                     text = "Create account",
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun WebRegisterSuccessCodeScreen(
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val companyCode = "JANS26"
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2)),
+    ) {
+        WebRegisterSidePanel(
+            activeStep = "Admin",
+            modifier = Modifier.width(132.dp),
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .padding(horizontal = 18.dp)
+                .padding(top = 44.dp, bottom = 22.dp),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Your company is ready.",
+                    color = Color(0xFF17171B),
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Share this company code with workers so they can create accounts.",
+                    color = Color(0xFF73737A),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
+                    shadowElevation = 0.dp,
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = "Company code",
+                            color = Color(0xFF73737A),
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = companyCode,
+                            color = Color(0xFF17171B),
+                            fontSize = 30.sp,
+                            lineHeight = 36.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 10.sp,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFEAF5EF),
+                    shadowElevation = 0.dp,
+                ) {
+                    Text(
+                        text = "Workers will wait for your approval before they can clock in.",
+                        color = Color(0xFF2F8F63),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
+                    )
+                }
+            }
+
+            Button(
+                onClick = {
+                    Toast.makeText(context, "Company code copied", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(7.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF111116),
+                    contentColor = Color.White,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Text(
+                    text = "Copy company code",
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -3201,6 +3320,7 @@ private enum class AppScreen {
     WebRegisterCompanyDetails,
     WebRegisterChoosePlan,
     WebRegisterAdminAccount,
+    WebRegisterSuccessCode,
 }
 
 private data class WorkerEmployer(
@@ -3337,6 +3457,14 @@ private fun WebRegisterChoosePlanScreenPreview() {
 private fun WebRegisterAdminAccountScreenPreview() {
     AloworkTheme {
         WebRegisterAdminAccountScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WebRegisterSuccessCodeScreenPreview() {
+    AloworkTheme {
+        WebRegisterSuccessCodeScreen()
     }
 }
 
