@@ -205,7 +205,13 @@ fun AloworkApp() {
             },
         )
 
-        AppScreen.WebRegisterSuccessCode -> WebRegisterSuccessCodeScreen()
+        AppScreen.WebRegisterSuccessCode -> WebRegisterSuccessCodeScreen(
+            onOpenDashboard = {
+                screen = AppScreen.AdminDashboardHome
+            },
+        )
+
+        AppScreen.AdminDashboardHome -> AdminDashboardHomeScreen()
     }
 }
 
@@ -678,6 +684,7 @@ fun WebRegisterAdminAccountScreen(
 @Composable
 fun WebRegisterSuccessCodeScreen(
     modifier: Modifier = Modifier,
+    onOpenDashboard: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val companyCode = "JANS26"
@@ -764,7 +771,8 @@ fun WebRegisterSuccessCodeScreen(
 
             Button(
                 onClick = {
-                    Toast.makeText(context, "Company code copied", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Opening dashboard", Toast.LENGTH_SHORT).show()
+                    onOpenDashboard()
                 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -778,13 +786,301 @@ fun WebRegisterSuccessCodeScreen(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
             ) {
                 Text(
-                    text = "Copy company code",
+                    text = "Open dashboard",
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
                 )
             }
         }
+    }
+}
+
+@Composable
+fun AdminDashboardHomeScreen(
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2)),
+    ) {
+        AdminWebSidebar(modifier = Modifier.width(82.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+                .padding(top = 34.dp, bottom = 18.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Dashboard",
+                        color = Color(0xFF17171B),
+                        fontSize = 20.sp,
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Bakkerij Jansen",
+                        color = Color(0xFF73737A),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
+                    shadowElevation = 0.dp,
+                ) {
+                    Text(
+                        text = "June",
+                        color = Color(0xFF17171B),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                AdminMetricCard(
+                    label = "Hours",
+                    value = "78.5h",
+                    detail = "This month",
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                AdminMetricCard(
+                    label = "Payroll",
+                    value = "\u20AC1,284",
+                    detail = "Estimated",
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                AdminMetricCard(
+                    label = "Pending",
+                    value = "3",
+                    detail = "Need review",
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                AdminMetricCard(
+                    label = "Workers",
+                    value = "14",
+                    detail = "Active",
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Hours approval",
+                color = Color(0xFF17171B),
+                fontSize = 15.sp,
+                lineHeight = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
+                shadowElevation = 0.dp,
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    AdminApprovalRow(
+                        name = "Sven de Vries",
+                        detail = "Week 25 · 16.0h",
+                        amount = "\u20AC256",
+                        onClick = {
+                            Toast.makeText(context, "Review Sven selected", Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                    ProfileDivider()
+                    AdminApprovalRow(
+                        name = "Mila Bakker",
+                        detail = "Week 25 · 12.5h",
+                        amount = "\u20AC200",
+                        onClick = {
+                            Toast.makeText(context, "Review Mila selected", Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                    ProfileDivider()
+                    AdminApprovalRow(
+                        name = "Noah Visser",
+                        detail = "Week 25 · adjusted",
+                        amount = "\u20AC176",
+                        onClick = {
+                            Toast.makeText(context, "Review Noah selected", Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdminWebSidebar(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFF111116))
+            .padding(horizontal = 12.dp, vertical = 22.dp),
+    ) {
+        Column(modifier = Modifier.align(Alignment.TopStart)) {
+            Text(
+                text = "alo",
+                color = Color.White,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(46.dp))
+            AdminNavItem(label = "Home", active = true)
+            Spacer(modifier = Modifier.height(10.dp))
+            AdminNavItem(label = "Hours", active = false)
+            Spacer(modifier = Modifier.height(10.dp))
+            AdminNavItem(label = "Team", active = false)
+            Spacer(modifier = Modifier.height(10.dp))
+            AdminNavItem(label = "Places", active = false)
+        }
+
+        Text(
+            text = "J",
+            color = Color.White,
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .size(28.dp)
+                .background(Color(0xFF2F8F63), CircleShape)
+                .padding(top = 6.dp),
+        )
+    }
+}
+
+@Composable
+private fun AdminNavItem(
+    label: String,
+    active: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(6.dp),
+        color = if (active) Color(0xFF24242A) else Color.Transparent,
+        shadowElevation = 0.dp,
+    ) {
+        Text(
+            text = label,
+            color = if (active) Color.White else Color(0xFF85858D),
+            fontSize = 9.sp,
+            lineHeight = 12.sp,
+            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 7.dp),
+        )
+    }
+}
+
+@Composable
+private fun AdminMetricCard(
+    label: String,
+    value: String,
+    detail: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.height(94.dp),
+        shape = RoundedCornerShape(10.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+        ) {
+            Text(
+                text = label,
+                color = Color(0xFF73737A),
+                fontSize = 10.sp,
+                lineHeight = 13.sp,
+            )
+            Spacer(modifier = Modifier.height(9.dp))
+            Text(
+                text = value,
+                color = Color(0xFF17171B),
+                fontSize = 20.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(5.dp))
+            Text(
+                text = detail,
+                color = Color(0xFF8C8C91),
+                fontSize = 9.sp,
+                lineHeight = 12.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdminApprovalRow(
+    name: String,
+    detail: String,
+    amount: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(62.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                color = Color(0xFF17171B),
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = detail,
+                color = Color(0xFF73737A),
+                fontSize = 10.sp,
+                lineHeight = 13.sp,
+            )
+        }
+        Text(
+            text = amount,
+            color = Color(0xFF17171B),
+            fontSize = 12.sp,
+            lineHeight = 15.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.End,
+        )
     }
 }
 
@@ -3321,6 +3617,7 @@ private enum class AppScreen {
     WebRegisterChoosePlan,
     WebRegisterAdminAccount,
     WebRegisterSuccessCode,
+    AdminDashboardHome,
 }
 
 private data class WorkerEmployer(
@@ -3465,6 +3762,14 @@ private fun WebRegisterAdminAccountScreenPreview() {
 private fun WebRegisterSuccessCodeScreenPreview() {
     AloworkTheme {
         WebRegisterSuccessCodeScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AdminDashboardHomeScreenPreview() {
+    AloworkTheme {
+        AdminDashboardHomeScreen()
     }
 }
 
