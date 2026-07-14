@@ -193,7 +193,13 @@ fun AloworkApp() {
             },
         )
 
-        AppScreen.WebRegisterChoosePlan -> WebRegisterChoosePlanScreen()
+        AppScreen.WebRegisterChoosePlan -> WebRegisterChoosePlanScreen(
+            onContinue = {
+                screen = AppScreen.WebRegisterAdminAccount
+            },
+        )
+
+        AppScreen.WebRegisterAdminAccount -> WebRegisterAdminAccountScreen()
     }
 }
 
@@ -555,6 +561,105 @@ fun WebRegisterChoosePlanScreen(
             ) {
                 Text(
                     text = "Continue",
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun WebRegisterAdminAccountScreen(
+    modifier: Modifier = Modifier,
+    onAccountCreated: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    var fullName by remember { mutableStateOf("Lotte Jansen") }
+    var email by remember { mutableStateOf("lotte@bakkerijjansen.nl") }
+    var password by remember { mutableStateOf("password") }
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2)),
+    ) {
+        WebRegisterSidePanel(
+            activeStep = "Admin",
+            modifier = Modifier.width(132.dp),
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .padding(horizontal = 18.dp)
+                .padding(top = 44.dp, bottom = 22.dp),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Create admin account",
+                    color = Color(0xFF17171B),
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Use this account to manage hours and payroll.",
+                    color = Color(0xFF73737A),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                SignUpField(
+                    label = "Full name",
+                    value = fullName,
+                    onValueChange = { fullName = it },
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                SignUpField(
+                    label = "Email address",
+                    value = email,
+                    onValueChange = { email = it },
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                SignUpField(
+                    label = "Password",
+                    value = password,
+                    onValueChange = { password = it },
+                    isPassword = true,
+                )
+            }
+
+            Button(
+                onClick = {
+                    val message = when {
+                        fullName.isBlank() -> "Enter your full name"
+                        email.isBlank() -> "Enter your email address"
+                        password.length < 6 -> "Use at least 6 password characters"
+                        else -> null
+                    }
+                    if (message == null) {
+                        Toast.makeText(context, "Admin account created", Toast.LENGTH_SHORT).show()
+                        onAccountCreated()
+                    } else {
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(7.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF111116),
+                    contentColor = Color.White,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Text(
+                    text = "Create account",
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -3095,6 +3200,7 @@ private enum class AppScreen {
     WorkerSwitchEmployer,
     WebRegisterCompanyDetails,
     WebRegisterChoosePlan,
+    WebRegisterAdminAccount,
 }
 
 private data class WorkerEmployer(
@@ -3223,6 +3329,14 @@ private fun WebRegisterCompanyDetailsScreenPreview() {
 private fun WebRegisterChoosePlanScreenPreview() {
     AloworkTheme {
         WebRegisterChoosePlanScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WebRegisterAdminAccountScreenPreview() {
+    AloworkTheme {
+        WebRegisterAdminAccountScreen()
     }
 }
 
