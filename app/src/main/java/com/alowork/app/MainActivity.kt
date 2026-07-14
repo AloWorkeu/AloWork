@@ -187,7 +187,13 @@ fun AloworkApp() {
             },
         )
 
-        AppScreen.WebRegisterCompanyDetails -> WebRegisterCompanyDetailsScreen()
+        AppScreen.WebRegisterCompanyDetails -> WebRegisterCompanyDetailsScreen(
+            onContinue = {
+                screen = AppScreen.WebRegisterChoosePlan
+            },
+        )
+
+        AppScreen.WebRegisterChoosePlan -> WebRegisterChoosePlanScreen()
     }
 }
 
@@ -391,7 +397,10 @@ fun WebRegisterCompanyDetailsScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F5F2)),
     ) {
-        WebRegisterSidePanel(modifier = Modifier.width(132.dp))
+        WebRegisterSidePanel(
+            activeStep = "Company",
+            modifier = Modifier.width(132.dp),
+        )
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -472,7 +481,154 @@ fun WebRegisterCompanyDetailsScreen(
 }
 
 @Composable
-private fun WebRegisterSidePanel(modifier: Modifier = Modifier) {
+fun WebRegisterChoosePlanScreen(
+    modifier: Modifier = Modifier,
+    onContinue: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    var selectedPlan by remember { mutableStateOf("Starter") }
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2)),
+    ) {
+        WebRegisterSidePanel(
+            activeStep = "Plan",
+            modifier = Modifier.width(132.dp),
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .padding(horizontal = 18.dp)
+                .padding(top = 44.dp, bottom = 22.dp),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Choose plan",
+                    color = Color(0xFF17171B),
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Select the plan that fits your team.",
+                    color = Color(0xFF73737A),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                WebPlanOptionCard(
+                    title = "Starter",
+                    price = "\u20AC19 / month",
+                    detail = "Up to 15 workers",
+                    selected = selectedPlan == "Starter",
+                    onClick = { selectedPlan = "Starter" },
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                WebPlanOptionCard(
+                    title = "Business",
+                    price = "\u20AC49 / month",
+                    detail = "Up to 60 workers",
+                    selected = selectedPlan == "Business",
+                    onClick = { selectedPlan = "Business" },
+                )
+            }
+
+            Button(
+                onClick = {
+                    Toast.makeText(context, "$selectedPlan plan selected", Toast.LENGTH_SHORT).show()
+                    onContinue()
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(7.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF111116),
+                    contentColor = Color.White,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Text(
+                    text = "Continue",
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WebPlanOptionCard(
+    title: String,
+    price: String,
+    detail: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(78.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(10.dp),
+        color = Color.White,
+        border = BorderStroke(
+            width = if (selected) 1.5.dp else 1.dp,
+            color = if (selected) Color(0xFF111116) else Color(0xFFE1E1DC),
+        ),
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    color = Color(0xFF17171B),
+                    fontSize = 14.sp,
+                    lineHeight = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = detail,
+                    color = Color(0xFF73737A),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = price,
+                    color = Color(0xFF17171B),
+                    fontSize = 13.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.End,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                EmployerSelectionIndicator(selected = selected)
+            }
+        }
+    }
+}
+
+@Composable
+private fun WebRegisterSidePanel(
+    activeStep: String,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -505,11 +661,11 @@ private fun WebRegisterSidePanel(modifier: Modifier = Modifier) {
         }
 
         Column(modifier = Modifier.align(Alignment.BottomStart)) {
-            WebRegisterStep(active = true, label = "Company")
+            WebRegisterStep(active = activeStep == "Company", label = "Company")
             Spacer(modifier = Modifier.height(8.dp))
-            WebRegisterStep(active = false, label = "Plan")
+            WebRegisterStep(active = activeStep == "Plan", label = "Plan")
             Spacer(modifier = Modifier.height(8.dp))
-            WebRegisterStep(active = false, label = "Admin")
+            WebRegisterStep(active = activeStep == "Admin", label = "Admin")
         }
     }
 }
@@ -2938,6 +3094,7 @@ private enum class AppScreen {
     WorkerAddEmployer,
     WorkerSwitchEmployer,
     WebRegisterCompanyDetails,
+    WebRegisterChoosePlan,
 }
 
 private data class WorkerEmployer(
@@ -3058,6 +3215,14 @@ private fun WorkerSwitchEmployerScreenPreview() {
 private fun WebRegisterCompanyDetailsScreenPreview() {
     AloworkTheme {
         WebRegisterCompanyDetailsScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WebRegisterChoosePlanScreenPreview() {
+    AloworkTheme {
+        WebRegisterChoosePlanScreen()
     }
 }
 
