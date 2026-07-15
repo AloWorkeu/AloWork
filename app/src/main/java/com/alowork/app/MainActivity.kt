@@ -86,6 +86,22 @@ fun AloworkApp() {
         }
     }
 
+    fun openAdminHome() {
+        screen = AppScreen.AdminDashboardHome
+    }
+
+    fun openAdminHours() {
+        screen = AppScreen.AdminHoursApprovalQueue
+    }
+
+    fun openAdminTeam() {
+        screen = AppScreen.AdminTeam
+    }
+
+    fun openAdminPlaces() {
+        screen = AppScreen.AdminWorkLocations
+    }
+
     when (screen) {
         AppScreen.WorkerSignUp -> WorkerSignUpScreen(
             onAccountCreated = {
@@ -215,32 +231,63 @@ fun AloworkApp() {
 
         AppScreen.AdminDashboardHome -> AdminDashboardHomeScreen(
             onOpenApprovalQueue = {
-                screen = AppScreen.AdminHoursApprovalQueue
+                openAdminHours()
+            },
+            onOpenHome = {
+                openAdminHome()
             },
             onOpenTeam = {
-                screen = AppScreen.AdminTeam
+                openAdminTeam()
             },
             onOpenWorkLocations = {
-                screen = AppScreen.AdminWorkLocations
+                openAdminPlaces()
             },
         )
 
         AppScreen.AdminHoursApprovalQueue -> AdminHoursApprovalQueueScreen(
+            onOpenHome = {
+                openAdminHome()
+            },
+            onOpenHours = {
+                openAdminHours()
+            },
             onOpenTeam = {
-                screen = AppScreen.AdminTeam
+                openAdminTeam()
             },
             onOpenWorkLocations = {
-                screen = AppScreen.AdminWorkLocations
+                openAdminPlaces()
             },
         )
 
         AppScreen.AdminWorkLocations -> AdminWorkLocationsScreen(
+            onOpenHome = {
+                openAdminHome()
+            },
+            onOpenHours = {
+                openAdminHours()
+            },
             onOpenTeam = {
-                screen = AppScreen.AdminTeam
+                openAdminTeam()
+            },
+            onOpenWorkLocations = {
+                openAdminPlaces()
             },
         )
 
-        AppScreen.AdminTeam -> AdminTeamScreen()
+        AppScreen.AdminTeam -> AdminTeamScreen(
+            onOpenHome = {
+                openAdminHome()
+            },
+            onOpenHours = {
+                openAdminHours()
+            },
+            onOpenTeam = {
+                openAdminTeam()
+            },
+            onOpenWorkLocations = {
+                openAdminPlaces()
+            },
+        )
     }
 }
 
@@ -829,6 +876,7 @@ fun WebRegisterSuccessCodeScreen(
 fun AdminDashboardHomeScreen(
     modifier: Modifier = Modifier,
     onOpenApprovalQueue: () -> Unit = {},
+    onOpenHome: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
     onOpenWorkLocations: () -> Unit = {},
 ) {
@@ -841,6 +889,8 @@ fun AdminDashboardHomeScreen(
     ) {
         AdminWebSidebar(
             activeItem = "Home",
+            onHomeClick = onOpenHome,
+            onHoursClick = onOpenApprovalQueue,
             onTeamClick = onOpenTeam,
             onPlacesClick = onOpenWorkLocations,
             modifier = Modifier.width(82.dp),
@@ -975,6 +1025,8 @@ fun AdminDashboardHomeScreen(
 @Composable
 fun AdminHoursApprovalQueueScreen(
     modifier: Modifier = Modifier,
+    onOpenHome: () -> Unit = {},
+    onOpenHours: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
     onOpenWorkLocations: () -> Unit = {},
 ) {
@@ -991,6 +1043,8 @@ fun AdminHoursApprovalQueueScreen(
         ) {
             AdminWebSidebar(
                 activeItem = "Hours",
+                onHomeClick = onOpenHome,
+                onHoursClick = onOpenHours,
                 onTeamClick = onOpenTeam,
                 onPlacesClick = onOpenWorkLocations,
                 modifier = Modifier.width(82.dp),
@@ -1110,7 +1164,10 @@ fun AdminHoursApprovalQueueScreen(
 @Composable
 fun AdminWorkLocationsScreen(
     modifier: Modifier = Modifier,
+    onOpenHome: () -> Unit = {},
+    onOpenHours: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
+    onOpenWorkLocations: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var selectedLocation by remember { mutableStateOf("Bakery floor") }
@@ -1126,7 +1183,10 @@ fun AdminWorkLocationsScreen(
     ) {
         AdminWebSidebar(
             activeItem = "Places",
+            onHomeClick = onOpenHome,
+            onHoursClick = onOpenHours,
             onTeamClick = onOpenTeam,
+            onPlacesClick = onOpenWorkLocations,
             modifier = Modifier.width(82.dp),
         )
         Column(
@@ -1399,6 +1459,10 @@ private fun AdminAddLocationDialog(
 @Composable
 fun AdminTeamScreen(
     modifier: Modifier = Modifier,
+    onOpenHome: () -> Unit = {},
+    onOpenHours: () -> Unit = {},
+    onOpenTeam: () -> Unit = {},
+    onOpenWorkLocations: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var selectedWorker by remember { mutableStateOf("Sven de Vries") }
@@ -1423,7 +1487,14 @@ fun AdminTeamScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F5F2)),
     ) {
-        AdminWebSidebar(activeItem = "Team", modifier = Modifier.width(82.dp))
+        AdminWebSidebar(
+            activeItem = "Team",
+            onHomeClick = onOpenHome,
+            onHoursClick = onOpenHours,
+            onTeamClick = onOpenTeam,
+            onPlacesClick = onOpenWorkLocations,
+            modifier = Modifier.width(82.dp),
+        )
         Column(
             modifier = Modifier
                 .weight(1f)
