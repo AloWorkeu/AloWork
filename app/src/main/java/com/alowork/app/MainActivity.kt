@@ -55,6 +55,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.alowork.app.ui.theme.AloworkTheme
 import kotlinx.coroutines.delay
@@ -1286,6 +1287,7 @@ fun AdminTeamScreen(
 ) {
     val context = LocalContext.current
     var selectedWorker by remember { mutableStateOf("Sven de Vries") }
+    var inviteOpen by remember { mutableStateOf(false) }
     val role = when (selectedWorker) {
         "Mila Bakker" -> "Cashier"
         "Noah Visser" -> "Driver"
@@ -1336,7 +1338,7 @@ fun AdminTeamScreen(
                 }
                 Button(
                     onClick = {
-                        Toast.makeText(context, "Invite worker started", Toast.LENGTH_SHORT).show()
+                        inviteOpen = true
                     },
                     modifier = Modifier
                         .width(104.dp)
@@ -1474,6 +1476,126 @@ fun AdminTeamScreen(
                                 )
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    if (inviteOpen) {
+        AdminInviteWorkerDialog(
+            onDismiss = { inviteOpen = false },
+            onSendInvite = { inviteEmail ->
+                Toast.makeText(context, "Invite sent to $inviteEmail", Toast.LENGTH_SHORT).show()
+                inviteOpen = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun AdminInviteWorkerDialog(
+    onDismiss: () -> Unit,
+    onSendInvite: (String) -> Unit,
+) {
+    var fullName by remember { mutableStateOf("Lotte Smit") }
+    var email by remember { mutableStateOf("lotte@email.nl") }
+    var role by remember { mutableStateOf("Baker") }
+    var location by remember { mutableStateOf("Bakery floor") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            color = Color.White,
+            shadowElevation = 0.dp,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            ) {
+                Text(
+                    text = "Invite worker",
+                    color = Color(0xFF17171B),
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Send an invite to join Bakkerij Jansen",
+                    color = Color(0xFF73737A),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                AdminAdjustField(
+                    label = "Full name",
+                    value = fullName,
+                    onValueChange = { fullName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                AdminAdjustField(
+                    label = "Email address",
+                    value = email,
+                    onValueChange = { email = it },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    AdminAdjustField(
+                        label = "Role",
+                        value = role,
+                        onValueChange = { role = it },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    AdminAdjustField(
+                        label = "Location",
+                        value = location,
+                        onValueChange = { location = it },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.height(42.dp),
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            color = Color(0xFF73737A),
+                            fontSize = 12.sp,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Button(
+                        onClick = { onSendInvite(email) },
+                        modifier = Modifier
+                            .width(112.dp)
+                            .height(42.dp),
+                        shape = RoundedCornerShape(7.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF111116),
+                            contentColor = Color.White,
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                        contentPadding = PaddingValues(0.dp),
+                    ) {
+                        Text(
+                            text = "Send invite",
+                            fontSize = 12.sp,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
                     }
                 }
             }
