@@ -216,18 +216,30 @@ fun AloworkApp() {
             onOpenApprovalQueue = {
                 screen = AppScreen.AdminHoursApprovalQueue
             },
+            onOpenTeam = {
+                screen = AppScreen.AdminTeam
+            },
             onOpenWorkLocations = {
                 screen = AppScreen.AdminWorkLocations
             },
         )
 
         AppScreen.AdminHoursApprovalQueue -> AdminHoursApprovalQueueScreen(
+            onOpenTeam = {
+                screen = AppScreen.AdminTeam
+            },
             onOpenWorkLocations = {
                 screen = AppScreen.AdminWorkLocations
             },
         )
 
-        AppScreen.AdminWorkLocations -> AdminWorkLocationsScreen()
+        AppScreen.AdminWorkLocations -> AdminWorkLocationsScreen(
+            onOpenTeam = {
+                screen = AppScreen.AdminTeam
+            },
+        )
+
+        AppScreen.AdminTeam -> AdminTeamScreen()
     }
 }
 
@@ -816,6 +828,7 @@ fun WebRegisterSuccessCodeScreen(
 fun AdminDashboardHomeScreen(
     modifier: Modifier = Modifier,
     onOpenApprovalQueue: () -> Unit = {},
+    onOpenTeam: () -> Unit = {},
     onOpenWorkLocations: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -827,6 +840,7 @@ fun AdminDashboardHomeScreen(
     ) {
         AdminWebSidebar(
             activeItem = "Home",
+            onTeamClick = onOpenTeam,
             onPlacesClick = onOpenWorkLocations,
             modifier = Modifier.width(82.dp),
         )
@@ -960,6 +974,7 @@ fun AdminDashboardHomeScreen(
 @Composable
 fun AdminHoursApprovalQueueScreen(
     modifier: Modifier = Modifier,
+    onOpenTeam: () -> Unit = {},
     onOpenWorkLocations: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -975,6 +990,7 @@ fun AdminHoursApprovalQueueScreen(
         ) {
             AdminWebSidebar(
                 activeItem = "Hours",
+                onTeamClick = onOpenTeam,
                 onPlacesClick = onOpenWorkLocations,
                 modifier = Modifier.width(82.dp),
             )
@@ -1093,6 +1109,7 @@ fun AdminHoursApprovalQueueScreen(
 @Composable
 fun AdminWorkLocationsScreen(
     modifier: Modifier = Modifier,
+    onOpenTeam: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var selectedLocation by remember { mutableStateOf("Bakery floor") }
@@ -1105,7 +1122,11 @@ fun AdminWorkLocationsScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F5F2)),
     ) {
-        AdminWebSidebar(activeItem = "Places", modifier = Modifier.width(82.dp))
+        AdminWebSidebar(
+            activeItem = "Places",
+            onTeamClick = onOpenTeam,
+            modifier = Modifier.width(82.dp),
+        )
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -1260,10 +1281,212 @@ fun AdminWorkLocationsScreen(
 }
 
 @Composable
+fun AdminTeamScreen(
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    var selectedWorker by remember { mutableStateOf("Sven de Vries") }
+    val role = when (selectedWorker) {
+        "Mila Bakker" -> "Cashier"
+        "Noah Visser" -> "Driver"
+        else -> "Baker"
+    }
+    val email = when (selectedWorker) {
+        "Mila Bakker" -> "mila@email.nl"
+        "Noah Visser" -> "noah@email.nl"
+        else -> "sven@email.nl"
+    }
+    val location = when (selectedWorker) {
+        "Noah Visser" -> "Warehouse"
+        else -> "Bakery floor"
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2)),
+    ) {
+        AdminWebSidebar(activeItem = "Team", modifier = Modifier.width(82.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+                .padding(top = 34.dp, bottom = 18.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Team",
+                        color = Color(0xFF17171B),
+                        fontSize = 20.sp,
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Manage workers and approvals",
+                        color = Color(0xFF73737A),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                    )
+                }
+                Button(
+                    onClick = {
+                        Toast.makeText(context, "Invite worker started", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .width(104.dp)
+                        .height(34.dp),
+                    shape = RoundedCornerShape(7.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF111116),
+                        contentColor = Color.White,
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                    contentPadding = PaddingValues(0.dp),
+                ) {
+                    Text(
+                        text = "Invite",
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    AdminWorkerListItem(
+                        name = "Sven de Vries",
+                        detail = "Baker · active",
+                        active = selectedWorker == "Sven de Vries",
+                        status = "Active",
+                        onClick = { selectedWorker = "Sven de Vries" },
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    AdminWorkerListItem(
+                        name = "Mila Bakker",
+                        detail = "Cashier · pending",
+                        active = selectedWorker == "Mila Bakker",
+                        status = "Pending",
+                        onClick = { selectedWorker = "Mila Bakker" },
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    AdminWorkerListItem(
+                        name = "Noah Visser",
+                        detail = "Driver · active",
+                        active = selectedWorker == "Noah Visser",
+                        status = "Active",
+                        onClick = { selectedWorker = "Noah Visser" },
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Surface(
+                    modifier = Modifier.weight(1.1f),
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
+                    shadowElevation = 0.dp,
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .background(Color(0xFFEAF0E9), CircleShape),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = selectedWorker.take(1),
+                                    color = Color(0xFF2F8F63),
+                                    fontSize = 18.sp,
+                                    lineHeight = 22.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = selectedWorker,
+                                    color = Color(0xFF17171B),
+                                    fontSize = 15.sp,
+                                    lineHeight = 18.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = email,
+                                    color = Color(0xFF73737A),
+                                    fontSize = 10.sp,
+                                    lineHeight = 13.sp,
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        AdminTeamDetailRow(label = "Role", value = role)
+                        ProfileDivider()
+                        AdminTeamDetailRow(label = "Default location", value = location)
+                        ProfileDivider()
+                        AdminTeamDetailRow(label = "Rate", value = "\u20AC16.00 / hour")
+                        ProfileDivider()
+                        AdminTeamDetailRow(label = "This month", value = "16.0h")
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            Button(
+                                onClick = {
+                                    Toast.makeText(context, "$selectedWorker approved", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(40.dp),
+                                shape = RoundedCornerShape(7.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF111116),
+                                    contentColor = Color.White,
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                                contentPadding = PaddingValues(0.dp),
+                            ) {
+                                Text(
+                                    text = "Approve",
+                                    fontSize = 11.sp,
+                                    lineHeight = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(
+                                onClick = {
+                                    Toast.makeText(context, "Reminder sent to $selectedWorker", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.height(40.dp),
+                            ) {
+                                Text(
+                                    text = "Remind",
+                                    color = Color(0xFF73737A),
+                                    fontSize = 11.sp,
+                                    lineHeight = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun AdminWebSidebar(
     activeItem: String,
     onHomeClick: () -> Unit = {},
     onHoursClick: () -> Unit = {},
+    onTeamClick: () -> Unit = {},
     onPlacesClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -1286,7 +1509,7 @@ private fun AdminWebSidebar(
             Spacer(modifier = Modifier.height(10.dp))
             AdminNavItem(label = "Hours", active = activeItem == "Hours", onClick = onHoursClick)
             Spacer(modifier = Modifier.height(10.dp))
-            AdminNavItem(label = "Team", active = activeItem == "Team")
+            AdminNavItem(label = "Team", active = activeItem == "Team", onClick = onTeamClick)
             Spacer(modifier = Modifier.height(10.dp))
             AdminNavItem(label = "Places", active = activeItem == "Places", onClick = onPlacesClick)
         }
@@ -1638,6 +1861,105 @@ private fun AdminLocationMapCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun AdminWorkerListItem(
+    name: String,
+    detail: String,
+    active: Boolean,
+    status: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(78.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(10.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, if (active) Color(0xFF111116) else Color(0xFFE1E1DC)),
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name,
+                    color = Color(0xFF17171B),
+                    fontSize = 12.sp,
+                    lineHeight = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(5.dp))
+                Text(
+                    text = detail,
+                    color = Color(0xFF73737A),
+                    fontSize = 10.sp,
+                    lineHeight = 13.sp,
+                )
+            }
+            AdminWorkerStatusChip(status = status)
+        }
+    }
+}
+
+@Composable
+private fun AdminWorkerStatusChip(
+    status: String,
+    modifier: Modifier = Modifier,
+) {
+    val active = status == "Active"
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        color = if (active) Color(0xFFEAF7F0) else Color(0xFFFFF4D8),
+        shadowElevation = 0.dp,
+    ) {
+        Text(
+            text = status,
+            color = if (active) Color(0xFF2F8F63) else Color(0xFFAA7A00),
+            fontSize = 9.sp,
+            lineHeight = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+        )
+    }
+}
+
+@Composable
+private fun AdminTeamDetailRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(46.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = Color(0xFF73737A),
+            fontSize = 10.sp,
+            lineHeight = 13.sp,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            color = Color(0xFF17171B),
+            fontSize = 11.sp,
+            lineHeight = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.End,
+        )
     }
 }
 
@@ -4337,6 +4659,7 @@ private enum class AppScreen {
     AdminDashboardHome,
     AdminHoursApprovalQueue,
     AdminWorkLocations,
+    AdminTeam,
 }
 
 private data class WorkerEmployer(
@@ -4505,6 +4828,14 @@ private fun AdminHoursApprovalQueueScreenPreview() {
 private fun AdminWorkLocationsScreenPreview() {
     AloworkTheme {
         AdminWorkLocationsScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AdminTeamScreenPreview() {
+    AloworkTheme {
+        AdminTeamScreen()
     }
 }
 
