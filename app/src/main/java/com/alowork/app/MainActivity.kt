@@ -1171,6 +1171,15 @@ fun AdminWorkLocationsScreen(
     onOpenWorkLocations: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    var locations by remember {
+        mutableStateOf(
+            listOf(
+                AdminLocation(name = "Bakery floor", address = "Lijnbaan 24", radius = "120"),
+                AdminLocation(name = "Market stall", address = "Binnenrotte 101", radius = "80"),
+                AdminLocation(name = "Warehouse", address = "Schuttevaerweg 12", radius = "160"),
+            ),
+        )
+    }
     var selectedLocation by remember { mutableStateOf("Bakery floor") }
     var locationName by remember { mutableStateOf("Bakery floor") }
     var address by remember { mutableStateOf("Lijnbaan 24") }
@@ -1245,41 +1254,22 @@ fun AdminWorkLocationsScreen(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(modifier = Modifier.weight(0.9f)) {
-                    AdminLocationListItem(
-                        name = "Bakery floor",
-                        detail = "Lijnbaan 24 · 120m",
-                        active = selectedLocation == "Bakery floor",
-                        onClick = {
-                            selectedLocation = "Bakery floor"
-                            locationName = "Bakery floor"
-                            address = "Lijnbaan 24"
-                            radius = "120"
-                        },
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    AdminLocationListItem(
-                        name = "Market stall",
-                        detail = "Binnenrotte · 80m",
-                        active = selectedLocation == "Market stall",
-                        onClick = {
-                            selectedLocation = "Market stall"
-                            locationName = "Market stall"
-                            address = "Binnenrotte 101"
-                            radius = "80"
-                        },
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    AdminLocationListItem(
-                        name = "Warehouse",
-                        detail = "Schuttevaerweg · 160m",
-                        active = selectedLocation == "Warehouse",
-                        onClick = {
-                            selectedLocation = "Warehouse"
-                            locationName = "Warehouse"
-                            address = "Schuttevaerweg 12"
-                            radius = "160"
-                        },
-                    )
+                    locations.forEachIndexed { index, location ->
+                        AdminLocationListItem(
+                            name = location.name,
+                            detail = "${location.address} · ${location.radius}m",
+                            active = selectedLocation == location.name,
+                            onClick = {
+                                selectedLocation = location.name
+                                locationName = location.name
+                                address = location.address
+                                radius = location.radius
+                            },
+                        )
+                        if (index < locations.lastIndex) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1.25f)) {
@@ -1316,6 +1306,15 @@ fun AdminWorkLocationsScreen(
                             Spacer(modifier = Modifier.height(14.dp))
                             Button(
                                 onClick = {
+                                    val updatedLocation = AdminLocation(
+                                        name = locationName,
+                                        address = address,
+                                        radius = radius,
+                                    )
+                                    locations = locations.map { location ->
+                                        if (location.name == selectedLocation) updatedLocation else location
+                                    }
+                                    selectedLocation = locationName
                                     Toast.makeText(context, "$locationName saved", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier
@@ -1346,6 +1345,12 @@ fun AdminWorkLocationsScreen(
         AdminAddLocationDialog(
             onDismiss = { addLocationOpen = false },
             onSaveLocation = { newName, newAddress, newRadius ->
+                val newLocation = AdminLocation(
+                    name = newName,
+                    address = newAddress,
+                    radius = newRadius,
+                )
+                locations = locations.filterNot { it.name == newName } + newLocation
                 selectedLocation = newName
                 locationName = newName
                 address = newAddress
@@ -5001,6 +5006,12 @@ private data class AdminHoursRequest(
     val hours: String,
     val pay: String,
     val status: String,
+)
+
+private data class AdminLocation(
+    val name: String,
+    val address: String,
+    val radius: String,
 )
 
 private data class AdminWorker(
