@@ -1468,20 +1468,19 @@ fun AdminTeamScreen(
     val context = LocalContext.current
     var selectedWorker by remember { mutableStateOf("Sven de Vries") }
     var inviteOpen by remember { mutableStateOf(false) }
-    val role = when (selectedWorker) {
-        "Mila Bakker" -> "Cashier"
-        "Noah Visser" -> "Driver"
-        else -> "Baker"
+    var workers by remember {
+        mutableStateOf(
+            listOf(
+                AdminWorker("Sven de Vries", "Baker", "sven@email.nl", "Bakery floor", "\u20AC16.00 / hour", "16.0h", "Active"),
+                AdminWorker("Mila Bakker", "Cashier", "mila@email.nl", "Bakery floor", "\u20AC16.00 / hour", "0.0h", "Pending"),
+                AdminWorker("Noah Visser", "Driver", "noah@email.nl", "Warehouse", "\u20AC16.00 / hour", "12.0h", "Active"),
+            ),
+        )
     }
-    val email = when (selectedWorker) {
-        "Mila Bakker" -> "mila@email.nl"
-        "Noah Visser" -> "noah@email.nl"
-        else -> "sven@email.nl"
-    }
-    val location = when (selectedWorker) {
-        "Noah Visser" -> "Warehouse"
-        else -> "Bakery floor"
-    }
+    val selectedWorkerDetails = workers.firstOrNull { it.name == selectedWorker } ?: workers.first()
+    val role = selectedWorkerDetails.role
+    val email = selectedWorkerDetails.email
+    val location = selectedWorkerDetails.location
 
     Row(
         modifier = modifier
@@ -1561,7 +1560,7 @@ fun AdminTeamScreen(
                         name = "Mila Bakker",
                         detail = "Cashier · pending",
                         active = selectedWorker == "Mila Bakker",
-                        status = "Pending",
+                        status = workers.first { it.name == "Mila Bakker" }.status,
                         onClick = { selectedWorker = "Mila Bakker" },
                     )
                     Spacer(modifier = Modifier.height(10.dp))
@@ -1620,13 +1619,20 @@ fun AdminTeamScreen(
                         ProfileDivider()
                         AdminTeamDetailRow(label = "Default location", value = location)
                         ProfileDivider()
-                        AdminTeamDetailRow(label = "Rate", value = "\u20AC16.00 / hour")
+                        AdminTeamDetailRow(label = "Rate", value = selectedWorkerDetails.rate)
                         ProfileDivider()
-                        AdminTeamDetailRow(label = "This month", value = "16.0h")
+                        AdminTeamDetailRow(label = "This month", value = selectedWorkerDetails.thisMonthHours)
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(modifier = Modifier.fillMaxWidth()) {
                             Button(
                                 onClick = {
+                                    workers = workers.map { worker ->
+                                        if (worker.name == selectedWorker) {
+                                            worker.copy(status = "Active")
+                                        } else {
+                                            worker
+                                        }
+                                    }
                                     Toast.makeText(context, "$selectedWorker approved", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier
@@ -4994,6 +5000,16 @@ private data class AdminHoursRequest(
     val period: String,
     val hours: String,
     val pay: String,
+    val status: String,
+)
+
+private data class AdminWorker(
+    val name: String,
+    val role: String,
+    val email: String,
+    val location: String,
+    val rate: String,
+    val thisMonthHours: String,
     val status: String,
 )
 
