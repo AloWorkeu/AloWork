@@ -960,6 +960,7 @@ fun AdminDashboardHomeScreen(
                     label = "Pending",
                     value = "3",
                     detail = "Need review",
+                    onClick = onOpenApprovalQueue,
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(10.dp))
@@ -967,6 +968,7 @@ fun AdminDashboardHomeScreen(
                     label = "Workers",
                     value = "14",
                     detail = "Active",
+                    onClick = onOpenTeam,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -2277,9 +2279,18 @@ private fun AdminMetricCard(
     value: String,
     detail: String,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
 ) {
+    val cardModifier = if (onClick == null) {
+        modifier.height(94.dp)
+    } else {
+        modifier
+            .height(94.dp)
+            .clickable(onClick = onClick)
+    }
+
     Surface(
-        modifier = modifier.height(94.dp),
+        modifier = cardModifier,
         shape = RoundedCornerShape(10.dp),
         color = Color.White,
         border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
