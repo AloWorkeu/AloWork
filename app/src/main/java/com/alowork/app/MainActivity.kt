@@ -1548,29 +1548,18 @@ fun AdminTeamScreen(
             Spacer(modifier = Modifier.height(18.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    AdminWorkerListItem(
-                        name = "Sven de Vries",
-                        detail = "Baker · active",
-                        active = selectedWorker == "Sven de Vries",
-                        status = "Active",
-                        onClick = { selectedWorker = "Sven de Vries" },
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    AdminWorkerListItem(
-                        name = "Mila Bakker",
-                        detail = "Cashier · pending",
-                        active = selectedWorker == "Mila Bakker",
-                        status = workers.first { it.name == "Mila Bakker" }.status,
-                        onClick = { selectedWorker = "Mila Bakker" },
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    AdminWorkerListItem(
-                        name = "Noah Visser",
-                        detail = "Driver · active",
-                        active = selectedWorker == "Noah Visser",
-                        status = "Active",
-                        onClick = { selectedWorker = "Noah Visser" },
-                    )
+                    workers.forEachIndexed { index, worker ->
+                        AdminWorkerListItem(
+                            name = worker.name,
+                            detail = "${worker.role} · ${worker.status.lowercase(Locale.US)}",
+                            active = selectedWorker == worker.name,
+                            status = worker.status,
+                            onClick = { selectedWorker = worker.name },
+                        )
+                        if (index < workers.lastIndex) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Surface(
@@ -1678,7 +1667,18 @@ fun AdminTeamScreen(
     if (inviteOpen) {
         AdminInviteWorkerDialog(
             onDismiss = { inviteOpen = false },
-            onSendInvite = { inviteEmail ->
+            onSendInvite = { fullName, inviteEmail, inviteRole, inviteLocation ->
+                val newWorker = AdminWorker(
+                    name = fullName,
+                    role = inviteRole,
+                    email = inviteEmail,
+                    location = inviteLocation,
+                    rate = "\u20AC16.00 / hour",
+                    thisMonthHours = "0.0h",
+                    status = "Pending",
+                )
+                workers = workers.filterNot { it.email == inviteEmail } + newWorker
+                selectedWorker = fullName
                 Toast.makeText(context, "Invite sent to $inviteEmail", Toast.LENGTH_SHORT).show()
                 inviteOpen = false
             },
@@ -1689,7 +1689,7 @@ fun AdminTeamScreen(
 @Composable
 private fun AdminInviteWorkerDialog(
     onDismiss: () -> Unit,
-    onSendInvite: (String) -> Unit,
+    onSendInvite: (String, String, String, String) -> Unit,
 ) {
     var fullName by remember { mutableStateOf("Lotte Smit") }
     var email by remember { mutableStateOf("lotte@email.nl") }
@@ -1771,7 +1771,7 @@ private fun AdminInviteWorkerDialog(
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     Button(
-                        onClick = { onSendInvite(email) },
+                        onClick = { onSendInvite(fullName, email, role, location) },
                         modifier = Modifier
                             .width(112.dp)
                             .height(42.dp),
