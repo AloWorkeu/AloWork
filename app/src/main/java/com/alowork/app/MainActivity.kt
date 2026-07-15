@@ -1034,6 +1034,15 @@ fun AdminHoursApprovalQueueScreen(
 ) {
     val context = LocalContext.current
     var selectedWorker by remember { mutableStateOf<String?>(null) }
+    var hourRequests by remember {
+        mutableStateOf(
+            listOf(
+                AdminHoursRequest("Sven de Vries", "Week 25", "16.0h", "\u20AC256", "Submitted"),
+                AdminHoursRequest("Mila Bakker", "Week 25", "12.5h", "\u20AC200", "Submitted"),
+                AdminHoursRequest("Noah Visser", "Week 25", "11.0h", "\u20AC176", "Adjusted"),
+            ),
+        )
+    }
 
     Box(
         modifier = modifier
@@ -1111,38 +1120,21 @@ fun AdminHoursApprovalQueueScreen(
                     shadowElevation = 0.dp,
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        AdminApprovalQueueRow(
-                            name = "Sven de Vries",
-                            period = "Week 25",
-                            hours = "16.0h",
-                            pay = "\u20AC256",
-                            status = "Submitted",
-                            onReview = {
-                                selectedWorker = "Sven de Vries"
-                            },
-                        )
-                        ProfileDivider()
-                        AdminApprovalQueueRow(
-                            name = "Mila Bakker",
-                            period = "Week 25",
-                            hours = "12.5h",
-                            pay = "\u20AC200",
-                            status = "Submitted",
-                            onReview = {
-                                selectedWorker = "Mila Bakker"
-                            },
-                        )
-                        ProfileDivider()
-                        AdminApprovalQueueRow(
-                            name = "Noah Visser",
-                            period = "Week 25",
-                            hours = "11.0h",
-                            pay = "\u20AC176",
-                            status = "Adjusted",
-                            onReview = {
-                                selectedWorker = "Noah Visser"
-                            },
-                        )
+                        hourRequests.forEachIndexed { index, request ->
+                            AdminApprovalQueueRow(
+                                name = request.name,
+                                period = request.period,
+                                hours = request.hours,
+                                pay = request.pay,
+                                status = request.status,
+                                onReview = {
+                                    selectedWorker = request.name
+                                },
+                            )
+                            if (index < hourRequests.lastIndex) {
+                                ProfileDivider()
+                            }
+                        }
                     }
                 }
             }
@@ -1154,7 +1146,14 @@ fun AdminHoursApprovalQueueScreen(
                 onDismiss = {
                     selectedWorker = null
                 },
-                onSave = {
+                onSave = { updatedHours, updatedPay ->
+                    hourRequests = hourRequests.map { request ->
+                        if (request.name == workerName) {
+                            request.copy(hours = updatedHours, pay = updatedPay, status = "Adjusted")
+                        } else {
+                            request
+                        }
+                    }
                     Toast.makeText(context, "Hours updated for $workerName", Toast.LENGTH_SHORT).show()
                     selectedWorker = null
                 },
@@ -1895,7 +1894,7 @@ private fun AdminQueueFilter(
 private fun AdminAdjustHoursModal(
     workerName: String,
     onDismiss: () -> Unit,
-    onSave: () -> Unit,
+    onSave: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var clockIn by remember(workerName) { mutableStateOf("09:00") }
@@ -1986,7 +1985,10 @@ private fun AdminAdjustHoursModal(
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     Button(
-                        onClick = onSave,
+                        onClick = {
+                            val adjustedHours = calculateManualHours(clockIn, clockOut, breakMinutes)
+                            onSave("${"%.1f".format(Locale.US, adjustedHours)}h", "\u20AC${"%.0f".format(Locale.US, adjustedHours * 16.0)}")
+                        },
                         modifier = Modifier
                             .width(112.dp)
                             .height(42.dp),
@@ -4985,6 +4987,14 @@ private data class WorkerEmployer(
     val name: String,
     val role: String,
     val rate: String,
+)
+
+private data class AdminHoursRequest(
+    val name: String,
+    val period: String,
+    val hours: String,
+    val pay: String,
+    val status: String,
 )
 
 private enum class NotificationType {
