@@ -1117,6 +1117,7 @@ fun AdminWorkLocationsScreen(
     var locationName by remember { mutableStateOf("Bakery floor") }
     var address by remember { mutableStateOf("Lijnbaan 24") }
     var radius by remember { mutableStateOf("120") }
+    var addLocationOpen by remember { mutableStateOf(false) }
 
     Row(
         modifier = modifier
@@ -1157,7 +1158,7 @@ fun AdminWorkLocationsScreen(
                 }
                 Button(
                     onClick = {
-                        Toast.makeText(context, "New location started", Toast.LENGTH_SHORT).show()
+                        addLocationOpen = true
                     },
                     modifier = Modifier
                         .width(94.dp)
@@ -1274,6 +1275,120 @@ fun AdminWorkLocationsScreen(
                                 )
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    if (addLocationOpen) {
+        AdminAddLocationDialog(
+            onDismiss = { addLocationOpen = false },
+            onSaveLocation = { newName, newAddress, newRadius ->
+                selectedLocation = newName
+                locationName = newName
+                address = newAddress
+                radius = newRadius
+                Toast.makeText(context, "$newName added", Toast.LENGTH_SHORT).show()
+                addLocationOpen = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun AdminAddLocationDialog(
+    onDismiss: () -> Unit,
+    onSaveLocation: (String, String, String) -> Unit,
+) {
+    var locationName by remember { mutableStateOf("New shop") }
+    var address by remember { mutableStateOf("Coolsingel 10") }
+    var radius by remember { mutableStateOf("100") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp),
+            color = Color.White,
+            shadowElevation = 0.dp,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            ) {
+                Text(
+                    text = "Add work location",
+                    color = Color(0xFF17171B),
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Create a place where workers can clock in",
+                    color = Color(0xFF73737A),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                AdminAdjustField(
+                    label = "Location name",
+                    value = locationName,
+                    onValueChange = { locationName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                AdminAdjustField(
+                    label = "Address",
+                    value = address,
+                    onValueChange = { address = it },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                AdminAdjustField(
+                    label = "Clock-in radius metres",
+                    value = radius,
+                    onValueChange = { radius = it },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.height(42.dp),
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            color = Color(0xFF73737A),
+                            fontSize = 12.sp,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Button(
+                        onClick = { onSaveLocation(locationName, address, radius) },
+                        modifier = Modifier
+                            .width(122.dp)
+                            .height(42.dp),
+                        shape = RoundedCornerShape(7.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF111116),
+                            contentColor = Color.White,
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                        contentPadding = PaddingValues(0.dp),
+                    ) {
+                        Text(
+                            text = "Save place",
+                            fontSize = 12.sp,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
                     }
                 }
             }
