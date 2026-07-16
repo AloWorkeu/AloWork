@@ -77,6 +77,7 @@ class MainActivity : ComponentActivity() {
 fun AloworkApp() {
     var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
     var pendingAdminReviewWorker by remember { mutableStateOf<String?>(null) }
+    var manualHoursSubmission by remember { mutableStateOf<WorkerManualHoursSubmission?>(null) }
 
     fun openWorkerTab(tab: WorkerTab) {
         screen = when (tab) {
@@ -171,6 +172,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerHistoryOverview -> WorkerHistoryOverviewScreen(
+            manualSubmission = manualHoursSubmission,
             onDaySelected = {
                 screen = AppScreen.WorkerDayViewAdjusted
             },
@@ -188,7 +190,11 @@ fun AloworkApp() {
             onBack = {
                 screen = AppScreen.WorkerGpsClockIn
             },
-            onSubmitted = {
+            onSubmitted = { hours, pay ->
+                manualHoursSubmission = WorkerManualHoursSubmission(
+                    hours = hours,
+                    pay = pay,
+                )
                 screen = AppScreen.WorkerHistoryOverview
             },
             onTabSelected = ::openWorkerTab,
@@ -3168,6 +3174,7 @@ fun WorkerProfileScreen(
 @Composable
 fun WorkerHistoryOverviewScreen(
     modifier: Modifier = Modifier,
+    manualSubmission: WorkerManualHoursSubmission? = null,
     onDaySelected: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
@@ -3231,6 +3238,16 @@ fun WorkerHistoryOverviewScreen(
                 shadowElevation = 0.dp,
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
+                    manualSubmission?.let { submission ->
+                        WeekOverviewRow(
+                            week = "Week 25",
+                            amount = submission.pay,
+                            detail = "${submission.hours} · 17 Jun",
+                            status = WeekStatus.Pending,
+                            onClick = onDaySelected,
+                        )
+                        ProfileDivider()
+                    }
                     WeekOverviewRow(
                         week = "Week 23",
                         amount = "€608",
@@ -3432,7 +3449,7 @@ fun WorkerDayViewAdjustedScreen(
 fun WorkerLogHoursDayDetailScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    onSubmitted: () -> Unit = {},
+    onSubmitted: (String, String) -> Unit = { _, _ -> },
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -3588,8 +3605,7 @@ fun WorkerLogHoursDayDetailScreen(
                     if (totalHours <= 0.0) {
                         Toast.makeText(context, "Check your start and end time", Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(context, "Hours submitted", Toast.LENGTH_SHORT).show()
-                        onSubmitted()
+                        onSubmitted(formatHours(totalHours), formatEuro(estimatedPay))
                     }
                 },
                 modifier = Modifier
@@ -5053,6 +5069,11 @@ private data class WorkerEmployer(
     val name: String,
     val role: String,
     val rate: String,
+)
+
+data class WorkerManualHoursSubmission(
+    val hours: String,
+    val pay: String,
 )
 
 private data class AdminHoursRequest(
