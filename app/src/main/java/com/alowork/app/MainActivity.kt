@@ -1034,6 +1034,7 @@ fun AdminHoursApprovalQueueScreen(
 ) {
     val context = LocalContext.current
     var selectedWorker by remember { mutableStateOf<String?>(null) }
+    var selectedFilter by remember { mutableStateOf("Pending") }
     var hourRequests by remember {
         mutableStateOf(
             listOf(
@@ -1042,6 +1043,12 @@ fun AdminHoursApprovalQueueScreen(
                 AdminHoursRequest("Noah Visser", "Week 25", "11.0h", "\u20AC176", "Adjusted"),
             ),
         )
+    }
+    val pendingCount = hourRequests.count { it.status != "Approved" }
+    val filteredRequests = when (selectedFilter) {
+        "Pending" -> hourRequests.filter { it.status != "Approved" }
+        "Approved" -> hourRequests.filter { it.status == "Approved" }
+        else -> hourRequests
     }
 
     Box(
@@ -1094,7 +1101,7 @@ fun AdminHoursApprovalQueueScreen(
                         shadowElevation = 0.dp,
                     ) {
                         Text(
-                            text = "3 pending",
+                            text = "$pendingCount pending",
                             color = Color(0xFF17171B),
                             fontSize = 11.sp,
                             lineHeight = 14.sp,
@@ -1105,11 +1112,26 @@ fun AdminHoursApprovalQueueScreen(
                 }
                 Spacer(modifier = Modifier.height(18.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    AdminQueueFilter(label = "Pending", active = true, modifier = Modifier.weight(1f))
+                    AdminQueueFilter(
+                        label = "Pending",
+                        active = selectedFilter == "Pending",
+                        onClick = { selectedFilter = "Pending" },
+                        modifier = Modifier.weight(1f),
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
-                    AdminQueueFilter(label = "Approved", active = false, modifier = Modifier.weight(1f))
+                    AdminQueueFilter(
+                        label = "Approved",
+                        active = selectedFilter == "Approved",
+                        onClick = { selectedFilter = "Approved" },
+                        modifier = Modifier.weight(1f),
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
-                    AdminQueueFilter(label = "All", active = false, modifier = Modifier.weight(1f))
+                    AdminQueueFilter(
+                        label = "All",
+                        active = selectedFilter == "All",
+                        onClick = { selectedFilter = "All" },
+                        modifier = Modifier.weight(1f),
+                    )
                 }
                 Spacer(modifier = Modifier.height(14.dp))
                 Surface(
@@ -1120,19 +1142,30 @@ fun AdminHoursApprovalQueueScreen(
                     shadowElevation = 0.dp,
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        hourRequests.forEachIndexed { index, request ->
-                            AdminApprovalQueueRow(
-                                name = request.name,
-                                period = request.period,
-                                hours = request.hours,
-                                pay = request.pay,
-                                status = request.status,
-                                onReview = {
-                                    selectedWorker = request.name
-                                },
+                        if (filteredRequests.isEmpty()) {
+                            Text(
+                                text = "No ${selectedFilter.lowercase(Locale.US)} requests",
+                                color = Color(0xFF73737A),
+                                fontSize = 12.sp,
+                                lineHeight = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(18.dp),
                             )
-                            if (index < hourRequests.lastIndex) {
-                                ProfileDivider()
+                        } else {
+                            filteredRequests.forEachIndexed { index, request ->
+                                AdminApprovalQueueRow(
+                                    name = request.name,
+                                    period = request.period,
+                                    hours = request.hours,
+                                    pay = request.pay,
+                                    status = request.status,
+                                    onReview = {
+                                        selectedWorker = request.name
+                                    },
+                                )
+                                if (index < filteredRequests.lastIndex) {
+                                    ProfileDivider()
+                                }
                             }
                         }
                     }
@@ -1880,10 +1913,13 @@ private fun AdminNavItem(
 private fun AdminQueueFilter(
     label: String,
     active: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.height(34.dp),
+        modifier = modifier
+            .height(34.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(7.dp),
         color = if (active) Color(0xFF111116) else Color.White,
         border = BorderStroke(1.dp, if (active) Color(0xFF111116) else Color(0xFFE1E1DC)),
