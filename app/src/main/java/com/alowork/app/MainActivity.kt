@@ -76,6 +76,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AloworkApp() {
     var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
+    var pendingAdminReviewWorker by remember { mutableStateOf<String?>(null) }
 
     fun openWorkerTab(tab: WorkerTab) {
         screen = when (tab) {
@@ -91,6 +92,12 @@ fun AloworkApp() {
     }
 
     fun openAdminHours() {
+        pendingAdminReviewWorker = null
+        screen = AppScreen.AdminHoursApprovalQueue
+    }
+
+    fun openAdminHoursForWorker(workerName: String) {
+        pendingAdminReviewWorker = workerName
         screen = AppScreen.AdminHoursApprovalQueue
     }
 
@@ -233,6 +240,9 @@ fun AloworkApp() {
             onOpenApprovalQueue = {
                 openAdminHours()
             },
+            onReviewWorker = { workerName ->
+                openAdminHoursForWorker(workerName)
+            },
             onOpenHome = {
                 openAdminHome()
             },
@@ -245,6 +255,10 @@ fun AloworkApp() {
         )
 
         AppScreen.AdminHoursApprovalQueue -> AdminHoursApprovalQueueScreen(
+            initialSelectedWorker = pendingAdminReviewWorker,
+            onInitialSelectionConsumed = {
+                pendingAdminReviewWorker = null
+            },
             onOpenHome = {
                 openAdminHome()
             },
@@ -876,12 +890,11 @@ fun WebRegisterSuccessCodeScreen(
 fun AdminDashboardHomeScreen(
     modifier: Modifier = Modifier,
     onOpenApprovalQueue: () -> Unit = {},
+    onReviewWorker: (String) -> Unit = {},
     onOpenHome: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
     onOpenWorkLocations: () -> Unit = {},
 ) {
-    val context = LocalContext.current
-
     Row(
         modifier = modifier
             .fillMaxSize()
@@ -994,8 +1007,7 @@ fun AdminDashboardHomeScreen(
                         detail = "Week 25 · 16.0h",
                         amount = "\u20AC256",
                         onClick = {
-                            Toast.makeText(context, "Review Sven selected", Toast.LENGTH_SHORT).show()
-                            onOpenApprovalQueue()
+                            onReviewWorker("Sven de Vries")
                         },
                     )
                     ProfileDivider()
@@ -1004,8 +1016,7 @@ fun AdminDashboardHomeScreen(
                         detail = "Week 25 · 12.5h",
                         amount = "\u20AC200",
                         onClick = {
-                            Toast.makeText(context, "Review Mila selected", Toast.LENGTH_SHORT).show()
-                            onOpenApprovalQueue()
+                            onReviewWorker("Mila Bakker")
                         },
                     )
                     ProfileDivider()
@@ -1014,8 +1025,7 @@ fun AdminDashboardHomeScreen(
                         detail = "Week 25 · adjusted",
                         amount = "\u20AC176",
                         onClick = {
-                            Toast.makeText(context, "Review Noah selected", Toast.LENGTH_SHORT).show()
-                            onOpenApprovalQueue()
+                            onReviewWorker("Noah Visser")
                         },
                     )
                 }
@@ -1027,13 +1037,15 @@ fun AdminDashboardHomeScreen(
 @Composable
 fun AdminHoursApprovalQueueScreen(
     modifier: Modifier = Modifier,
+    initialSelectedWorker: String? = null,
+    onInitialSelectionConsumed: () -> Unit = {},
     onOpenHome: () -> Unit = {},
     onOpenHours: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
     onOpenWorkLocations: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    var selectedWorker by remember { mutableStateOf<String?>(null) }
+    var selectedWorker by remember { mutableStateOf<String?>(initialSelectedWorker) }
     var selectedFilter by remember { mutableStateOf("Pending") }
     var hourRequests by remember {
         mutableStateOf(
@@ -1049,6 +1061,13 @@ fun AdminHoursApprovalQueueScreen(
         "Pending" -> hourRequests.filter { it.status != "Approved" }
         "Approved" -> hourRequests.filter { it.status == "Approved" }
         else -> hourRequests
+    }
+
+    LaunchedEffect(initialSelectedWorker) {
+        if (initialSelectedWorker != null) {
+            selectedWorker = initialSelectedWorker
+            onInitialSelectionConsumed()
+        }
     }
 
     Box(
