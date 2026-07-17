@@ -52,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
@@ -71,6 +72,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.alowork.app.ui.theme.AloworkTheme
 import kotlinx.coroutines.delay
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -105,7 +108,7 @@ fun AloworkApp() {
 
     fun openWorkerTab(tab: WorkerTab) {
         screen = when (tab) {
-            WorkerTab.Home -> AppScreen.WorkerGpsClockIn
+            WorkerTab.Calendar -> AppScreen.WorkerCalendarEarnings
             WorkerTab.History -> AppScreen.WorkerHistoryOverview
             WorkerTab.Alerts -> AppScreen.WorkerNotifications
             WorkerTab.Profile -> AppScreen.WorkerProfile
@@ -187,6 +190,19 @@ fun AloworkApp() {
             onSave = {
                 screen = AppScreen.WorkerGpsClockIn
             },
+        )
+
+        AppScreen.WorkerCalendarEarnings -> WorkerCalendarEarningsScreen(
+            onDaySelected = {
+                screen = AppScreen.WorkerDayViewAdjusted
+            },
+            onLogHours = {
+                screen = AppScreen.WorkerLogHoursDayDetail
+            },
+            onProfileSelected = {
+                screen = AppScreen.WorkerProfile
+            },
+            onTabSelected = ::openWorkerTab,
         )
 
         AppScreen.WorkerLocationDenied -> GpsLocationDeniedScreen(
@@ -3109,6 +3125,527 @@ fun GpsClockInScreen(
 }
 
 @Composable
+fun WorkerCalendarEarningsScreen(
+    modifier: Modifier = Modifier,
+    onDaySelected: () -> Unit = {},
+    onLogHours: () -> Unit = {},
+    onProfileSelected: () -> Unit = {},
+    onTabSelected: (WorkerTab) -> Unit = {},
+) {
+    var displayedMonth by remember { mutableStateOf(YearMonth.of(2026, 6)) }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2)),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(top = 16.dp, bottom = 93.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(34.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Hi, Sven",
+                    color = Color(0xFF17171C),
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .background(Color(0xFFDCEBFD), CircleShape)
+                        .clickable(onClick = onProfileSelected),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "S",
+                        color = Color(0xFF378ADD),
+                        fontSize = 13.sp,
+                        lineHeight = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            WorkerEarningsCard(isCurrentDesignMonth = displayedMonth == YearMonth.of(2026, 6))
+            Spacer(modifier = Modifier.height(14.dp))
+            WorkerMonthCalendar(
+                month = displayedMonth,
+                onPreviousMonth = { displayedMonth = displayedMonth.minusMonths(1) },
+                onNextMonth = { displayedMonth = displayedMonth.plusMonths(1) },
+                onDaySelected = onDaySelected,
+            )
+        }
+
+        Button(
+            onClick = onLogHours,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(start = 20.dp, end = 20.dp, bottom = 93.dp)
+                .fillMaxWidth()
+                .height(48.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF17171C),
+                contentColor = Color.White,
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+        ) {
+            Text(
+                text = "+  Log today's hours",
+                fontSize = 15.sp,
+                lineHeight = 18.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+
+        WorkerCalendarTabBar(
+            selected = WorkerTab.Calendar,
+            onTabSelected = onTabSelected,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+@Composable
+private fun WorkerEarningsCard(isCurrentDesignMonth: Boolean) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(124.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE0E0DE)),
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+        ) {
+            Text(
+                text = if (isCurrentDesignMonth) "Earned in June \u00B7 net" else "Earned this month \u00B7 net",
+                color = Color(0xFF73737A),
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = if (isCurrentDesignMonth) "\u20AC1,284" else "\u20AC0",
+                color = Color(0xFF17171C),
+                fontSize = 34.sp,
+                lineHeight = 41.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                EarningsLegendItem(
+                    color = Color(0xFF1D9E75),
+                    label = if (isCurrentDesignMonth) "\u20AC1,092 approved" else "\u20AC0 approved",
+                )
+                EarningsLegendItem(
+                    color = Color(0xFFEF9F27),
+                    label = if (isCurrentDesignMonth) "\u20AC192 pending" else "\u20AC0 pending",
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EarningsLegendItem(color: Color, label: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(color, CircleShape),
+        )
+        Text(
+            text = label,
+            color = Color(0xFF73737A),
+            fontSize = 12.sp,
+            lineHeight = 15.sp,
+        )
+    }
+}
+
+@Composable
+private fun WorkerMonthCalendar(
+    month: YearMonth,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit,
+    onDaySelected: () -> Unit,
+) {
+    val firstDayOffset = month.atDay(1).dayOfWeek.value - 1
+    val cells = firstDayOffset + month.lengthOfMonth()
+    val weekCount = ((cells + 6) / 7).coerceAtLeast(5)
+    val rowHeight = if (weekCount > 5) 38.dp else 46.dp
+    val monthFormatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH) }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(368.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE0E0DE)),
+        shadowElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(22.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = month.format(monthFormatter),
+                    color = Color(0xFF17171C),
+                    fontSize = 15.sp,
+                    lineHeight = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f),
+                )
+                MonthArrowButton(symbol = "\u2039", onClick = onPreviousMonth)
+                Spacer(modifier = Modifier.width(8.dp))
+                MonthArrowButton(symbol = "\u203A", onClick = onNextMonth)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { day ->
+                    Text(
+                        text = day,
+                        color = Color(0xFF9E9EA6),
+                        fontSize = 11.sp,
+                        lineHeight = 13.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            repeat(weekCount) { week ->
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    repeat(7) { weekday ->
+                        val dayNumber = week * 7 + weekday - firstDayOffset + 1
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (dayNumber in 1..month.lengthOfMonth()) {
+                                val dayData = calendarDayData(month, dayNumber)
+                                WorkerCalendarDayCell(
+                                    day = dayNumber,
+                                    data = dayData,
+                                    height = rowHeight,
+                                    onClick = onDaySelected,
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.height(rowHeight))
+                            }
+                        }
+                    }
+                }
+                if (week < weekCount - 1) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CalendarLegendItem(CalendarDayStatus.Approved, "approved")
+                CalendarLegendItem(CalendarDayStatus.Pending, "pending")
+                CalendarLegendItem(CalendarDayStatus.Adjusted, "adjusted")
+            }
+        }
+    }
+}
+
+@Composable
+private fun MonthArrowButton(symbol: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(22.dp)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = symbol,
+            color = Color(0xFF17171C),
+            fontSize = 18.sp,
+            lineHeight = 22.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun WorkerCalendarDayCell(
+    day: Int,
+    data: CalendarDayData?,
+    height: Dp,
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .width(40.dp)
+            .height(height)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(8.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE0E0DE)),
+        shadowElevation = 0.dp,
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Text(
+                text = day.toString(),
+                color = Color(0xFF17171C),
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .align(if (data == null) Alignment.Center else Alignment.TopCenter)
+                    .padding(top = if (data == null) 0.dp else 3.dp),
+            )
+            data?.let { shift ->
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .offset(y = 2.dp)
+                        .size(6.dp)
+                        .background(shift.status.color, CircleShape),
+                )
+                Text(
+                    text = shift.hours,
+                    color = Color(0xFF9E9EA6),
+                    fontSize = 10.sp,
+                    lineHeight = 12.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 1.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarLegendItem(status: CalendarDayStatus, label: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(status.color, RoundedCornerShape(2.dp)),
+        )
+        Text(
+            text = label,
+            color = Color(0xFF73737A),
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
+        )
+    }
+}
+
+private fun calendarDayData(month: YearMonth, day: Int): CalendarDayData? {
+    if (month != YearMonth.of(2026, 6)) return null
+
+    return when (day) {
+        2, 3, 4, 6, 9, 10, 11, 12, 16, 17 ->
+            CalendarDayData(CalendarDayStatus.Approved, "8h")
+        13 -> CalendarDayData(CalendarDayStatus.Approved, "4h")
+        5 -> CalendarDayData(CalendarDayStatus.Adjusted, "6h")
+        18, 19 -> CalendarDayData(CalendarDayStatus.Pending, "8h")
+        else -> null
+    }
+}
+
+@Composable
+private fun WorkerCalendarTabBar(
+    selected: WorkerTab,
+    modifier: Modifier = Modifier,
+    onTabSelected: (WorkerTab) -> Unit = {},
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(93.dp)
+            .drawBehind {
+                drawLine(
+                    color = Color(0xFFE5E5E3),
+                    start = Offset.Zero,
+                    end = Offset(size.width, 0f),
+                    strokeWidth = 1.dp.toPx(),
+                )
+            },
+        color = Color.White,
+        shadowElevation = 0.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 12.dp, top = 10.dp, end = 12.dp, bottom = 28.dp),
+        ) {
+            WorkerTab.entries.forEach { tab ->
+                WorkerCalendarTabItem(
+                    tab = tab,
+                    selected = tab == selected,
+                    onClick = onTabSelected,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkerCalendarTabItem(
+    tab: WorkerTab,
+    selected: Boolean,
+    onClick: (WorkerTab) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val color = if (selected) Color(0xFF17171C) else Color(0xFF9999A1)
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .clickable { onClick(tab) }
+            .padding(vertical = 5.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.CenterVertically),
+    ) {
+        WorkerTabIcon(tab = tab, color = color)
+        Text(
+            text = tab.label,
+            color = color,
+            fontSize = 11.sp,
+            lineHeight = 13.sp,
+            fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
+        )
+    }
+}
+
+@Composable
+private fun WorkerTabIcon(
+    tab: WorkerTab,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier.size(22.dp)) {
+        val strokeWidth = 1.8.dp.toPx()
+        when (tab) {
+            WorkerTab.Calendar -> {
+                drawRoundRect(
+                    color = color,
+                    topLeft = Offset(size.width * 0.14f, size.height * 0.22f),
+                    size = Size(size.width * 0.72f, size.height * 0.68f),
+                    cornerRadius = CornerRadius(2.dp.toPx()),
+                    style = Stroke(width = strokeWidth),
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * 0.14f, size.height * 0.40f),
+                    end = Offset(size.width * 0.86f, size.height * 0.40f),
+                    strokeWidth = strokeWidth,
+                )
+                listOf(0.34f, 0.66f).forEach { x ->
+                    drawLine(
+                        color = color,
+                        start = Offset(size.width * x, size.height * 0.10f),
+                        end = Offset(size.width * x, size.height * 0.30f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                }
+            }
+
+            WorkerTab.History -> {
+                listOf(
+                    0.31f to 0.78f,
+                    0.50f to 0.66f,
+                    0.69f to 0.52f,
+                ).forEach { (y, endX) ->
+                    drawLine(
+                        color = color,
+                        start = Offset(size.width * 0.22f, size.height * y),
+                        end = Offset(size.width * endX, size.height * y),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                }
+            }
+
+            WorkerTab.Alerts -> {
+                drawArc(
+                    color = color,
+                    startAngle = 190f,
+                    sweepAngle = 160f,
+                    useCenter = false,
+                    topLeft = Offset(size.width * 0.25f, size.height * 0.20f),
+                    size = Size(size.width * 0.5f, size.height * 0.62f),
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * 0.20f, size.height * 0.72f),
+                    end = Offset(size.width * 0.80f, size.height * 0.72f),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round,
+                )
+                drawCircle(
+                    color = color,
+                    center = Offset(size.width * 0.5f, size.height * 0.84f),
+                    radius = size.width * 0.06f,
+                )
+            }
+
+            WorkerTab.Profile -> {
+                drawCircle(
+                    color = color,
+                    center = Offset(size.width * 0.5f, size.height * 0.31f),
+                    radius = size.width * 0.17f,
+                    style = Stroke(width = strokeWidth),
+                )
+                drawArc(
+                    color = color,
+                    startAngle = 200f,
+                    sweepAngle = 140f,
+                    useCenter = false,
+                    topLeft = Offset(size.width * 0.18f, size.height * 0.48f),
+                    size = Size(size.width * 0.64f, size.height * 0.45f),
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun WorkerNotificationsScreen(
     modifier: Modifier = Modifier,
     onTabSelected: (WorkerTab) -> Unit = {},
@@ -4830,8 +5367,8 @@ private fun WorkerBottomNavigation(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             WorkerNavItem(
-                tab = WorkerTab.Home,
-                selected = selected == WorkerTab.Home,
+                tab = WorkerTab.Calendar,
+                selected = selected == WorkerTab.Calendar,
                 onClick = onTabSelected,
                 modifier = Modifier.weight(1f),
             )
@@ -4874,20 +5411,29 @@ private fun WorkerNavItem(
         Canvas(modifier = Modifier.size(22.dp)) {
             val strokeWidth = 2.dp.toPx()
             when (tab) {
-                WorkerTab.Home -> {
-                    drawCircle(
+                WorkerTab.Calendar -> {
+                    drawRoundRect(
                         color = iconColor,
-                        center = Offset(size.width * 0.5f, size.height * 0.5f),
-                        radius = size.width * 0.28f,
+                        topLeft = Offset(size.width * 0.14f, size.height * 0.22f),
+                        size = Size(size.width * 0.72f, size.height * 0.68f),
+                        cornerRadius = CornerRadius(2.dp.toPx()),
                         style = Stroke(width = strokeWidth),
                     )
                     drawLine(
                         color = iconColor,
-                        start = Offset(size.width * 0.5f, size.height * 0.23f),
-                        end = Offset(size.width * 0.5f, size.height * 0.08f),
+                        start = Offset(size.width * 0.14f, size.height * 0.40f),
+                        end = Offset(size.width * 0.86f, size.height * 0.40f),
                         strokeWidth = strokeWidth,
-                        cap = StrokeCap.Round,
                     )
+                    listOf(0.34f, 0.66f).forEach { x ->
+                        drawLine(
+                            color = iconColor,
+                            start = Offset(size.width * x, size.height * 0.10f),
+                            end = Offset(size.width * x, size.height * 0.30f),
+                            strokeWidth = strokeWidth,
+                            cap = StrokeCap.Round,
+                        )
+                    }
                 }
 
                 WorkerTab.History -> {
@@ -5587,6 +6133,7 @@ private enum class AppScreen {
     WorkerSignUp,
     WorkerAwaitingApproval,
     WorkerLocationPermission,
+    WorkerCalendarEarnings,
     WorkerGpsClockIn,
     WorkerShiftInProgress,
     WorkerShiftPhotos,
@@ -5659,12 +6206,23 @@ private enum class NotificationType {
     AccountApproved,
 }
 
-enum class WorkerTab {
-    Home,
-    History,
-    Alerts,
-    Profile,
+enum class WorkerTab(val label: String) {
+    Calendar("Calendar"),
+    History("Overview"),
+    Alerts("Alerts"),
+    Profile("Profile"),
 }
+
+private enum class CalendarDayStatus(val color: Color) {
+    Approved(Color(0xFF1D9E75)),
+    Pending(Color(0xFFEF9F27)),
+    Adjusted(Color(0xFF378ADD)),
+}
+
+private data class CalendarDayData(
+    val status: CalendarDayStatus,
+    val hours: String,
+)
 
 private enum class WeekStatus {
     Approved,
@@ -5701,6 +6259,14 @@ private fun WorkerLocationPermissionScreenPreview() {
 private fun GpsClockInScreenPreview() {
     AloworkTheme {
         GpsClockInScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerCalendarEarningsScreenPreview() {
+    AloworkTheme {
+        WorkerCalendarEarningsScreen()
     }
 }
 
