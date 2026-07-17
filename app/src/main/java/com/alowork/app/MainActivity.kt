@@ -94,7 +94,7 @@ fun AloworkApp() {
     var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
     var pendingAdminReviewWorker by remember { mutableStateOf<String?>(null) }
     var manualHoursSubmission by remember { mutableStateOf(loadManualHoursSubmission(context)) }
-    var workerChatMessages by remember { mutableStateOf(emptyList<String>()) }
+    var workerChatMessages by remember { mutableStateOf(loadWorkerChatMessages(context)) }
     var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
     var weekendPremiumSettings by remember { mutableStateOf(loadWeekendPremiumSettings(context)) }
     var selectedEmployerName by remember { mutableStateOf(loadSelectedEmployerName(context)) }
@@ -232,6 +232,7 @@ fun AloworkApp() {
                 manualHoursSubmission = null
                 clearManualHoursSubmission(context)
                 workerChatMessages = emptyList()
+                clearWorkerChatMessages(context)
                 workerShiftPhotoUris = emptyList()
                 selectedEmployerName = "Bakkerij Jansen"
                 workerEmployers = defaultWorkerEmployers()
@@ -266,6 +267,7 @@ fun AloworkApp() {
             },
             onSendMessage = { message ->
                 workerChatMessages = workerChatMessages + message
+                saveWorkerChatMessages(context, workerChatMessages)
             },
             onTabSelected = ::openWorkerTab,
         )
@@ -6396,6 +6398,35 @@ private fun saveManualHoursSubmission(context: Context, submission: WorkerManual
 
 private fun clearManualHoursSubmission(context: Context) {
     context.getSharedPreferences(ManualHoursPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .clear()
+        .apply()
+}
+
+private const val WorkerChatPreferences = "worker_chat"
+
+private fun loadWorkerChatMessages(context: Context): List<String> {
+    return context.getSharedPreferences(WorkerChatPreferences, Context.MODE_PRIVATE)
+        .getStringSet("messages", emptySet())
+        ?.mapNotNull { row ->
+            val separator = row.indexOf('|')
+            if (separator <= 0) null else row.substring(0, separator).toIntOrNull()
+                ?.let { index -> index to row.substring(separator + 1) }
+        }
+        ?.sortedBy { it.first }
+        ?.map { it.second }
+        ?: emptyList()
+}
+
+private fun saveWorkerChatMessages(context: Context, messages: List<String>) {
+    context.getSharedPreferences(WorkerChatPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putStringSet("messages", messages.mapIndexed { index, message -> "$index|$message" }.toSet())
+        .apply()
+}
+
+private fun clearWorkerChatMessages(context: Context) {
+    context.getSharedPreferences(WorkerChatPreferences, Context.MODE_PRIVATE)
         .edit()
         .clear()
         .apply()
