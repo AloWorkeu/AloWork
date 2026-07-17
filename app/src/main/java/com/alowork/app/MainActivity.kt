@@ -1381,13 +1381,7 @@ fun AdminWorkLocationsScreen(
 ) {
     val context = LocalContext.current
     var locations by remember {
-        mutableStateOf(
-            listOf(
-                AdminLocation(name = "Bakery floor", address = "Lijnbaan 24", radius = "120"),
-                AdminLocation(name = "Market stall", address = "Binnenrotte 101", radius = "80"),
-                AdminLocation(name = "Warehouse", address = "Schuttevaerweg 12", radius = "160"),
-            ),
-        )
+        mutableStateOf(loadAdminWorkLocations(context))
     }
     var selectedLocation by remember { mutableStateOf("Bakery floor") }
     var locationName by remember { mutableStateOf("Bakery floor") }
@@ -1524,6 +1518,7 @@ fun AdminWorkLocationsScreen(
                                     locations = locations.map { location ->
                                         if (location.name == selectedLocation) updatedLocation else location
                                     }
+                                    saveAdminWorkLocations(context, locations)
                                     selectedLocation = locationName
                                     Toast.makeText(context, "$locationName saved", Toast.LENGTH_SHORT).show()
                                 },
@@ -1561,6 +1556,7 @@ fun AdminWorkLocationsScreen(
                     radius = newRadius,
                 )
                 locations = locations.filterNot { it.name == newName } + newLocation
+                saveAdminWorkLocations(context, locations)
                 selectedLocation = newName
                 locationName = newName
                 address = newAddress
@@ -6445,6 +6441,31 @@ private data class AdminLocation(
     val address: String,
     val radius: String,
 )
+
+private const val AdminLocationsPreferences = "admin_locations"
+
+private fun defaultAdminWorkLocations(): List<AdminLocation> = listOf(
+    AdminLocation(name = "Bakery floor", address = "Lijnbaan 24", radius = "120"),
+    AdminLocation(name = "Market stall", address = "Binnenrotte 101", radius = "80"),
+    AdminLocation(name = "Warehouse", address = "Schuttevaerweg 12", radius = "160"),
+)
+
+private fun loadAdminWorkLocations(context: Context): List<AdminLocation> {
+    val stored = context.getSharedPreferences(AdminLocationsPreferences, Context.MODE_PRIVATE)
+        .getString("locations", null)
+        ?: return defaultAdminWorkLocations()
+    return stored.lineSequence().mapNotNull { row ->
+        val parts = row.split('|')
+        if (parts.size == 3) AdminLocation(parts[0], parts[1], parts[2]) else null
+    }.toList().ifEmpty(::defaultAdminWorkLocations)
+}
+
+private fun saveAdminWorkLocations(context: Context, locations: List<AdminLocation>) {
+    context.getSharedPreferences(AdminLocationsPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putString("locations", locations.joinToString("\n") { "${it.name}|${it.address}|${it.radius}" })
+        .apply()
+}
 
 private data class AdminWorker(
     val name: String,
