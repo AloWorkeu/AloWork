@@ -78,6 +78,16 @@ fun AloworkApp() {
     var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
     var pendingAdminReviewWorker by remember { mutableStateOf<String?>(null) }
     var manualHoursSubmission by remember { mutableStateOf<WorkerManualHoursSubmission?>(null) }
+    var selectedEmployerName by remember { mutableStateOf("Bakkerij Jansen") }
+    var workerEmployers by remember {
+        mutableStateOf(
+            listOf(
+                WorkerEmployer("Bakkerij Jansen", "Shift worker", "\u20AC16.00/hr", "Active"),
+                WorkerEmployer("Cafe De Hoek", "Service", "\u20AC14.50/hr", "Active"),
+                WorkerEmployer("Tuincentrum Bos", "Weekend help", "\u20AC13.00/hr", "Active"),
+            ),
+        )
+    }
 
     fun openWorkerTab(tab: WorkerTab) {
         screen = when (tab) {
@@ -204,17 +214,30 @@ fun AloworkApp() {
             onBack = {
                 screen = AppScreen.WorkerSwitchEmployer
             },
-            onCompanyAdded = {
-                screen = AppScreen.WorkerProfile
+            onCompanyAdded = { companyCode ->
+                val newEmployer = WorkerEmployer(
+                    name = "Company $companyCode",
+                    role = "Pending approval",
+                    rate = "Rate pending",
+                    status = "Pending",
+                )
+                workerEmployers = workerEmployers.filterNot { it.name == newEmployer.name } + newEmployer
+                selectedEmployerName = newEmployer.name
+                screen = AppScreen.WorkerSwitchEmployer
             },
         )
 
         AppScreen.WorkerSwitchEmployer -> WorkerSwitchEmployerScreen(
+            employers = workerEmployers,
+            selectedEmployerName = selectedEmployerName,
             onBack = {
                 screen = AppScreen.WorkerProfile
             },
             onAddCompany = {
                 screen = AppScreen.WorkerAddEmployer
+            },
+            onEmployerSelected = { employer ->
+                selectedEmployerName = employer.name
             },
         )
 
@@ -3639,7 +3662,7 @@ fun WorkerLogHoursDayDetailScreen(
 fun WorkerAddEmployerScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    onCompanyAdded: () -> Unit = {},
+    onCompanyAdded: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     var companyCode by remember { mutableStateOf("JANS26") }
@@ -3754,8 +3777,7 @@ fun WorkerAddEmployerScreen(
                 if (companyCode.length < 6) {
                     Toast.makeText(context, "Enter the 6-character company code", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(context, "Company request sent", Toast.LENGTH_SHORT).show()
-                    onCompanyAdded()
+                    onCompanyAdded(companyCode)
                 }
             },
             modifier = Modifier
@@ -3782,19 +3804,12 @@ fun WorkerAddEmployerScreen(
 @Composable
 fun WorkerSwitchEmployerScreen(
     modifier: Modifier = Modifier,
+    employers: List<WorkerEmployer> = defaultWorkerEmployers(),
+    selectedEmployerName: String = "Bakkerij Jansen",
     onBack: () -> Unit = {},
     onAddCompany: () -> Unit = {},
+    onEmployerSelected: (WorkerEmployer) -> Unit = {},
 ) {
-    val context = LocalContext.current
-    var selectedEmployer by remember { mutableStateOf("Bakkerij Jansen") }
-    val employers = remember {
-        listOf(
-            WorkerEmployer("Bakkerij Jansen", "Shift worker", "\u20AC16.00/hr"),
-            WorkerEmployer("Cafe De Hoek", "Service", "\u20AC14.50/hr"),
-            WorkerEmployer("Tuincentrum Bos", "Weekend help", "\u20AC13.00/hr"),
-        )
-    }
-
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -3835,10 +3850,9 @@ fun WorkerSwitchEmployerScreen(
             employers.forEach { employer ->
                 EmployerChoiceRow(
                     employer = employer,
-                    selected = selectedEmployer == employer.name,
+                    selected = selectedEmployerName == employer.name,
                     onClick = {
-                        selectedEmployer = employer.name
-                        Toast.makeText(context, "Switched to ${employer.name}", Toast.LENGTH_SHORT).show()
+                        onEmployerSelected(employer)
                     },
                 )
                 Spacer(modifier = Modifier.height(10.dp))
@@ -3898,7 +3912,7 @@ private fun EmployerChoiceRow(
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = "${employer.role} · ${employer.rate}",
+                    text = "${employer.role} · ${employer.rate} · ${employer.status.lowercase(Locale.US)}",
                     color = Color(0xFF73737A),
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
@@ -5065,11 +5079,20 @@ private enum class AppScreen {
     AdminTeam,
 }
 
-private data class WorkerEmployer(
+data class WorkerEmployer(
     val name: String,
     val role: String,
     val rate: String,
+    val status: String,
 )
+
+fun defaultWorkerEmployers(): List<WorkerEmployer> {
+    return listOf(
+        WorkerEmployer("Bakkerij Jansen", "Shift worker", "\u20AC16.00/hr", "Active"),
+        WorkerEmployer("Cafe De Hoek", "Service", "\u20AC14.50/hr", "Active"),
+        WorkerEmployer("Tuincentrum Bos", "Weekend help", "\u20AC13.00/hr", "Active"),
+    )
+}
 
 data class WorkerManualHoursSubmission(
     val hours: String,
