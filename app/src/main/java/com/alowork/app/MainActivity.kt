@@ -147,6 +147,9 @@ fun AloworkApp() {
             onAccountCreated = {
                 screen = AppScreen.WorkerAwaitingApproval
             },
+            onRegisterCompany = {
+                screen = AppScreen.WebRegisterCompanyDetails
+            },
         )
 
         AppScreen.WorkerAwaitingApproval -> WorkerAwaitingApprovalScreen(
@@ -435,6 +438,7 @@ fun AloworkApp() {
 fun WorkerSignUpScreen(
     modifier: Modifier = Modifier,
     onAccountCreated: () -> Unit = {},
+    onRegisterCompany: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var fullName by remember { mutableStateOf("Sven de Vries") }
@@ -556,6 +560,21 @@ fun WorkerSignUpScreen(
                         fontWeight = FontWeight.Medium,
                     )
                 }
+            }
+            TextButton(
+                onClick = onRegisterCompany,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    horizontal = 4.dp,
+                    vertical = 0.dp,
+                ),
+            ) {
+                Text(
+                    text = "Register a company",
+                    color = Color(0xFF73737A),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                )
             }
         }
     }
