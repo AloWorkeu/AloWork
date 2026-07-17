@@ -1520,6 +1520,19 @@ fun AdminHoursApprovalQueueScreen(
                 onDismiss = {
                     selectedWorker = null
                 },
+                onApprove = {
+                    val updatedRequests = hourRequests.map { request ->
+                        if (request.name == workerName) {
+                            request.copy(status = "Approved")
+                        } else {
+                            request
+                        }
+                    }
+                    hourRequests = updatedRequests
+                    saveAdminHoursRequests(context, updatedRequests)
+                    Toast.makeText(context, "Hours approved for $workerName", Toast.LENGTH_SHORT).show()
+                    selectedWorker = null
+                },
                 onSave = { updatedHours, updatedPay ->
                     val updatedRequests = hourRequests.map { request ->
                         if (request.name == workerName) {
@@ -2341,6 +2354,7 @@ private fun AdminQueueFilter(
 private fun AdminAdjustHoursModal(
     workerName: String,
     onDismiss: () -> Unit,
+    onApprove: () -> Unit,
     onSave: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -2431,6 +2445,27 @@ private fun AdminAdjustHoursModal(
                         )
                     }
                     Spacer(modifier = Modifier.weight(1f))
+                    Button(
+                        onClick = onApprove,
+                        modifier = Modifier
+                            .width(92.dp)
+                            .height(42.dp),
+                        shape = RoundedCornerShape(7.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFE3F8EF),
+                            contentColor = Color(0xFF167A5B),
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                        contentPadding = PaddingValues(0.dp),
+                    ) {
+                        Text(
+                            text = "Approve",
+                            fontSize = 12.sp,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
                             val adjustedHours = calculateManualHours(clockIn, clockOut, breakMinutes)
