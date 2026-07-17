@@ -1894,6 +1894,7 @@ fun AdminTeamScreen(
     val role = selectedWorkerDetails.role
     val email = selectedWorkerDetails.email
     val location = selectedWorkerDetails.location
+    val reminderStatus = if (selectedWorkerDetails.reminderSent) "Sent" else "Not sent"
 
     Row(
         modifier = modifier
@@ -2025,6 +2026,8 @@ fun AdminTeamScreen(
                         AdminTeamDetailRow(label = "Rate", value = selectedWorkerDetails.rate)
                         ProfileDivider()
                         AdminTeamDetailRow(label = "This month", value = selectedWorkerDetails.thisMonthHours)
+                        ProfileDivider()
+                        AdminTeamDetailRow(label = "Reminder", value = reminderStatus)
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(modifier = Modifier.fillMaxWidth()) {
                             Button(
@@ -2061,12 +2064,21 @@ fun AdminTeamScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             TextButton(
                                 onClick = {
+                                    val updatedWorkers = workers.map { worker ->
+                                        if (worker.name == selectedWorker) {
+                                            worker.copy(reminderSent = true)
+                                        } else {
+                                            worker
+                                        }
+                                    }
+                                    workers = updatedWorkers
+                                    saveAdminWorkers(context, updatedWorkers)
                                     Toast.makeText(context, "Reminder sent to $selectedWorker", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier.height(40.dp),
                             ) {
                                 Text(
-                                    text = "Remind",
+                                    text = if (selectedWorkerDetails.reminderSent) "Sent" else "Remind",
                                     color = Color(0xFF73737A),
                                     fontSize = 11.sp,
                                     lineHeight = 14.sp,
@@ -2092,6 +2104,7 @@ fun AdminTeamScreen(
                     rate = "\u20AC16.00 / hour",
                     thisMonthHours = "0.0h",
                     status = "Pending",
+                    reminderSent = false,
                 )
                 val updatedWorkers = workers.filterNot { it.email == inviteEmail } + newWorker
                 workers = updatedWorkers
@@ -7067,6 +7080,7 @@ private data class AdminWorker(
     val rate: String,
     val thisMonthHours: String,
     val status: String,
+    val reminderSent: Boolean = false,
 )
 
 private const val AdminWorkersPreferences = "admin_workers"
@@ -7083,7 +7097,7 @@ private fun loadAdminWorkers(context: Context): List<AdminWorker> {
         ?: return defaultAdminWorkers()
     return stored.lineSequence().mapNotNull { row ->
         val parts = row.split('|')
-        if (parts.size == 7) {
+        if (parts.size >= 7) {
             AdminWorker(
                 name = parts[0],
                 role = parts[1],
@@ -7092,6 +7106,7 @@ private fun loadAdminWorkers(context: Context): List<AdminWorker> {
                 rate = parts[4],
                 thisMonthHours = parts[5],
                 status = parts[6],
+                reminderSent = parts.getOrNull(7)?.toBooleanStrictOrNull() ?: false,
             )
         } else {
             null
@@ -7105,7 +7120,7 @@ private fun saveAdminWorkers(context: Context, workers: List<AdminWorker>) {
         .putString(
             "workers",
             workers.joinToString("\n") {
-                "${it.name}|${it.role}|${it.email}|${it.location}|${it.rate}|${it.thisMonthHours}|${it.status}"
+                "${it.name}|${it.role}|${it.email}|${it.location}|${it.rate}|${it.thisMonthHours}|${it.status}|${it.reminderSent}"
             },
         )
         .apply()
