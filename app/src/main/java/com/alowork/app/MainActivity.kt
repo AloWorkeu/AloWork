@@ -1853,13 +1853,7 @@ fun AdminTeamScreen(
     var selectedWorker by remember { mutableStateOf("Sven de Vries") }
     var inviteOpen by remember { mutableStateOf(false) }
     var workers by remember {
-        mutableStateOf(
-            listOf(
-                AdminWorker("Sven de Vries", "Baker", "sven@email.nl", "Bakery floor", "\u20AC16.00 / hour", "16.0h", "Active"),
-                AdminWorker("Mila Bakker", "Cashier", "mila@email.nl", "Bakery floor", "\u20AC16.00 / hour", "0.0h", "Pending"),
-                AdminWorker("Noah Visser", "Driver", "noah@email.nl", "Warehouse", "\u20AC16.00 / hour", "12.0h", "Active"),
-            ),
-        )
+        mutableStateOf(loadAdminWorkers(context))
     }
     val selectedWorkerDetails = workers.firstOrNull { it.name == selectedWorker } ?: workers.first()
     val role = selectedWorkerDetails.role
@@ -2000,13 +1994,15 @@ fun AdminTeamScreen(
                         Row(modifier = Modifier.fillMaxWidth()) {
                             Button(
                                 onClick = {
-                                    workers = workers.map { worker ->
+                                    val updatedWorkers = workers.map { worker ->
                                         if (worker.name == selectedWorker) {
                                             worker.copy(status = "Active")
                                         } else {
                                             worker
                                         }
                                     }
+                                    workers = updatedWorkers
+                                    saveAdminWorkers(context, updatedWorkers)
                                     Toast.makeText(context, "$selectedWorker approved", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier
@@ -2062,7 +2058,9 @@ fun AdminTeamScreen(
                     thisMonthHours = "0.0h",
                     status = "Pending",
                 )
-                workers = workers.filterNot { it.email == inviteEmail } + newWorker
+                val updatedWorkers = workers.filterNot { it.email == inviteEmail } + newWorker
+                workers = updatedWorkers
+                saveAdminWorkers(context, updatedWorkers)
                 selectedWorker = fullName
                 Toast.makeText(context, "Invite sent to $inviteEmail", Toast.LENGTH_SHORT).show()
                 inviteOpen = false
@@ -6925,6 +6923,48 @@ private data class AdminWorker(
     val thisMonthHours: String,
     val status: String,
 )
+
+private const val AdminWorkersPreferences = "admin_workers"
+
+private fun defaultAdminWorkers(): List<AdminWorker> = listOf(
+    AdminWorker("Sven de Vries", "Baker", "sven@email.nl", "Bakery floor", "\u20AC16.00 / hour", "16.0h", "Active"),
+    AdminWorker("Mila Bakker", "Cashier", "mila@email.nl", "Bakery floor", "\u20AC16.00 / hour", "0.0h", "Pending"),
+    AdminWorker("Noah Visser", "Driver", "noah@email.nl", "Warehouse", "\u20AC16.00 / hour", "12.0h", "Active"),
+)
+
+private fun loadAdminWorkers(context: Context): List<AdminWorker> {
+    val stored = context.getSharedPreferences(AdminWorkersPreferences, Context.MODE_PRIVATE)
+        .getString("workers", null)
+        ?: return defaultAdminWorkers()
+    return stored.lineSequence().mapNotNull { row ->
+        val parts = row.split('|')
+        if (parts.size == 7) {
+            AdminWorker(
+                name = parts[0],
+                role = parts[1],
+                email = parts[2],
+                location = parts[3],
+                rate = parts[4],
+                thisMonthHours = parts[5],
+                status = parts[6],
+            )
+        } else {
+            null
+        }
+    }.toList().ifEmpty(::defaultAdminWorkers)
+}
+
+private fun saveAdminWorkers(context: Context, workers: List<AdminWorker>) {
+    context.getSharedPreferences(AdminWorkersPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putString(
+            "workers",
+            workers.joinToString("\n") {
+                "${it.name}|${it.role}|${it.email}|${it.location}|${it.rate}|${it.thisMonthHours}|${it.status}"
+            },
+        )
+        .apply()
+}
 
 private enum class NotificationType {
     HoursAdjusted,
