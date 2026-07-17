@@ -12,6 +12,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -25,6 +26,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -78,6 +81,7 @@ fun AloworkApp() {
     var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
     var pendingAdminReviewWorker by remember { mutableStateOf<String?>(null) }
     var manualHoursSubmission by remember { mutableStateOf<WorkerManualHoursSubmission?>(null) }
+    var workerChatMessages by remember { mutableStateOf(emptyList<String>()) }
     var selectedEmployerName by remember { mutableStateOf("Bakkerij Jansen") }
     var workerEmployers by remember {
         mutableStateOf(
@@ -180,6 +184,7 @@ fun AloworkApp() {
             },
             onLogout = {
                 manualHoursSubmission = null
+                workerChatMessages = emptyList()
                 selectedEmployerName = "Bakkerij Jansen"
                 workerEmployers = defaultWorkerEmployers()
                 screen = AppScreen.WorkerSignUp
@@ -198,6 +203,20 @@ fun AloworkApp() {
         AppScreen.WorkerDayViewAdjusted -> WorkerDayViewAdjustedScreen(
             onBack = {
                 screen = AppScreen.WorkerHistoryOverview
+            },
+            onAskQuestion = {
+                screen = AppScreen.WorkerChatWithEmployer
+            },
+            onTabSelected = ::openWorkerTab,
+        )
+
+        AppScreen.WorkerChatWithEmployer -> WorkerChatWithEmployerScreen(
+            sentMessages = workerChatMessages,
+            onBack = {
+                screen = AppScreen.WorkerDayViewAdjusted
+            },
+            onSendMessage = { message ->
+                workerChatMessages = workerChatMessages + message
             },
             onTabSelected = ::openWorkerTab,
         )
@@ -3315,10 +3334,9 @@ fun WorkerHistoryOverviewScreen(
 fun WorkerDayViewAdjustedScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
+    onAskQuestion: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
-    val context = LocalContext.current
-
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -3443,9 +3461,7 @@ fun WorkerDayViewAdjustedScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = {
-                    Toast.makeText(context, "Question sent", Toast.LENGTH_SHORT).show()
-                },
+                onClick = onAskQuestion,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -3469,6 +3485,249 @@ fun WorkerDayViewAdjustedScreen(
             modifier = Modifier.align(Alignment.BottomCenter),
             selected = WorkerTab.History,
             onTabSelected = onTabSelected,
+        )
+    }
+}
+
+@Composable
+fun WorkerChatWithEmployerScreen(
+    modifier: Modifier = Modifier,
+    sentMessages: List<String> = emptyList(),
+    onBack: () -> Unit = {},
+    onSendMessage: (String) -> Unit = {},
+    onTabSelected: (WorkerTab) -> Unit = {},
+) {
+    var draftMessage by remember { mutableStateOf("") }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 48.dp, bottom = 20.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 72.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "\u2039",
+                    color = Color(0xFF17171B),
+                    fontSize = 30.sp,
+                    lineHeight = 30.sp,
+                    modifier = Modifier
+                        .width(30.dp)
+                        .clickable(onClick = onBack),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Bakkerij Jansen",
+                        color = Color(0xFF17171B),
+                        fontSize = 20.sp,
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "Employer",
+                        color = Color(0xFF73737A),
+                        fontSize = 12.sp,
+                        lineHeight = 15.sp,
+                    )
+                }
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFFDFF1E6),
+                ) {
+                    Text(
+                        text = "BJ",
+                        color = Color(0xFF247347),
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .size(38.dp)
+                            .padding(top = 11.dp),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+                shadowElevation = 0.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Tue 3 Jun \u00B7 Hours adjusted",
+                            color = Color(0xFF73737A),
+                            fontSize = 12.sp,
+                            lineHeight = 15.sp,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "6.0h after employer adjustment",
+                            color = Color(0xFF17171B),
+                            fontSize = 13.sp,
+                            lineHeight = 17.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                    Text(
+                        text = "\u20AC96.00",
+                        color = Color(0xFF17171B),
+                        fontSize = 14.sp,
+                        lineHeight = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentPadding = PaddingValues(vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                item {
+                    ChatMessageBubble(
+                        message = "I adjusted Tuesday to match the approved schedule.",
+                        time = "09:12",
+                        isWorker = false,
+                    )
+                }
+                item {
+                    ChatMessageBubble(
+                        message = "Let me know if anything does not look right.",
+                        time = "09:13",
+                        isWorker = false,
+                    )
+                }
+                items(sentMessages) { message ->
+                    ChatMessageBubble(
+                        message = message,
+                        time = "Now",
+                        isWorker = true,
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                OutlinedTextField(
+                    value = draftMessage,
+                    onValueChange = { draftMessage = it },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(54.dp),
+                    placeholder = {
+                        Text(
+                            text = "Write a message",
+                            color = Color(0xFFA7A7AC),
+                            fontSize = 13.sp,
+                        )
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    textStyle = TextStyle(
+                        color = Color(0xFF17171B),
+                        fontSize = 13.sp,
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = Color(0xFF17171B),
+                        unfocusedBorderColor = Color(0xFFDADAD5),
+                        cursorColor = Color(0xFF17171B),
+                    ),
+                )
+                Button(
+                    onClick = {
+                        val message = draftMessage.trim()
+                        if (message.isNotEmpty()) {
+                            onSendMessage(message)
+                            draftMessage = ""
+                        }
+                    },
+                    enabled = draftMessage.isNotBlank(),
+                    modifier = Modifier
+                        .width(76.dp)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF111116),
+                        contentColor = Color.White,
+                        disabledContainerColor = Color(0xFFD7D7D2),
+                        disabledContentColor = Color(0xFF8C8C91),
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                ) {
+                    Text(
+                        text = "Send",
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+        }
+
+        WorkerBottomNavigation(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            selected = WorkerTab.History,
+            onTabSelected = onTabSelected,
+        )
+    }
+}
+
+@Composable
+private fun ChatMessageBubble(
+    message: String,
+    time: String,
+    isWorker: Boolean,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = if (isWorker) Alignment.End else Alignment.Start,
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(0.78f),
+            shape = RoundedCornerShape(10.dp),
+            color = if (isWorker) Color(0xFF17171B) else Color.White,
+            border = if (isWorker) null else BorderStroke(1.dp, Color(0xFFE4E4DF)),
+            shadowElevation = 0.dp,
+        ) {
+            Text(
+                text = message,
+                color = if (isWorker) Color.White else Color(0xFF17171B),
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = time,
+            color = Color(0xFF9A9A9F),
+            fontSize = 10.sp,
+            lineHeight = 13.sp,
         )
     }
 }
@@ -5071,6 +5330,7 @@ private enum class AppScreen {
     WorkerProfile,
     WorkerHistoryOverview,
     WorkerDayViewAdjusted,
+    WorkerChatWithEmployer,
     WorkerLogHoursDayDetail,
     WorkerAddEmployer,
     WorkerSwitchEmployer,
@@ -5208,6 +5468,16 @@ private fun WorkerHistoryOverviewScreenPreview() {
 private fun WorkerDayViewAdjustedScreenPreview() {
     AloworkTheme {
         WorkerDayViewAdjustedScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerChatWithEmployerScreenPreview() {
+    AloworkTheme {
+        WorkerChatWithEmployerScreen(
+            sentMessages = listOf("I worked until 15:30. Could you check it?"),
+        )
     }
 }
 
