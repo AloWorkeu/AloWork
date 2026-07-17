@@ -142,6 +142,21 @@ fun AloworkApp() {
             onAccountCreated = {
                 screen = AppScreen.WorkerAwaitingApproval
             },
+            onLoginSelected = {
+                screen = AppScreen.WorkerLogin
+            },
+            onRegisterCompany = {
+                screen = AppScreen.WebRegisterCompanyDetails
+            },
+        )
+
+        AppScreen.WorkerLogin -> WorkerLoginScreen(
+            onLogin = {
+                screen = AppScreen.WorkerGpsClockIn
+            },
+            onCreateAccount = {
+                screen = AppScreen.WorkerSignUp
+            },
             onRegisterCompany = {
                 screen = AppScreen.WebRegisterCompanyDetails
             },
@@ -445,6 +460,7 @@ fun AloworkApp() {
 fun WorkerSignUpScreen(
     modifier: Modifier = Modifier,
     onAccountCreated: () -> Unit = {},
+    onLoginSelected: () -> Unit = {},
     onRegisterCompany: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -551,9 +567,7 @@ fun WorkerSignUpScreen(
                     lineHeight = 14.sp,
                 )
                 TextButton(
-                    onClick = {
-                        Toast.makeText(context, "Log in selected", Toast.LENGTH_SHORT).show()
-                    },
+                    onClick = onLoginSelected,
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(
                         horizontal = 4.dp,
                         vertical = 0.dp,
@@ -571,6 +585,134 @@ fun WorkerSignUpScreen(
             TextButton(
                 onClick = onRegisterCompany,
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    horizontal = 4.dp,
+                    vertical = 0.dp,
+                ),
+            ) {
+                Text(
+                    text = "Register a company",
+                    color = Color(0xFF73737A),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun WorkerLoginScreen(
+    modifier: Modifier = Modifier,
+    onLogin: () -> Unit = {},
+    onCreateAccount: () -> Unit = {},
+    onRegisterCompany: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    var email by remember { mutableStateOf("sven@email.nl") }
+    var password by remember { mutableStateOf("password") }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 80.dp, bottom = 24.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Log in",
+                color = Color(0xFF17171B),
+                fontSize = 22.sp,
+                lineHeight = 27.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Log in to clock hours, view shifts, and send updates\nto your employer.",
+                color = Color(0xFF73737A),
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            SignUpField(
+                label = "Email address",
+                value = email,
+                onValueChange = { email = it },
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            SignUpField(
+                label = "Password",
+                value = password,
+                onValueChange = { password = it },
+                isPassword = true,
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Button(
+                onClick = {
+                    val message = when {
+                        email.isBlank() -> "Enter your email address"
+                        password.isBlank() -> "Enter your password"
+                        else -> null
+                    }
+                    if (message == null) {
+                        onLogin()
+                    } else {
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF111116),
+                    contentColor = Color.White,
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+            ) {
+                Text(
+                    text = "Log in",
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "New to Alowork?",
+                    color = Color(0xFF8C8C91),
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+                TextButton(
+                    onClick = onCreateAccount,
+                    contentPadding = PaddingValues(
+                        horizontal = 4.dp,
+                        vertical = 0.dp,
+                    ),
+                ) {
+                    Text(
+                        text = "Create account",
+                        color = Color(0xFF111116),
+                        fontSize = 11.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+            TextButton(
+                onClick = onRegisterCompany,
+                contentPadding = PaddingValues(
                     horizontal = 4.dp,
                     vertical = 0.dp,
                 ),
@@ -6248,6 +6390,7 @@ private fun formatEuro(value: Double): String {
 
 private enum class AppScreen {
     WorkerSignUp,
+    WorkerLogin,
     WorkerAwaitingApproval,
     WorkerLocationPermission,
     WorkerCalendarEarnings,
@@ -6520,6 +6663,14 @@ private fun AloworkAppPreview() {
 private fun WorkerAwaitingApprovalScreenPreview() {
     AloworkTheme {
         WorkerAwaitingApprovalScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerLoginScreenPreview() {
+    AloworkTheme {
+        WorkerLoginScreen()
     }
 }
 
