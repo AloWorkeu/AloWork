@@ -98,6 +98,7 @@ fun AloworkApp() {
     var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
     var weekendPremiumSettings by remember { mutableStateOf(loadWeekendPremiumSettings(context)) }
     var workerLanguage by remember { mutableStateOf(loadWorkerLanguage(context)) }
+    var adminCompanyProfile by remember { mutableStateOf(loadAdminCompanyProfile(context)) }
     var selectedEmployerName by remember { mutableStateOf(loadSelectedEmployerName(context)) }
     var workerEmployers by remember {
         mutableStateOf(loadWorkerEmployers(context))
@@ -368,19 +369,38 @@ fun AloworkApp() {
         )
 
         AppScreen.WebRegisterCompanyDetails -> WebRegisterCompanyDetailsScreen(
-            onContinue = {
+            companyProfile = adminCompanyProfile,
+            onContinue = { companyName, industry, email ->
+                val updatedProfile = adminCompanyProfile.copy(
+                    companyName = companyName,
+                    industry = industry,
+                    workEmail = email,
+                )
+                adminCompanyProfile = updatedProfile
+                saveAdminCompanyProfile(context, updatedProfile)
                 screen = AppScreen.WebRegisterChoosePlan
             },
         )
 
         AppScreen.WebRegisterChoosePlan -> WebRegisterChoosePlanScreen(
-            onContinue = {
+            selectedPlan = adminCompanyProfile.plan,
+            onContinue = { plan ->
+                val updatedProfile = adminCompanyProfile.copy(plan = plan)
+                adminCompanyProfile = updatedProfile
+                saveAdminCompanyProfile(context, updatedProfile)
                 screen = AppScreen.WebRegisterAdminAccount
             },
         )
 
         AppScreen.WebRegisterAdminAccount -> WebRegisterAdminAccountScreen(
-            onAccountCreated = {
+            companyProfile = adminCompanyProfile,
+            onAccountCreated = { adminName, adminEmail ->
+                val updatedProfile = adminCompanyProfile.copy(
+                    adminName = adminName,
+                    adminEmail = adminEmail,
+                )
+                adminCompanyProfile = updatedProfile
+                saveAdminCompanyProfile(context, updatedProfile)
                 screen = AppScreen.WebRegisterSuccessCode
             },
         )
@@ -392,6 +412,7 @@ fun AloworkApp() {
         )
 
         AppScreen.AdminDashboardHome -> AdminDashboardHomeScreen(
+            companyProfile = adminCompanyProfile,
             onOpenApprovalQueue = {
                 openAdminHours()
             },
@@ -817,12 +838,13 @@ private fun SignUpField(
 @Composable
 fun WebRegisterCompanyDetailsScreen(
     modifier: Modifier = Modifier,
-    onContinue: () -> Unit = {},
+    companyProfile: AdminCompanyProfile = defaultAdminCompanyProfile(),
+    onContinue: (String, String, String) -> Unit = { _, _, _ -> },
 ) {
     val context = LocalContext.current
-    var companyName by remember { mutableStateOf("Bakkerij Jansen") }
-    var industry by remember { mutableStateOf("Bakery") }
-    var email by remember { mutableStateOf("admin@bakkerijjansen.nl") }
+    var companyName by remember { mutableStateOf(companyProfile.companyName) }
+    var industry by remember { mutableStateOf(companyProfile.industry) }
+    var email by remember { mutableStateOf(companyProfile.workEmail) }
 
     Row(
         modifier = modifier
@@ -885,7 +907,7 @@ fun WebRegisterCompanyDetailsScreen(
                     }
                     if (message == null) {
                         Toast.makeText(context, "Company details saved", Toast.LENGTH_SHORT).show()
-                        onContinue()
+                        onContinue(companyName, industry, email)
                     } else {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
@@ -915,10 +937,11 @@ fun WebRegisterCompanyDetailsScreen(
 @Composable
 fun WebRegisterChoosePlanScreen(
     modifier: Modifier = Modifier,
-    onContinue: () -> Unit = {},
+    selectedPlan: String = "Starter",
+    onContinue: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
-    var selectedPlan by remember { mutableStateOf("Starter") }
+    var currentPlan by remember { mutableStateOf(selectedPlan) }
 
     Row(
         modifier = modifier
@@ -956,23 +979,23 @@ fun WebRegisterChoosePlanScreen(
                     title = "Starter",
                     price = "\u20AC19 / month",
                     detail = "Up to 15 workers",
-                    selected = selectedPlan == "Starter",
-                    onClick = { selectedPlan = "Starter" },
+                    selected = currentPlan == "Starter",
+                    onClick = { currentPlan = "Starter" },
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 WebPlanOptionCard(
                     title = "Business",
                     price = "\u20AC49 / month",
                     detail = "Up to 60 workers",
-                    selected = selectedPlan == "Business",
-                    onClick = { selectedPlan = "Business" },
+                    selected = currentPlan == "Business",
+                    onClick = { currentPlan = "Business" },
                 )
             }
 
             Button(
                 onClick = {
-                    Toast.makeText(context, "$selectedPlan plan selected", Toast.LENGTH_SHORT).show()
-                    onContinue()
+                    Toast.makeText(context, "$currentPlan plan selected", Toast.LENGTH_SHORT).show()
+                    onContinue(currentPlan)
                 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -999,11 +1022,12 @@ fun WebRegisterChoosePlanScreen(
 @Composable
 fun WebRegisterAdminAccountScreen(
     modifier: Modifier = Modifier,
-    onAccountCreated: () -> Unit = {},
+    companyProfile: AdminCompanyProfile = defaultAdminCompanyProfile(),
+    onAccountCreated: (String, String) -> Unit = { _, _ -> },
 ) {
     val context = LocalContext.current
-    var fullName by remember { mutableStateOf("Lotte Jansen") }
-    var email by remember { mutableStateOf("lotte@bakkerijjansen.nl") }
+    var fullName by remember { mutableStateOf(companyProfile.adminName) }
+    var email by remember { mutableStateOf(companyProfile.adminEmail) }
     var password by remember { mutableStateOf("password") }
 
     Row(
@@ -1068,7 +1092,7 @@ fun WebRegisterAdminAccountScreen(
                     }
                     if (message == null) {
                         Toast.makeText(context, "Admin account created", Toast.LENGTH_SHORT).show()
-                        onAccountCreated()
+                        onAccountCreated(fullName, email)
                     } else {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
@@ -1213,6 +1237,7 @@ fun WebRegisterSuccessCodeScreen(
 @Composable
 fun AdminDashboardHomeScreen(
     modifier: Modifier = Modifier,
+    companyProfile: AdminCompanyProfile = defaultAdminCompanyProfile(),
     onOpenApprovalQueue: () -> Unit = {},
     onReviewWorker: (String) -> Unit = {},
     onOpenHome: () -> Unit = {},
@@ -1227,6 +1252,7 @@ fun AdminDashboardHomeScreen(
     ) {
         AdminWebSidebar(
             activeItem = "Home",
+            companyInitial = companyProfile.companyName.firstOrNull()?.uppercaseChar()?.toString() ?: "A",
             onHomeClick = onOpenHome,
             onHoursClick = onOpenApprovalQueue,
             onTeamClick = onOpenTeam,
@@ -1255,7 +1281,7 @@ fun AdminDashboardHomeScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Bakkerij Jansen",
+                        text = "${companyProfile.companyName} · ${companyProfile.plan}",
                         color = Color(0xFF73737A),
                         fontSize = 11.sp,
                         lineHeight = 14.sp,
@@ -2247,6 +2273,7 @@ private fun AdminWeekendPremiumSettingsScreen(
 @Composable
 private fun AdminWebSidebar(
     activeItem: String,
+    companyInitial: String = "J",
     onHomeClick: () -> Unit = {},
     onHoursClick: () -> Unit = {},
     onTeamClick: () -> Unit = {},
@@ -2281,7 +2308,7 @@ private fun AdminWebSidebar(
         }
 
         Text(
-            text = "J",
+            text = companyInitial,
             color = Color.White,
             fontSize = 13.sp,
             lineHeight = 16.sp,
@@ -6903,6 +6930,53 @@ private fun clearWorkerChatMessages(context: Context) {
     context.getSharedPreferences(WorkerChatPreferences, Context.MODE_PRIVATE)
         .edit()
         .clear()
+        .apply()
+}
+
+data class AdminCompanyProfile(
+    val companyName: String,
+    val industry: String,
+    val workEmail: String,
+    val plan: String,
+    val adminName: String,
+    val adminEmail: String,
+)
+
+fun defaultAdminCompanyProfile(): AdminCompanyProfile {
+    return AdminCompanyProfile(
+        companyName = "Bakkerij Jansen",
+        industry = "Bakery",
+        workEmail = "admin@bakkerijjansen.nl",
+        plan = "Starter",
+        adminName = "Lotte Jansen",
+        adminEmail = "lotte@bakkerijjansen.nl",
+    )
+}
+
+private const val AdminCompanyPreferences = "admin_company"
+
+private fun loadAdminCompanyProfile(context: Context): AdminCompanyProfile {
+    val defaults = defaultAdminCompanyProfile()
+    val preferences = context.getSharedPreferences(AdminCompanyPreferences, Context.MODE_PRIVATE)
+    return defaults.copy(
+        companyName = preferences.getString("companyName", defaults.companyName) ?: defaults.companyName,
+        industry = preferences.getString("industry", defaults.industry) ?: defaults.industry,
+        workEmail = preferences.getString("workEmail", defaults.workEmail) ?: defaults.workEmail,
+        plan = preferences.getString("plan", defaults.plan) ?: defaults.plan,
+        adminName = preferences.getString("adminName", defaults.adminName) ?: defaults.adminName,
+        adminEmail = preferences.getString("adminEmail", defaults.adminEmail) ?: defaults.adminEmail,
+    )
+}
+
+private fun saveAdminCompanyProfile(context: Context, profile: AdminCompanyProfile) {
+    context.getSharedPreferences(AdminCompanyPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putString("companyName", profile.companyName)
+        .putString("industry", profile.industry)
+        .putString("workEmail", profile.workEmail)
+        .putString("plan", profile.plan)
+        .putString("adminName", profile.adminName)
+        .putString("adminEmail", profile.adminEmail)
         .apply()
 }
 
