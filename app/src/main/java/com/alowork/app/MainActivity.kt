@@ -97,6 +97,7 @@ fun AloworkApp() {
     var workerChatMessages by remember { mutableStateOf(loadWorkerChatMessages(context)) }
     var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
     var weekendPremiumSettings by remember { mutableStateOf(loadWeekendPremiumSettings(context)) }
+    var workerLanguage by remember { mutableStateOf(loadWorkerLanguage(context)) }
     var selectedEmployerName by remember { mutableStateOf(loadSelectedEmployerName(context)) }
     var workerEmployers by remember {
         mutableStateOf(loadWorkerEmployers(context))
@@ -238,11 +239,15 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerProfile -> WorkerProfileScreen(
+            language = workerLanguage,
             onSwitchEmployer = {
                 screen = AppScreen.WorkerSwitchEmployer
             },
             onAddEmployer = {
                 screen = AppScreen.WorkerAddEmployer
+            },
+            onChangeLanguage = {
+                screen = AppScreen.WorkerLanguageSettings
             },
             onChangePassword = {
                 screen = AppScreen.WorkerChangePassword
@@ -259,6 +264,18 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerSignUp
             },
             onTabSelected = ::openWorkerTab,
+        )
+
+        AppScreen.WorkerLanguageSettings -> WorkerLanguageSettingsScreen(
+            selectedLanguage = workerLanguage,
+            onBack = {
+                screen = AppScreen.WorkerProfile
+            },
+            onLanguageSelected = { language ->
+                workerLanguage = language
+                saveWorkerLanguage(context, language)
+                screen = AppScreen.WorkerProfile
+            },
         )
 
         AppScreen.WorkerChangePassword -> WorkerChangePasswordScreen(
@@ -3981,14 +3998,14 @@ fun WorkerNotificationsScreen(
 @Composable
 fun WorkerProfileScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     onSwitchEmployer: () -> Unit = {},
     onAddEmployer: () -> Unit = {},
+    onChangeLanguage: () -> Unit = {},
     onChangePassword: () -> Unit = {},
     onLogout: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
-    val context = LocalContext.current
-
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -4033,11 +4050,10 @@ fun WorkerProfileScreen(
                     onClick = onAddEmployer,
                 )
                 ProfileDivider()
-                ProfileActionRow(
+                ProfileActionValueRow(
                     label = "Language",
-                    onClick = {
-                        Toast.makeText(context, "Language selected", Toast.LENGTH_SHORT).show()
-                    },
+                    value = language.label,
+                    onClick = onChangeLanguage,
                 )
                 ProfileDivider()
                 ProfileActionRow(
@@ -4162,6 +4178,116 @@ fun WorkerChangePasswordScreen(
                 fontWeight = FontWeight.Medium,
             )
         }
+    }
+}
+
+@Composable
+fun WorkerLanguageSettingsScreen(
+    modifier: Modifier = Modifier,
+    selectedLanguage: WorkerLanguage = WorkerLanguage.English,
+    onBack: () -> Unit = {},
+    onLanguageSelected: (WorkerLanguage) -> Unit = {},
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 52.dp, bottom = 24.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            TextButton(
+                onClick = onBack,
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
+            ) {
+                Text(
+                    text = "Back",
+                    color = Color(0xFF73737A),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Language",
+                color = Color(0xFF17171B),
+                fontSize = 22.sp,
+                lineHeight = 27.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Choose the language used for your worker app.",
+                color = Color(0xFF73737A),
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            ProfileSectionCard {
+                WorkerLanguage.entries.forEachIndexed { index, language ->
+                    WorkerLanguageRow(
+                        language = language,
+                        selected = language == selectedLanguage,
+                        onClick = { onLanguageSelected(language) },
+                    )
+                    if (index != WorkerLanguage.entries.lastIndex) {
+                        ProfileDivider()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkerLanguageRow(
+    language: WorkerLanguage,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = language.label,
+                color = Color(0xFF17171B),
+                fontSize = 14.sp,
+                lineHeight = 17.sp,
+                fontWeight = FontWeight.Medium,
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = language.localName,
+                color = Color(0xFF8C8C91),
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(18.dp)
+                .background(Color.Transparent, CircleShape)
+                .drawBehind {
+                    drawCircle(
+                        color = if (selected) Color(0xFF111116) else Color(0xFFE4E4DF),
+                        style = Stroke(width = 1.5.dp.toPx()),
+                    )
+                    if (selected) {
+                        drawCircle(
+                            color = Color(0xFF111116),
+                            radius = size.minDimension * 0.28f,
+                        )
+                    }
+                },
+        )
     }
 }
 
@@ -5551,6 +5677,38 @@ private fun ProfileActionRow(
 }
 
 @Composable
+private fun ProfileActionValueRow(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = Color(0xFF17171B),
+            fontSize = 14.sp,
+            lineHeight = 17.sp,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            color = Color(0xFF8C8C91),
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
+            textAlign = TextAlign.End,
+        )
+    }
+}
+
+@Composable
 private fun ProfileDivider() {
     Box(
         modifier = Modifier
@@ -6523,6 +6681,7 @@ private enum class AppScreen {
     WorkerLocationDenied,
     WorkerNotifications,
     WorkerProfile,
+    WorkerLanguageSettings,
     WorkerChangePassword,
     WorkerHistoryOverview,
     WorkerDayViewAdjusted,
@@ -6627,6 +6786,29 @@ private fun saveSelectedEmployerName(context: Context, name: String) {
     context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
         .edit()
         .putString("selected", name)
+        .apply()
+}
+
+enum class WorkerLanguage(val label: String, val localName: String) {
+    English("English", "English"),
+    Dutch("Dutch", "Nederlands"),
+    German("German", "Deutsch"),
+    French("French", "Francais"),
+}
+
+private const val WorkerSettingsPreferences = "worker_settings"
+
+private fun loadWorkerLanguage(context: Context): WorkerLanguage {
+    val stored = context.getSharedPreferences(WorkerSettingsPreferences, Context.MODE_PRIVATE)
+        .getString("language", WorkerLanguage.English.name)
+        ?: WorkerLanguage.English.name
+    return runCatching { WorkerLanguage.valueOf(stored) }.getOrDefault(WorkerLanguage.English)
+}
+
+private fun saveWorkerLanguage(context: Context, language: WorkerLanguage) {
+    context.getSharedPreferences(WorkerSettingsPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putString("language", language.name)
         .apply()
 }
 
@@ -6835,6 +7017,14 @@ private fun WorkerNotificationsScreenPreview() {
 private fun WorkerProfileScreenPreview() {
     AloworkTheme {
         WorkerProfileScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerLanguageSettingsScreenPreview() {
+    AloworkTheme {
+        WorkerLanguageSettingsScreen()
     }
 }
 
