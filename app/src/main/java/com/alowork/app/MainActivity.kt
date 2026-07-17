@@ -93,7 +93,7 @@ fun AloworkApp() {
     val context = LocalContext.current
     var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
     var pendingAdminReviewWorker by remember { mutableStateOf<String?>(null) }
-    var manualHoursSubmission by remember { mutableStateOf<WorkerManualHoursSubmission?>(null) }
+    var manualHoursSubmission by remember { mutableStateOf(loadManualHoursSubmission(context)) }
     var workerChatMessages by remember { mutableStateOf(emptyList<String>()) }
     var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
     var weekendPremiumSettings by remember { mutableStateOf(loadWeekendPremiumSettings(context)) }
@@ -236,6 +236,7 @@ fun AloworkApp() {
             },
             onLogout = {
                 manualHoursSubmission = null
+                clearManualHoursSubmission(context)
                 workerChatMessages = emptyList()
                 workerShiftPhotoUris = emptyList()
                 selectedEmployerName = "Bakkerij Jansen"
@@ -279,10 +280,12 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerGpsClockIn
             },
             onSubmitted = { hours, pay ->
-                manualHoursSubmission = WorkerManualHoursSubmission(
+                val submission = WorkerManualHoursSubmission(
                     hours = hours,
                     pay = pay,
                 )
+                manualHoursSubmission = submission
+                saveManualHoursSubmission(context, submission)
                 screen = AppScreen.WorkerHistoryOverview
             },
             onTabSelected = ::openWorkerTab,
@@ -6336,6 +6339,30 @@ data class WorkerManualHoursSubmission(
     val hours: String,
     val pay: String,
 )
+
+private const val ManualHoursPreferences = "manual_hours"
+
+private fun loadManualHoursSubmission(context: Context): WorkerManualHoursSubmission? {
+    val preferences = context.getSharedPreferences(ManualHoursPreferences, Context.MODE_PRIVATE)
+    val hours = preferences.getString("hours", null) ?: return null
+    val pay = preferences.getString("pay", null) ?: return null
+    return WorkerManualHoursSubmission(hours = hours, pay = pay)
+}
+
+private fun saveManualHoursSubmission(context: Context, submission: WorkerManualHoursSubmission) {
+    context.getSharedPreferences(ManualHoursPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putString("hours", submission.hours)
+        .putString("pay", submission.pay)
+        .apply()
+}
+
+private fun clearManualHoursSubmission(context: Context) {
+    context.getSharedPreferences(ManualHoursPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .clear()
+        .apply()
+}
 
 private data class AdminHoursRequest(
     val name: String,
