@@ -1,7 +1,10 @@
 package com.alowork.app
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -10,6 +13,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,11 +49,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -82,6 +91,7 @@ fun AloworkApp() {
     var pendingAdminReviewWorker by remember { mutableStateOf<String?>(null) }
     var manualHoursSubmission by remember { mutableStateOf<WorkerManualHoursSubmission?>(null) }
     var workerChatMessages by remember { mutableStateOf(emptyList<String>()) }
+    var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
     var selectedEmployerName by remember { mutableStateOf("Bakkerij Jansen") }
     var workerEmployers by remember {
         mutableStateOf(
@@ -149,6 +159,7 @@ fun AloworkApp() {
 
         AppScreen.WorkerGpsClockIn -> GpsClockInScreen(
             onClockIn = {
+                workerShiftPhotoUris = emptyList()
                 screen = AppScreen.WorkerShiftInProgress
             },
             onManualEntry = {
@@ -158,6 +169,22 @@ fun AloworkApp() {
 
         AppScreen.WorkerShiftInProgress -> GpsShiftInProgressScreen(
             onClockOut = {
+                screen = AppScreen.WorkerShiftPhotos
+            },
+        )
+
+        AppScreen.WorkerShiftPhotos -> WorkerShiftPhotosScreen(
+            photoUris = workerShiftPhotoUris,
+            onBack = {
+                screen = AppScreen.WorkerShiftInProgress
+            },
+            onPhotoAdded = { uri ->
+                workerShiftPhotoUris = (workerShiftPhotoUris + uri).distinct().take(4)
+            },
+            onPhotoRemoved = { uri ->
+                workerShiftPhotoUris = workerShiftPhotoUris.filterNot { it == uri }
+            },
+            onSave = {
                 screen = AppScreen.WorkerGpsClockIn
             },
         )
@@ -185,6 +212,7 @@ fun AloworkApp() {
             onLogout = {
                 manualHoursSubmission = null
                 workerChatMessages = emptyList()
+                workerShiftPhotoUris = emptyList()
                 selectedEmployerName = "Bakkerij Jansen"
                 workerEmployers = defaultWorkerEmployers()
                 screen = AppScreen.WorkerSignUp
@@ -5207,6 +5235,242 @@ fun GpsShiftInProgressScreen(
 }
 
 @Composable
+fun WorkerShiftPhotosScreen(
+    modifier: Modifier = Modifier,
+    photoUris: List<Uri> = emptyList(),
+    onBack: () -> Unit = {},
+    onPhotoAdded: (Uri) -> Unit = {},
+    onPhotoRemoved: (Uri) -> Unit = {},
+    onSave: () -> Unit = {},
+) {
+    val photoPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            if (uri != null) {
+                onPhotoAdded(uri)
+            }
+        },
+    )
+    val gridItems: List<Uri?> = if (photoUris.size < 4) {
+        photoUris + listOf(null)
+    } else {
+        photoUris
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 48.dp, bottom = 20.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "\u2039",
+                    color = Color(0xFF17171C),
+                    fontSize = 28.sp,
+                    lineHeight = 30.sp,
+                    modifier = Modifier
+                        .width(24.dp)
+                        .clickable(onClick = onBack),
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Shift photos",
+                    color = Color(0xFF17171C),
+                    fontSize = 18.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = "Add photos as proof of your shift. Your employer may require this for certain shifts.",
+                color = Color(0xFF73737A),
+                fontSize = 13.sp,
+                lineHeight = 17.sp,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                gridItems.chunked(2).forEach { rowItems ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        rowItems.forEach { uri ->
+                            if (uri == null) {
+                                AddShiftPhotoTile(
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { photoPicker.launch("image/*") },
+                                )
+                            } else {
+                                ShiftPhotoTile(
+                                    uri = uri,
+                                    onRemove = { onPhotoRemoved(uri) },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                        }
+                        if (rowItems.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+
+        Button(
+            onClick = onSave,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF17171C),
+                contentColor = Color.White,
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+        ) {
+            Text(
+                text = "Save",
+                fontSize = 15.sp,
+                lineHeight = 19.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddShiftPhotoTile(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = modifier
+            .height(150.dp)
+            .drawBehind {
+                drawRoundRect(
+                    color = Color(0xFFE0E0DE),
+                    cornerRadius = CornerRadius(12.dp.toPx()),
+                    style = Stroke(
+                        width = 1.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(
+                            intervals = floatArrayOf(8.dp.toPx(), 6.dp.toPx()),
+                        ),
+                    ),
+                )
+            }
+            .clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = "+",
+            color = Color(0xFF73737A),
+            fontSize = 30.sp,
+            lineHeight = 32.sp,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Add photo",
+            color = Color(0xFF73737A),
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
+@Composable
+private fun ShiftPhotoTile(
+    uri: Uri,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val image = remember(uri) { loadShiftPhotoPreview(context, uri) }
+
+    Surface(
+        modifier = modifier.height(150.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFFD6DBE0),
+        shadowElevation = 0.dp,
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (image != null) {
+                Image(
+                    bitmap = image,
+                    contentDescription = "Shift proof photo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Text(
+                    text = "Photo unavailable",
+                    color = Color(0xFF73737A),
+                    fontSize = 12.sp,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(28.dp)
+                    .clickable(onClick = onRemove),
+                shape = CircleShape,
+                color = Color(0xCC17171C),
+                shadowElevation = 0.dp,
+            ) {
+                Text(
+                    text = "\u00D7",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    lineHeight = 24.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 1.dp),
+                )
+            }
+        }
+    }
+}
+
+private fun loadShiftPhotoPreview(
+    context: Context,
+    uri: Uri,
+) = runCatching {
+    val bounds = BitmapFactory.Options().apply {
+        inJustDecodeBounds = true
+    }
+    context.contentResolver.openInputStream(uri)?.use { stream ->
+        BitmapFactory.decodeStream(stream, null, bounds)
+    }
+
+    var sampleSize = 1
+    while (
+        bounds.outWidth / sampleSize > 1200 ||
+        bounds.outHeight / sampleSize > 1200
+    ) {
+        sampleSize *= 2
+    }
+
+    val options = BitmapFactory.Options().apply {
+        inSampleSize = sampleSize
+    }
+    context.contentResolver.openInputStream(uri)?.use { stream ->
+        BitmapFactory.decodeStream(stream, null, options)?.asImageBitmap()
+    }
+}.getOrNull()
+
+@Composable
 private fun ShiftStatusPill() {
     Surface(
         modifier = Modifier
@@ -5325,6 +5589,7 @@ private enum class AppScreen {
     WorkerLocationPermission,
     WorkerGpsClockIn,
     WorkerShiftInProgress,
+    WorkerShiftPhotos,
     WorkerLocationDenied,
     WorkerNotifications,
     WorkerProfile,
@@ -5574,5 +5839,13 @@ private fun AdminTeamScreenPreview() {
 private fun GpsShiftInProgressScreenPreview() {
     AloworkTheme {
         GpsShiftInProgressScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerShiftPhotosScreenPreview() {
+    AloworkTheme {
+        WorkerShiftPhotosScreen()
     }
 }
