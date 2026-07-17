@@ -178,6 +178,12 @@ fun AloworkApp() {
             onAddEmployer = {
                 screen = AppScreen.WorkerAddEmployer
             },
+            onLogout = {
+                manualHoursSubmission = null
+                selectedEmployerName = "Bakkerij Jansen"
+                workerEmployers = defaultWorkerEmployers()
+                screen = AppScreen.WorkerSignUp
+            },
             onTabSelected = ::openWorkerTab,
         )
 
@@ -3114,6 +3120,7 @@ fun WorkerProfileScreen(
     modifier: Modifier = Modifier,
     onSwitchEmployer: () -> Unit = {},
     onAddEmployer: () -> Unit = {},
+    onLogout: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -3179,9 +3186,7 @@ fun WorkerProfileScreen(
                 ProfileDivider()
                 ProfileActionRow(
                     label = "Log out",
-                    onClick = {
-                        Toast.makeText(context, "Logged out", Toast.LENGTH_SHORT).show()
-                    },
+                    onClick = onLogout,
                 )
             }
         }
