@@ -186,6 +186,7 @@ fun AloworkApp() {
             onManualEntry = {
                 screen = AppScreen.WorkerLogHoursDayDetail
             },
+            onTabSelected = ::openWorkerTab,
         )
 
         AppScreen.WorkerShiftInProgress -> GpsShiftInProgressScreen(
@@ -3272,6 +3273,7 @@ fun GpsClockInScreen(
     modifier: Modifier = Modifier,
     onClockIn: () -> Unit = {},
     onManualEntry: () -> Unit = {},
+    onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -3354,7 +3356,7 @@ fun GpsClockInScreen(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(horizontal = 22.dp)
-                .padding(bottom = 54.dp),
+                .padding(bottom = 116.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Button(
@@ -3392,6 +3394,12 @@ fun GpsClockInScreen(
                 )
             }
         }
+
+        WorkerBottomNavigation(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            selected = WorkerTab.Calendar,
+            onTabSelected = onTabSelected,
+        )
     }
 }
 
