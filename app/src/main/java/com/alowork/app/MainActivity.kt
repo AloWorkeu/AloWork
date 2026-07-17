@@ -90,12 +90,13 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AloworkApp() {
+    val context = LocalContext.current
     var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
     var pendingAdminReviewWorker by remember { mutableStateOf<String?>(null) }
     var manualHoursSubmission by remember { mutableStateOf<WorkerManualHoursSubmission?>(null) }
     var workerChatMessages by remember { mutableStateOf(emptyList<String>()) }
     var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
-    var weekendPremiumSettings by remember { mutableStateOf(defaultWeekendPremiumSettings()) }
+    var weekendPremiumSettings by remember { mutableStateOf(loadWeekendPremiumSettings(context)) }
     var selectedEmployerName by remember { mutableStateOf("Bakkerij Jansen") }
     var workerEmployers by remember {
         mutableStateOf(
@@ -423,7 +424,10 @@ fun AloworkApp() {
 
         AppScreen.AdminWeekendPremiumSettings -> AdminWeekendPremiumSettingsScreen(
             settings = weekendPremiumSettings,
-            onSettingsChanged = { weekendPremiumSettings = it },
+            onSettingsChanged = {
+                weekendPremiumSettings = it
+                saveWeekendPremiumSettings(context, it)
+            },
             onBack = {
                 openAdminHome()
             },
@@ -6278,6 +6282,40 @@ private data class WeekendPremiumEmployee(val name: String, val initials: String
 }
 private data class WeekendPremiumSettings(val enabled: Boolean, val mode: PremiumMode, val value: String, val employees: List<WeekendPremiumEmployee>)
 private fun defaultWeekendPremiumSettings() = WeekendPremiumSettings(true, PremiumMode.Multiplier, "1.5", listOf(WeekendPremiumEmployee("Sven de Vries", "SV", EmployeePremiumMode.Default), WeekendPremiumEmployee("Anke Jansen", "AJ", EmployeePremiumMode.FixedAmount), WeekendPremiumEmployee("Mo El Amrani", "ME", EmployeePremiumMode.Default), WeekendPremiumEmployee("Lotte Bakker", "LB", EmployeePremiumMode.None)))
+
+private const val WeekendPremiumPreferences = "weekend_premium"
+
+private fun loadWeekendPremiumSettings(context: Context): WeekendPremiumSettings {
+    val defaults = defaultWeekendPremiumSettings()
+    val preferences = context.getSharedPreferences(WeekendPremiumPreferences, Context.MODE_PRIVATE)
+    return defaults.copy(
+        enabled = preferences.getBoolean("enabled", defaults.enabled),
+        mode = preferences.getString("mode", defaults.mode.name)
+            ?.let { runCatching { PremiumMode.valueOf(it) }.getOrNull() }
+            ?: defaults.mode,
+        value = preferences.getString("value", defaults.value) ?: defaults.value,
+        employees = defaults.employees.map { employee ->
+            val storedMode = preferences.getString("employee_${employee.initials}", employee.mode.name)
+                ?.let { runCatching { EmployeePremiumMode.valueOf(it) }.getOrNull() }
+                ?: employee.mode
+            employee.copy(mode = storedMode)
+        },
+    )
+}
+
+private fun saveWeekendPremiumSettings(context: Context, settings: WeekendPremiumSettings) {
+    context.getSharedPreferences(WeekendPremiumPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putBoolean("enabled", settings.enabled)
+        .putString("mode", settings.mode.name)
+        .putString("value", settings.value)
+        .apply {
+            settings.employees.forEach { employee ->
+                putString("employee_${employee.initials}", employee.mode.name)
+            }
+        }
+        .apply()
+}
 
 data class WorkerEmployer(
     val name: String,
