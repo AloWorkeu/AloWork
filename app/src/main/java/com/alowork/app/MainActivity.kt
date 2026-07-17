@@ -243,6 +243,9 @@ fun AloworkApp() {
             onAddEmployer = {
                 screen = AppScreen.WorkerAddEmployer
             },
+            onChangePassword = {
+                screen = AppScreen.WorkerChangePassword
+            },
             onLogout = {
                 manualHoursSubmission = null
                 clearManualHoursSubmission(context)
@@ -255,6 +258,15 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerSignUp
             },
             onTabSelected = ::openWorkerTab,
+        )
+
+        AppScreen.WorkerChangePassword -> WorkerChangePasswordScreen(
+            onBack = {
+                screen = AppScreen.WorkerProfile
+            },
+            onPasswordChanged = {
+                screen = AppScreen.WorkerProfile
+            },
         )
 
         AppScreen.WorkerHistoryOverview -> WorkerHistoryOverviewScreen(
@@ -3963,6 +3975,7 @@ fun WorkerProfileScreen(
     modifier: Modifier = Modifier,
     onSwitchEmployer: () -> Unit = {},
     onAddEmployer: () -> Unit = {},
+    onChangePassword: () -> Unit = {},
     onLogout: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
@@ -4021,10 +4034,7 @@ fun WorkerProfileScreen(
                 ProfileDivider()
                 ProfileActionRow(
                     label = "Change password",
-                    onClick = {
-                        Toast.makeText(context, "Change password selected", Toast.LENGTH_SHORT)
-                            .show()
-                    },
+                    onClick = onChangePassword,
                 )
                 ProfileDivider()
                 ProfileActionRow(
@@ -4039,6 +4049,111 @@ fun WorkerProfileScreen(
             selected = WorkerTab.Profile,
             onTabSelected = onTabSelected,
         )
+    }
+}
+
+@Composable
+fun WorkerChangePasswordScreen(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
+    onPasswordChanged: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    var currentPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F2))
+            .padding(horizontal = 20.dp)
+            .padding(top = 52.dp, bottom = 24.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            TextButton(
+                onClick = onBack,
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
+            ) {
+                Text(
+                    text = "Back",
+                    color = Color(0xFF73737A),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Change password",
+                color = Color(0xFF17171B),
+                fontSize = 22.sp,
+                lineHeight = 27.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Use at least 8 characters. Your new password must\nmatch before it can be saved.",
+                color = Color(0xFF73737A),
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            SignUpField(
+                label = "Current password",
+                value = currentPassword,
+                onValueChange = { currentPassword = it },
+                isPassword = true,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            SignUpField(
+                label = "New password",
+                value = newPassword,
+                onValueChange = { newPassword = it },
+                isPassword = true,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            SignUpField(
+                label = "Repeat new password",
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                isPassword = true,
+            )
+        }
+
+        Button(
+            onClick = {
+                val message = when {
+                    currentPassword.isBlank() -> "Enter your current password"
+                    newPassword.length < 8 -> "Use at least 8 characters"
+                    confirmPassword != newPassword -> "Passwords do not match"
+                    else -> null
+                }
+                if (message == null) {
+                    Toast.makeText(context, "Password changed", Toast.LENGTH_SHORT).show()
+                    onPasswordChanged()
+                } else {
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF111116),
+                contentColor = Color.White,
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+        ) {
+            Text(
+                text = "Save password",
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
     }
 }
 
@@ -6400,6 +6515,7 @@ private enum class AppScreen {
     WorkerLocationDenied,
     WorkerNotifications,
     WorkerProfile,
+    WorkerChangePassword,
     WorkerHistoryOverview,
     WorkerDayViewAdjusted,
     WorkerChatWithEmployer,
@@ -6711,6 +6827,14 @@ private fun WorkerNotificationsScreenPreview() {
 private fun WorkerProfileScreenPreview() {
     AloworkTheme {
         WorkerProfileScreen()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WorkerChangePasswordScreenPreview() {
+    AloworkTheme {
+        WorkerChangePasswordScreen()
     }
 }
 
