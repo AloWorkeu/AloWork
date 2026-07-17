@@ -97,15 +97,9 @@ fun AloworkApp() {
     var workerChatMessages by remember { mutableStateOf(emptyList<String>()) }
     var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
     var weekendPremiumSettings by remember { mutableStateOf(loadWeekendPremiumSettings(context)) }
-    var selectedEmployerName by remember { mutableStateOf("Bakkerij Jansen") }
+    var selectedEmployerName by remember { mutableStateOf(loadSelectedEmployerName(context)) }
     var workerEmployers by remember {
-        mutableStateOf(
-            listOf(
-                WorkerEmployer("Bakkerij Jansen", "Shift worker", "\u20AC16.00/hr", "Active"),
-                WorkerEmployer("Cafe De Hoek", "Service", "\u20AC14.50/hr", "Active"),
-                WorkerEmployer("Tuincentrum Bos", "Weekend help", "\u20AC13.00/hr", "Active"),
-            ),
-        )
+        mutableStateOf(loadWorkerEmployers(context))
     }
 
     fun openWorkerTab(tab: WorkerTab) {
@@ -241,6 +235,7 @@ fun AloworkApp() {
                 workerShiftPhotoUris = emptyList()
                 selectedEmployerName = "Bakkerij Jansen"
                 workerEmployers = defaultWorkerEmployers()
+                clearWorkerEmployers(context)
                 screen = AppScreen.WorkerSignUp
             },
             onTabSelected = ::openWorkerTab,
@@ -303,7 +298,9 @@ fun AloworkApp() {
                     status = "Pending",
                 )
                 workerEmployers = workerEmployers.filterNot { it.name == newEmployer.name } + newEmployer
+                saveWorkerEmployers(context, workerEmployers)
                 selectedEmployerName = newEmployer.name
+                saveSelectedEmployerName(context, selectedEmployerName)
                 screen = AppScreen.WorkerSwitchEmployer
             },
         )
@@ -319,6 +316,7 @@ fun AloworkApp() {
             },
             onEmployerSelected = { employer ->
                 selectedEmployerName = employer.name
+                saveSelectedEmployerName(context, selectedEmployerName)
             },
         )
 
@@ -6333,6 +6331,45 @@ fun defaultWorkerEmployers(): List<WorkerEmployer> {
         WorkerEmployer("Cafe De Hoek", "Service", "\u20AC14.50/hr", "Active"),
         WorkerEmployer("Tuincentrum Bos", "Weekend help", "\u20AC13.00/hr", "Active"),
     )
+}
+
+private const val WorkerEmployersPreferences = "worker_employers"
+
+private fun loadWorkerEmployers(context: Context): List<WorkerEmployer> {
+    val stored = context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
+        .getString("companies", null)
+        ?: return defaultWorkerEmployers()
+    return stored.lineSequence().mapNotNull { row ->
+        val parts = row.split('|')
+        if (parts.size == 4) WorkerEmployer(parts[0], parts[1], parts[2], parts[3]) else null
+    }.toList().ifEmpty(::defaultWorkerEmployers)
+}
+
+private fun saveWorkerEmployers(context: Context, employers: List<WorkerEmployer>) {
+    context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putString("companies", employers.joinToString("\n") { "${it.name}|${it.role}|${it.rate}|${it.status}" })
+        .apply()
+}
+
+private fun loadSelectedEmployerName(context: Context): String {
+    return context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
+        .getString("selected", "Bakkerij Jansen")
+        ?: "Bakkerij Jansen"
+}
+
+private fun saveSelectedEmployerName(context: Context, name: String) {
+    context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putString("selected", name)
+        .apply()
+}
+
+private fun clearWorkerEmployers(context: Context) {
+    context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .clear()
+        .apply()
 }
 
 data class WorkerManualHoursSubmission(
