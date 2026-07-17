@@ -95,6 +95,7 @@ fun AloworkApp() {
     var manualHoursSubmission by remember { mutableStateOf<WorkerManualHoursSubmission?>(null) }
     var workerChatMessages by remember { mutableStateOf(emptyList<String>()) }
     var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
+    var weekendPremiumSettings by remember { mutableStateOf(defaultWeekendPremiumSettings()) }
     var selectedEmployerName by remember { mutableStateOf("Bakkerij Jansen") }
     var workerEmployers by remember {
         mutableStateOf(
@@ -135,6 +136,10 @@ fun AloworkApp() {
 
     fun openAdminPlaces() {
         screen = AppScreen.AdminWorkLocations
+    }
+
+    fun openAdminWeekendPremium() {
+        screen = AppScreen.AdminWeekendPremiumSettings
     }
 
     when (screen) {
@@ -350,6 +355,9 @@ fun AloworkApp() {
             onOpenWorkLocations = {
                 openAdminPlaces()
             },
+            onOpenWeekendPremium = {
+                openAdminWeekendPremium()
+            },
         )
 
         AppScreen.AdminHoursApprovalQueue -> AdminHoursApprovalQueueScreen(
@@ -369,6 +377,9 @@ fun AloworkApp() {
             onOpenWorkLocations = {
                 openAdminPlaces()
             },
+            onOpenWeekendPremium = {
+                openAdminWeekendPremium()
+            },
         )
 
         AppScreen.AdminWorkLocations -> AdminWorkLocationsScreen(
@@ -384,6 +395,9 @@ fun AloworkApp() {
             onOpenWorkLocations = {
                 openAdminPlaces()
             },
+            onOpenWeekendPremium = {
+                openAdminWeekendPremium()
+            },
         )
 
         AppScreen.AdminTeam -> AdminTeamScreen(
@@ -398,6 +412,20 @@ fun AloworkApp() {
             },
             onOpenWorkLocations = {
                 openAdminPlaces()
+            },
+            onOpenWeekendPremium = {
+                openAdminWeekendPremium()
+            },
+        )
+
+        AppScreen.AdminWeekendPremiumSettings -> AdminWeekendPremiumSettingsScreen(
+            settings = weekendPremiumSettings,
+            onSettingsChanged = { weekendPremiumSettings = it },
+            onBack = {
+                openAdminHome()
+            },
+            onSave = {
+                openAdminHome()
             },
         )
     }
@@ -992,6 +1020,7 @@ fun AdminDashboardHomeScreen(
     onOpenHome: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
     onOpenWorkLocations: () -> Unit = {},
+    onOpenWeekendPremium: () -> Unit = {},
 ) {
     Row(
         modifier = modifier
@@ -1004,6 +1033,7 @@ fun AdminDashboardHomeScreen(
             onHoursClick = onOpenApprovalQueue,
             onTeamClick = onOpenTeam,
             onPlacesClick = onOpenWorkLocations,
+            onSettingsClick = onOpenWeekendPremium,
             modifier = Modifier.width(82.dp),
         )
         Column(
@@ -1141,6 +1171,7 @@ fun AdminHoursApprovalQueueScreen(
     onOpenHours: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
     onOpenWorkLocations: () -> Unit = {},
+    onOpenWeekendPremium: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var selectedWorker by remember { mutableStateOf<String?>(initialSelectedWorker) }
@@ -1182,6 +1213,7 @@ fun AdminHoursApprovalQueueScreen(
                 onHoursClick = onOpenHours,
                 onTeamClick = onOpenTeam,
                 onPlacesClick = onOpenWorkLocations,
+                onSettingsClick = onOpenWeekendPremium,
                 modifier = Modifier.width(82.dp),
             )
             Column(
@@ -1319,6 +1351,7 @@ fun AdminWorkLocationsScreen(
     onOpenHours: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
     onOpenWorkLocations: () -> Unit = {},
+    onOpenWeekendPremium: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var locations by remember {
@@ -1347,6 +1380,7 @@ fun AdminWorkLocationsScreen(
             onHoursClick = onOpenHours,
             onTeamClick = onOpenTeam,
             onPlacesClick = onOpenWorkLocations,
+            onSettingsClick = onOpenWeekendPremium,
             modifier = Modifier.width(82.dp),
         )
         Column(
@@ -1619,6 +1653,7 @@ fun AdminTeamScreen(
     onOpenHours: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
     onOpenWorkLocations: () -> Unit = {},
+    onOpenWeekendPremium: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var selectedWorker by remember { mutableStateOf("Sven de Vries") }
@@ -1648,6 +1683,7 @@ fun AdminTeamScreen(
             onHoursClick = onOpenHours,
             onTeamClick = onOpenTeam,
             onPlacesClick = onOpenWorkLocations,
+            onSettingsClick = onOpenWeekendPremium,
             modifier = Modifier.width(82.dp),
         )
         Column(
@@ -1952,12 +1988,69 @@ private fun AdminInviteWorkerDialog(
 }
 
 @Composable
+private fun AdminWeekendPremiumSettingsScreen(
+    settings: WeekendPremiumSettings = defaultWeekendPremiumSettings(),
+    onSettingsChanged: (WeekendPremiumSettings) -> Unit = {},
+    onBack: () -> Unit = {},
+    onSave: () -> Unit = {},
+) {
+    var editing by remember { mutableStateOf<WeekendPremiumEmployee?>(null) }
+    val context = LocalContext.current
+    Box(Modifier.fillMaxSize().background(Color(0xFFF5F5F2)).padding(horizontal = 20.dp, vertical = 16.dp)) {
+        Column(Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("‹", fontSize = 28.sp, modifier = Modifier.width(26.dp).clickable(onClick = onBack))
+                Text("Weekend premium", color = Color(0xFF17171B), fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            }
+            Spacer(Modifier.height(14.dp))
+            Text("Applies to Sunday. Set a default for the whole company\nand override per employee where needed.", color = Color(0xFF73737A), fontSize = 12.sp, lineHeight = 16.sp)
+            Spacer(Modifier.height(14.dp))
+            Surface(shape = RoundedCornerShape(14.dp), color = Color.White, border = BorderStroke(1.dp, Color(0xFFE4E4DF))) {
+                Column(Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Company default", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            Text("Premium on Sunday", color = Color(0xFF73737A), fontSize = 10.sp)
+                        }
+                        Box(Modifier.size(34.dp, 20.dp).background(if (settings.enabled) Color(0xFF1D9E75) else Color(0xFFB8B8BC), CircleShape).clickable { onSettingsChanged(settings.copy(enabled = !settings.enabled)) }) {
+                            Box(Modifier.align(if (settings.enabled) Alignment.CenterEnd else Alignment.CenterStart).padding(3.dp).size(14.dp).background(Color.White, CircleShape))
+                        }
+                    }
+                    if (settings.enabled) {
+                        Spacer(Modifier.height(12.dp))
+                        Row(Modifier.fillMaxWidth().height(32.dp)) {
+                            PremiumModeButton("Multiplier", settings.mode == PremiumMode.Multiplier, Modifier.weight(1f)) { onSettingsChanged(settings.copy(mode = PremiumMode.Multiplier)) }
+                            PremiumModeButton("Fixed amount", settings.mode == PremiumMode.FixedAmount, Modifier.weight(1f)) { onSettingsChanged(settings.copy(mode = PremiumMode.FixedAmount)) }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        OutlinedTextField(value = settings.value, onValueChange = { onSettingsChanged(settings.copy(value = it.filter { c -> c.isDigit() || c == '.' }.take(4))) }, modifier = Modifier.fillMaxWidth().height(48.dp), singleLine = true, suffix = { Text(if (settings.mode == PremiumMode.Multiplier) "× normal rate" else "per hour", fontSize = 10.sp, color = Color(0xFF73737A)) }, shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFE4E4DF), unfocusedBorderColor = Color(0xFFE4E4DF)))
+                        Spacer(Modifier.height(10.dp))
+                        Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFE1F7EF)) { Text("Example: €16/hr becomes ${if (settings.mode == PremiumMode.Multiplier) "€24/hr" else "€${16 + (settings.value.toDoubleOrNull() ?: 0.0)}/hr"} on Sunday", color = Color(0xFF167A5B), fontSize = 10.sp, modifier = Modifier.padding(10.dp)) }
+                    }
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            Text("Per employee", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            Surface(shape = RoundedCornerShape(14.dp), color = Color.White, border = BorderStroke(1.dp, Color(0xFFE4E4DF))) { Column { settings.employees.forEachIndexed { index, employee -> PremiumEmployeeRow(employee, settings, { editing = employee }); if (index < settings.employees.lastIndex) ProfileDivider() } } }
+        }
+        Button(onClick = { Toast.makeText(context, "Weekend premium saved", Toast.LENGTH_SHORT).show(); onSave() }, modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF111116), contentColor = Color.White), elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)) { Text("Save", fontSize = 13.sp, fontWeight = FontWeight.Medium) }
+    }
+    editing?.let { employee -> PremiumOverrideDialog(employee, settings) { updated -> onSettingsChanged(settings.copy(employees = settings.employees.map { if (it.name == updated.name) updated else it })); editing = null } }
+}
+
+@Composable private fun PremiumModeButton(label: String, active: Boolean, modifier: Modifier, onClick: () -> Unit) { Surface(modifier.clickable(onClick = onClick), shape = RoundedCornerShape(7.dp), color = if (active) Color.White else Color(0xFFF5F5F2), border = BorderStroke(1.dp, Color(0xFFE4E4DF))) { Box(contentAlignment = Alignment.Center) { Text(label, fontSize = 11.sp, color = Color(0xFF17171B)) } } }
+@Composable private fun PremiumEmployeeRow(employee: WeekendPremiumEmployee, settings: WeekendPremiumSettings, onClick: () -> Unit) { Row(Modifier.fillMaxWidth().height(58.dp).clickable(onClick = onClick).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) { Box(Modifier.size(26.dp).background(Color(0xFFDCEBFD), CircleShape), contentAlignment = Alignment.Center) { Text(employee.initials, color = Color(0xFF378ADD), fontSize = 9.sp) }; Spacer(Modifier.width(10.dp)); Column(Modifier.weight(1f)) { Text(employee.name, fontSize = 12.sp, fontWeight = FontWeight.Medium); Text(employee.summary(settings), color = Color(0xFF73737A), fontSize = 10.sp) }; Text(if (employee.mode == EmployeePremiumMode.Default) "default" else "adjusted", color = Color(0xFF73737A), fontSize = 9.sp); Spacer(Modifier.width(6.dp)); Text("›", color = Color(0xFF73737A), fontSize = 18.sp) } }
+@Composable private fun PremiumOverrideDialog(employee: WeekendPremiumEmployee, settings: WeekendPremiumSettings, onDone: (WeekendPremiumEmployee) -> Unit) { var mode by remember { mutableStateOf(employee.mode) }; Dialog(onDismissRequest = { onDone(employee) }) { Surface(shape = RoundedCornerShape(14.dp), color = Color.White) { Column(Modifier.padding(20.dp)) { Text("Edit premium", fontSize = 18.sp, fontWeight = FontWeight.SemiBold); Text(employee.name, color = Color(0xFF73737A), fontSize = 12.sp); Spacer(Modifier.height(14.dp)); EmployeePremiumMode.entries.forEach { option -> Text(option.label, modifier = Modifier.fillMaxWidth().clickable { mode = option }.padding(vertical = 10.dp), color = if (mode == option) Color(0xFF1D9E75) else Color(0xFF17171B), fontSize = 14.sp) }; Button(onClick = { onDone(employee.copy(mode = mode)) }, modifier = Modifier.fillMaxWidth().height(44.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF111116))) { Text("Apply") } } } } }
+
+@Composable
 private fun AdminWebSidebar(
     activeItem: String,
     onHomeClick: () -> Unit = {},
     onHoursClick: () -> Unit = {},
     onTeamClick: () -> Unit = {},
     onPlacesClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -1982,6 +2075,8 @@ private fun AdminWebSidebar(
             AdminNavItem(label = "Team", active = activeItem == "Team", onClick = onTeamClick)
             Spacer(modifier = Modifier.height(10.dp))
             AdminNavItem(label = "Places", active = activeItem == "Places", onClick = onPlacesClick)
+            Spacer(modifier = Modifier.height(10.dp))
+            AdminNavItem(label = "Premium", active = activeItem == "Premium", onClick = onSettingsClick)
         }
 
         Text(
@@ -6154,7 +6249,16 @@ private enum class AppScreen {
     AdminHoursApprovalQueue,
     AdminWorkLocations,
     AdminTeam,
+    AdminWeekendPremiumSettings,
 }
+
+private enum class PremiumMode { Multiplier, FixedAmount }
+private enum class EmployeePremiumMode(val label: String) { Default("Use company default"), Multiplier("Multiplier: 1.5×"), FixedAmount("Fixed amount: +€5/hr"), None("No premium") }
+private data class WeekendPremiumEmployee(val name: String, val initials: String, val mode: EmployeePremiumMode) {
+    fun summary(settings: WeekendPremiumSettings): String = when (mode) { EmployeePremiumMode.Default -> if (settings.enabled) "${settings.value}${if (settings.mode == PremiumMode.Multiplier) "× (default)" else " per hour (default)"}" else "No premium (default)"; EmployeePremiumMode.Multiplier -> "1.5× on Sunday"; EmployeePremiumMode.FixedAmount -> "+€5/hr on Sunday"; EmployeePremiumMode.None -> "No premium" }
+}
+private data class WeekendPremiumSettings(val enabled: Boolean, val mode: PremiumMode, val value: String, val employees: List<WeekendPremiumEmployee>)
+private fun defaultWeekendPremiumSettings() = WeekendPremiumSettings(true, PremiumMode.Multiplier, "1.5", listOf(WeekendPremiumEmployee("Sven de Vries", "SV", EmployeePremiumMode.Default), WeekendPremiumEmployee("Anke Jansen", "AJ", EmployeePremiumMode.FixedAmount), WeekendPremiumEmployee("Mo El Amrani", "ME", EmployeePremiumMode.Default), WeekendPremiumEmployee("Lotte Bakker", "LB", EmployeePremiumMode.None)))
 
 data class WorkerEmployer(
     val name: String,
