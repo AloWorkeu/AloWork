@@ -1375,13 +1375,7 @@ fun AdminHoursApprovalQueueScreen(
     var selectedWorker by remember { mutableStateOf<String?>(initialSelectedWorker) }
     var selectedFilter by remember { mutableStateOf("Pending") }
     var hourRequests by remember {
-        mutableStateOf(
-            listOf(
-                AdminHoursRequest("Sven de Vries", "Week 25", "16.0h", "\u20AC256", "Submitted"),
-                AdminHoursRequest("Mila Bakker", "Week 25", "12.5h", "\u20AC200", "Submitted"),
-                AdminHoursRequest("Noah Visser", "Week 25", "11.0h", "\u20AC176", "Adjusted"),
-            ),
-        )
+        mutableStateOf(loadAdminHoursRequests(context))
     }
     val pendingCount = hourRequests.count { it.status != "Approved" }
     val filteredRequests = when (selectedFilter) {
@@ -1527,13 +1521,15 @@ fun AdminHoursApprovalQueueScreen(
                     selectedWorker = null
                 },
                 onSave = { updatedHours, updatedPay ->
-                    hourRequests = hourRequests.map { request ->
+                    val updatedRequests = hourRequests.map { request ->
                         if (request.name == workerName) {
                             request.copy(hours = updatedHours, pay = updatedPay, status = "Adjusted")
                         } else {
                             request
                         }
                     }
+                    hourRequests = updatedRequests
+                    saveAdminHoursRequests(context, updatedRequests)
                     Toast.makeText(context, "Hours updated for $workerName", Toast.LENGTH_SHORT).show()
                     selectedWorker = null
                 },
@@ -6882,6 +6878,46 @@ private data class AdminHoursRequest(
     val pay: String,
     val status: String,
 )
+
+private const val AdminHoursPreferences = "admin_hours"
+
+private fun defaultAdminHoursRequests(): List<AdminHoursRequest> = listOf(
+    AdminHoursRequest("Sven de Vries", "Week 25", "16.0h", "\u20AC256", "Submitted"),
+    AdminHoursRequest("Mila Bakker", "Week 25", "12.5h", "\u20AC200", "Submitted"),
+    AdminHoursRequest("Noah Visser", "Week 25", "11.0h", "\u20AC176", "Adjusted"),
+)
+
+private fun loadAdminHoursRequests(context: Context): List<AdminHoursRequest> {
+    val stored = context.getSharedPreferences(AdminHoursPreferences, Context.MODE_PRIVATE)
+        .getString("requests", null)
+        ?: return defaultAdminHoursRequests()
+    return stored.lineSequence().mapNotNull { row ->
+        val parts = row.split('|')
+        if (parts.size == 5) {
+            AdminHoursRequest(
+                name = parts[0],
+                period = parts[1],
+                hours = parts[2],
+                pay = parts[3],
+                status = parts[4],
+            )
+        } else {
+            null
+        }
+    }.toList().ifEmpty(::defaultAdminHoursRequests)
+}
+
+private fun saveAdminHoursRequests(context: Context, requests: List<AdminHoursRequest>) {
+    context.getSharedPreferences(AdminHoursPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putString(
+            "requests",
+            requests.joinToString("\n") {
+                "${it.name}|${it.period}|${it.hours}|${it.pay}|${it.status}"
+            },
+        )
+        .apply()
+}
 
 private data class AdminLocation(
     val name: String,
