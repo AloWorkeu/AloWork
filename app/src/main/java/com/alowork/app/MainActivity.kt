@@ -7263,6 +7263,21 @@ private fun WorkerEmployer.hourlyRateValue(): Double {
     return parseEuroValue(rate).takeIf { it > 0.0 } ?: 16.0
 }
 
+private fun effectiveHourlyRateLabel(
+    hours: String,
+    pay: String,
+    fallbackRate: Double = 16.0,
+): String {
+    val hourValue = parseHoursValue(hours)
+    val payValue = parseEuroValue(pay)
+    val rate = if (hourValue > 0.0 && payValue > 0.0) {
+        payValue / hourValue
+    } else {
+        fallbackRate
+    }
+    return formatEuro(rate)
+}
+
 private enum class AppScreen {
     WorkerSignUp,
     WorkerLogin,
@@ -7490,7 +7505,7 @@ private fun gpsShiftWorkerDayDetail(
         clockIn = "08:00",
         clockOut = if (status == WeekStatus.Pending) "Now" else "Clocked out",
         breakLabel = "0 min",
-        hourlyRate = "\u20AC13.05",
+        hourlyRate = effectiveHourlyRateLabel(hours, pay, fallbackRate = 13.05),
         note = workerSubmissionNote(status),
         actionLabel = workerSubmissionActionLabel(status),
     )
@@ -7512,7 +7527,7 @@ private fun manualWorkerDayDetail(
         clockIn = "08:00",
         clockOut = "16:30",
         breakLabel = "30 min",
-        hourlyRate = "\u20AC16.00",
+        hourlyRate = effectiveHourlyRateLabel(hours, pay),
         note = workerSubmissionNote(status),
         actionLabel = workerSubmissionActionLabel(status),
     )
@@ -7548,7 +7563,7 @@ private fun AdminHoursRequest.workerDayDetail(
         clockIn = "08:00",
         clockOut = if (workerWeekStatus() == WeekStatus.Pending) "Now" else "Clocked out",
         breakLabel = "0 min",
-        hourlyRate = "\u20AC16.00",
+        hourlyRate = effectiveHourlyRateLabel(hours, pay),
         note = workerSubmissionNote(workerWeekStatus()),
         actionLabel = workerSubmissionActionLabel(workerWeekStatus()),
     )
@@ -7568,7 +7583,10 @@ private fun workerMessageFallbackDayDetail(
         clockIn = "08:00",
         clockOut = if (status == WeekStatus.Pending) "Now" else "Clocked out",
         breakLabel = "0 min",
-        hourlyRate = "\u20AC16.00",
+        hourlyRate = effectiveHourlyRateLabel(
+            hours = adminRequest?.hours ?: message.shiftSummary.substringBefore(" - "),
+            pay = adminRequest?.pay ?: message.pay,
+        ),
         note = workerSubmissionNote(status),
         actionLabel = workerSubmissionActionLabel(status),
     )
