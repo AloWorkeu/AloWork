@@ -93,6 +93,7 @@ fun AloworkApp() {
     val context = LocalContext.current
     var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
     var pendingAdminReviewWorker by remember { mutableStateOf<String?>(null) }
+    var pendingAdminReviewPeriod by remember { mutableStateOf<String?>(null) }
     var manualHoursSubmission by remember { mutableStateOf(loadManualHoursSubmission(context)) }
     var gpsShiftSubmission by remember { mutableStateOf(loadWorkerGpsShiftSubmission(context)) }
     var pendingGpsShiftSeconds by remember { mutableStateOf<Long?>(null) }
@@ -122,11 +123,13 @@ fun AloworkApp() {
 
     fun openAdminHours() {
         pendingAdminReviewWorker = null
+        pendingAdminReviewPeriod = null
         screen = AppScreen.AdminHoursApprovalQueue
     }
 
-    fun openAdminHoursForWorker(workerName: String) {
+    fun openAdminHoursForWorker(workerName: String, period: String? = null) {
         pendingAdminReviewWorker = workerName
+        pendingAdminReviewPeriod = period
         screen = AppScreen.AdminHoursApprovalQueue
     }
 
@@ -458,8 +461,8 @@ fun AloworkApp() {
             onOpenApprovalQueue = {
                 openAdminHours()
             },
-            onReviewWorker = { workerName ->
-                openAdminHoursForWorker(workerName)
+            onReviewWorker = { workerName, period ->
+                openAdminHoursForWorker(workerName, period)
             },
             onOpenHome = {
                 openAdminHome()
@@ -477,8 +480,10 @@ fun AloworkApp() {
 
         AppScreen.AdminHoursApprovalQueue -> AdminHoursApprovalQueueScreen(
             initialSelectedWorker = pendingAdminReviewWorker,
+            initialSelectedPeriod = pendingAdminReviewPeriod,
             onInitialSelectionConsumed = {
                 pendingAdminReviewWorker = null
+                pendingAdminReviewPeriod = null
             },
             onOpenHome = {
                 openAdminHome()
@@ -1281,7 +1286,7 @@ fun AdminDashboardHomeScreen(
     modifier: Modifier = Modifier,
     companyProfile: AdminCompanyProfile = defaultAdminCompanyProfile(),
     onOpenApprovalQueue: () -> Unit = {},
-    onReviewWorker: (String) -> Unit = {},
+    onReviewWorker: (String, String?) -> Unit = { _, _ -> },
     onOpenHome: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
     onOpenWorkLocations: () -> Unit = {},
@@ -1294,6 +1299,7 @@ fun AdminDashboardHomeScreen(
     val estimatedPayroll = hourRequests.sumOf { parseEuroValue(it.pay) }
     val pendingRequests = hourRequests.filter { it.status != "Approved" }
     val activeWorkerCount = adminWorkers.count { it.status == "Active" }
+    val workerMessages = loadWorkerChatMessages(context)
 
     Row(
         modifier = modifier
@@ -1421,10 +1427,51 @@ fun AdminDashboardHomeScreen(
                                 detail = "${request.period} - ${request.hours}",
                                 amount = request.pay,
                                 onClick = {
-                                    onReviewWorker(request.name)
+                                    onReviewWorker(request.name, request.period)
                                 },
                             )
                             if (index < previewRequests.lastIndex) {
+                                ProfileDivider()
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Worker messages",
+                color = Color(0xFF17171B),
+                fontSize = 15.sp,
+                lineHeight = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFE1E1DC)),
+                shadowElevation = 0.dp,
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    if (workerMessages.isEmpty()) {
+                        Text(
+                            text = "No worker messages",
+                            color = Color(0xFF73737A),
+                            fontSize = 12.sp,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(18.dp),
+                        )
+                    } else {
+                        workerMessages.takeLast(3).asReversed().forEachIndexed { index, message ->
+                            AdminWorkerMessageRow(
+                                message = message,
+                                onClick = {
+                                    onReviewWorker(message.workerName, message.shiftTitle)
+                                },
+                            )
+                            if (index < workerMessages.takeLast(3).lastIndex) {
                                 ProfileDivider()
                             }
                         }
@@ -1439,6 +1486,7 @@ fun AdminDashboardHomeScreen(
 fun AdminHoursApprovalQueueScreen(
     modifier: Modifier = Modifier,
     initialSelectedWorker: String? = null,
+    initialSelectedPeriod: String? = null,
     onInitialSelectionConsumed: () -> Unit = {},
     onOpenHome: () -> Unit = {},
     onOpenHours: () -> Unit = {},
@@ -1459,9 +1507,15 @@ fun AdminHoursApprovalQueueScreen(
         else -> hourRequests
     }
 
-    LaunchedEffect(initialSelectedWorker) {
+    LaunchedEffect(initialSelectedWorker, initialSelectedPeriod) {
         if (initialSelectedWorker != null) {
-            selectedRequest = hourRequests.firstOrNull { request ->
+            selectedRequest = if (initialSelectedPeriod != null) {
+                hourRequests.firstOrNull { request ->
+                    request.name == initialSelectedWorker && request.period == initialSelectedPeriod
+                }
+            } else {
+                null
+            } ?: hourRequests.firstOrNull { request ->
                 request.name == initialSelectedWorker && request.status != "Approved"
             } ?: hourRequests.firstOrNull { request ->
                 request.name == initialSelectedWorker
@@ -3022,6 +3076,55 @@ private fun AdminApprovalRow(
 }
 
 @Composable
+private fun AdminWorkerMessageRow(
+    message: WorkerShiftMessage,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(74.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = message.workerName,
+                color = Color(0xFF17171B),
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = "${message.shiftTitle} - ${message.shiftStatus} - ${message.shiftSummary}",
+                color = Color(0xFF73737A),
+                fontSize = 10.sp,
+                lineHeight = 13.sp,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = shortenNotificationBody(message.message),
+                color = Color(0xFF17171B),
+                fontSize = 10.sp,
+                lineHeight = 13.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+        Text(
+            text = message.pay,
+            color = Color(0xFF17171B),
+            fontSize = 12.sp,
+            lineHeight = 15.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.End,
+        )
+    }
+}
+
+@Composable
 private fun WebPlanOptionCard(
     title: String,
     price: String,
@@ -4077,7 +4180,7 @@ private fun WorkerTabIcon(
 @Composable
 fun WorkerNotificationsScreen(
     modifier: Modifier = Modifier,
-    sentMessages: List<String> = emptyList(),
+    sentMessages: List<WorkerShiftMessage> = emptyList(),
     adminRequests: List<AdminHoursRequest> = emptyList(),
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
@@ -4106,7 +4209,7 @@ fun WorkerNotificationsScreen(
                 NotificationCard(
                     type = NotificationType.MessageSent,
                     title = "Message sent",
-                    body = shortenNotificationBody(message),
+                    body = shortenNotificationBody(message.message),
                     time = "Now",
                     unread = true,
                 )
@@ -4772,9 +4875,9 @@ fun WorkerDayViewAdjustedScreen(
 fun WorkerChatWithEmployerScreen(
     modifier: Modifier = Modifier,
     dayDetail: WorkerDayDetail = defaultAdjustedWorkerDayDetail(),
-    sentMessages: List<String> = emptyList(),
+    sentMessages: List<WorkerShiftMessage> = emptyList(),
     onBack: () -> Unit = {},
-    onSendMessage: (String) -> Unit = {},
+    onSendMessage: (WorkerShiftMessage) -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     var draftMessage by remember { mutableStateOf("") }
@@ -4898,7 +5001,7 @@ fun WorkerChatWithEmployerScreen(
                 }
                 items(sentMessages) { message ->
                     ChatMessageBubble(
-                        message = message,
+                        message = message.message,
                         time = "Now",
                         isWorker = true,
                     )
@@ -4941,7 +5044,16 @@ fun WorkerChatWithEmployerScreen(
                     onClick = {
                         val message = draftMessage.trim()
                         if (message.isNotEmpty()) {
-                            onSendMessage(message)
+                            onSendMessage(
+                                WorkerShiftMessage(
+                                    workerName = "Sven de Vries",
+                                    shiftTitle = dayDetail.title,
+                                    shiftStatus = dayDetail.status.chatLabel,
+                                    shiftSummary = dayDetail.chatSummary,
+                                    pay = dayDetail.pay,
+                                    message = message,
+                                ),
+                            )
                             draftMessage = ""
                         }
                     },
@@ -7348,25 +7460,34 @@ private fun saveWorkerSubmittedHoursForAdmin(
     saveAdminHoursRequests(context, updatedRequests)
 }
 
+data class WorkerShiftMessage(
+    val workerName: String,
+    val shiftTitle: String,
+    val shiftStatus: String,
+    val shiftSummary: String,
+    val pay: String,
+    val message: String,
+)
+
 private const val WorkerChatPreferences = "worker_chat"
 
-private fun loadWorkerChatMessages(context: Context): List<String> {
+private fun loadWorkerChatMessages(context: Context): List<WorkerShiftMessage> {
     return context.getSharedPreferences(WorkerChatPreferences, Context.MODE_PRIVATE)
         .getStringSet("messages", emptySet())
         ?.mapNotNull { row ->
             val separator = row.indexOf('|')
             if (separator <= 0) null else row.substring(0, separator).toIntOrNull()
-                ?.let { index -> index to row.substring(separator + 1) }
+                ?.let { index -> index to decodeWorkerShiftMessage(row.substring(separator + 1)) }
         }
         ?.sortedBy { it.first }
         ?.map { it.second }
         ?: emptyList()
 }
 
-private fun saveWorkerChatMessages(context: Context, messages: List<String>) {
+private fun saveWorkerChatMessages(context: Context, messages: List<WorkerShiftMessage>) {
     context.getSharedPreferences(WorkerChatPreferences, Context.MODE_PRIVATE)
         .edit()
-        .putStringSet("messages", messages.mapIndexed { index, message -> "$index|$message" }.toSet())
+        .putStringSet("messages", messages.mapIndexed { index, message -> "$index|${encodeWorkerShiftMessage(message)}" }.toSet())
         .apply()
 }
 
@@ -7375,6 +7496,40 @@ private fun clearWorkerChatMessages(context: Context) {
         .edit()
         .clear()
         .apply()
+}
+
+private fun encodeWorkerShiftMessage(message: WorkerShiftMessage): String {
+    return listOf(
+        message.workerName,
+        message.shiftTitle,
+        message.shiftStatus,
+        message.shiftSummary,
+        message.pay,
+        message.message,
+    ).joinToString("|") { Uri.encode(it) }
+}
+
+private fun decodeWorkerShiftMessage(row: String): WorkerShiftMessage {
+    val parts = row.split('|')
+    return if (parts.size == 6) {
+        WorkerShiftMessage(
+            workerName = Uri.decode(parts[0]),
+            shiftTitle = Uri.decode(parts[1]),
+            shiftStatus = Uri.decode(parts[2]),
+            shiftSummary = Uri.decode(parts[3]),
+            pay = Uri.decode(parts[4]),
+            message = Uri.decode(parts[5]),
+        )
+    } else {
+        WorkerShiftMessage(
+            workerName = "Sven de Vries",
+            shiftTitle = "Shift",
+            shiftStatus = WeekStatus.Pending.chatLabel,
+            shiftSummary = "Worker message",
+            pay = "",
+            message = row,
+        )
+    }
 }
 
 data class AdminCompanyProfile(
@@ -7744,7 +7899,16 @@ private fun WorkerDayViewAdjustedScreenPreview() {
 private fun WorkerChatWithEmployerScreenPreview() {
     AloworkTheme {
         WorkerChatWithEmployerScreen(
-            sentMessages = listOf("I worked until 15:30. Could you check it?"),
+            sentMessages = listOf(
+                WorkerShiftMessage(
+                    workerName = "Sven de Vries",
+                    shiftTitle = "Today",
+                    shiftStatus = WeekStatus.Pending.chatLabel,
+                    shiftSummary = "3.4h - Submitted with 1 photo",
+                    pay = "\u20AC44.42",
+                    message = "I worked until 15:30. Could you check it?",
+                ),
+            ),
         )
     }
 }
