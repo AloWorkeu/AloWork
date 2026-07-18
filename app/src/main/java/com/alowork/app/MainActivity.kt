@@ -497,6 +497,9 @@ fun AloworkApp() {
                 pendingAdminReviewWorker = null
                 pendingAdminReviewPeriod = null
             },
+            onWorkerMessagesChanged = { messages ->
+                workerChatMessages = messages
+            },
             onOpenHome = {
                 openAdminHome()
             },
@@ -1500,6 +1503,7 @@ fun AdminHoursApprovalQueueScreen(
     initialSelectedWorker: String? = null,
     initialSelectedPeriod: String? = null,
     onInitialSelectionConsumed: () -> Unit = {},
+    onWorkerMessagesChanged: (List<WorkerShiftMessage>) -> Unit = {},
     onOpenHome: () -> Unit = {},
     onOpenHours: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
@@ -1684,6 +1688,7 @@ fun AdminHoursApprovalQueueScreen(
                     )
                     workerMessages = workerMessages + replyMessage
                     saveWorkerChatMessages(context, workerMessages)
+                    onWorkerMessagesChanged(workerMessages)
                     Toast.makeText(context, "Reply sent to ${requestToReview.name}", Toast.LENGTH_SHORT).show()
                 },
                 onApprove = {
