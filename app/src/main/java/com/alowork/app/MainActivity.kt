@@ -229,6 +229,8 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerCalendarEarnings -> WorkerCalendarEarningsScreen(
+            manualSubmission = manualHoursSubmission,
+            gpsShiftSubmission = gpsShiftSubmission,
             onDaySelected = {
                 screen = AppScreen.WorkerDayViewAdjusted
             },
@@ -3518,12 +3520,15 @@ fun GpsClockInScreen(
 @Composable
 fun WorkerCalendarEarningsScreen(
     modifier: Modifier = Modifier,
+    manualSubmission: WorkerManualHoursSubmission? = null,
+    gpsShiftSubmission: WorkerGpsShiftSubmission? = null,
     onDaySelected: () -> Unit = {},
     onLogHours: () -> Unit = {},
     onProfileSelected: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     var displayedMonth by remember { mutableStateOf(YearMonth.of(2026, 6)) }
+    val monthSummary = workerMonthSummary(manualSubmission, gpsShiftSubmission)
 
     Box(
         modifier = modifier
@@ -3567,7 +3572,10 @@ fun WorkerCalendarEarningsScreen(
                 }
             }
             Spacer(modifier = Modifier.height(14.dp))
-            WorkerEarningsCard(isCurrentDesignMonth = displayedMonth == YearMonth.of(2026, 6))
+            WorkerEarningsCard(
+                isCurrentDesignMonth = displayedMonth == YearMonth.of(2026, 6),
+                summary = monthSummary,
+            )
             Spacer(modifier = Modifier.height(14.dp))
             WorkerMonthCalendar(
                 month = displayedMonth,
@@ -3608,7 +3616,10 @@ fun WorkerCalendarEarningsScreen(
 }
 
 @Composable
-private fun WorkerEarningsCard(isCurrentDesignMonth: Boolean) {
+private fun WorkerEarningsCard(
+    isCurrentDesignMonth: Boolean,
+    summary: WorkerMonthSummary,
+) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -3631,7 +3642,7 @@ private fun WorkerEarningsCard(isCurrentDesignMonth: Boolean) {
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = if (isCurrentDesignMonth) "\u20AC1,284" else "\u20AC0",
+                text = if (isCurrentDesignMonth) formatWholeEuro(summary.totalPay) else "\u20AC0",
                 color = Color(0xFF17171C),
                 fontSize = 34.sp,
                 lineHeight = 41.sp,
@@ -3644,11 +3655,11 @@ private fun WorkerEarningsCard(isCurrentDesignMonth: Boolean) {
             ) {
                 EarningsLegendItem(
                     color = Color(0xFF1D9E75),
-                    label = if (isCurrentDesignMonth) "\u20AC1,092 approved" else "\u20AC0 approved",
+                    label = if (isCurrentDesignMonth) "${formatWholeEuro(summary.approvedPay)} approved" else "\u20AC0 approved",
                 )
                 EarningsLegendItem(
                     color = Color(0xFFEF9F27),
-                    label = if (isCurrentDesignMonth) "\u20AC192 pending" else "\u20AC0 pending",
+                    label = if (isCurrentDesignMonth) "${formatWholeEuro(summary.pendingPay)} pending" else "\u20AC0 pending",
                 )
             }
         }
@@ -4395,6 +4406,7 @@ fun WorkerHistoryOverviewScreen(
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val monthSummary = workerMonthSummary(manualSubmission, gpsShiftSubmission)
 
     Box(
         modifier = modifier
@@ -4444,7 +4456,7 @@ fun WorkerHistoryOverviewScreen(
                 }
             }
             Spacer(modifier = Modifier.height(18.dp))
-            MonthlySummaryCard()
+            MonthlySummaryCard(summary = monthSummary)
             Spacer(modifier = Modifier.height(14.dp))
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -5472,7 +5484,10 @@ private fun DayInfoRow(
 }
 
 @Composable
-private fun MonthlySummaryCard(modifier: Modifier = Modifier) {
+private fun MonthlySummaryCard(
+    summary: WorkerMonthSummary = workerMonthSummary(),
+    modifier: Modifier = Modifier,
+) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -5495,7 +5510,7 @@ private fun MonthlySummaryCard(modifier: Modifier = Modifier) {
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "€1,284",
+                text = formatWholeEuro(summary.totalPay),
                 color = Color(0xFF17171B),
                 fontSize = 32.sp,
                 lineHeight = 38.sp,
@@ -5504,13 +5519,13 @@ private fun MonthlySummaryCard(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(18.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 SummaryMetricTile(
-                    value = "78.5h",
+                    value = formatHours(summary.totalHours),
                     label = "Hours worked",
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 SummaryMetricTile(
-                    value = "14",
+                    value = summary.workdays.toString(),
                     label = "Workdays",
                     modifier = Modifier.weight(1f),
                 )
@@ -6954,6 +6969,34 @@ data class WorkerGpsShiftSubmission(
     val pay: String,
     val photoCount: Int,
 )
+
+private data class WorkerMonthSummary(
+    val totalPay: Double,
+    val approvedPay: Double,
+    val pendingPay: Double,
+    val totalHours: Double,
+    val workdays: Int,
+)
+
+private fun workerMonthSummary(
+    manualSubmission: WorkerManualHoursSubmission? = null,
+    gpsShiftSubmission: WorkerGpsShiftSubmission? = null,
+): WorkerMonthSummary {
+    val submissions = listOfNotNull(
+        manualSubmission?.let { it.hours to it.pay },
+        gpsShiftSubmission?.let { it.hours to it.pay },
+    )
+    val submittedPay = submissions.sumOf { (_, pay) -> parseEuroValue(pay) }
+    val submittedHours = submissions.sumOf { (hours, _) -> parseHoursValue(hours) }
+
+    return WorkerMonthSummary(
+        totalPay = 1284.0 + submittedPay,
+        approvedPay = 1092.0,
+        pendingPay = 192.0 + submittedPay,
+        totalHours = 78.5 + submittedHours,
+        workdays = 14 + submissions.size,
+    )
+}
 
 private const val ManualHoursPreferences = "manual_hours"
 private const val WorkerGpsShiftPreferences = "gps_shift"
