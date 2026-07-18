@@ -391,6 +391,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerDayViewAdjusted -> WorkerDayViewAdjustedScreen(
+            language = workerLanguage,
             dayDetail = selectedWorkerDayDetail,
             onBack = {
                 screen = AppScreen.WorkerHistoryOverview
@@ -402,6 +403,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerChatWithEmployer -> WorkerChatWithEmployerScreen(
+            language = workerLanguage,
             dayDetail = selectedWorkerDayDetail,
             sentMessages = workerChatMessages,
             onBack = {
@@ -5094,11 +5096,13 @@ fun WorkerHistoryOverviewScreen(
 @Composable
 fun WorkerDayViewAdjustedScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     dayDetail: WorkerDayDetail = defaultAdjustedWorkerDayDetail(),
     onBack: () -> Unit = {},
     onAskQuestion: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
+    val copy = language.workerShiftDetailCopy()
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -5133,7 +5137,7 @@ fun WorkerDayViewAdjustedScreen(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                WeekStatusPill(status = dayDetail.status)
+                WeekStatusPill(status = dayDetail.status, language = language)
             }
             Spacer(modifier = Modifier.height(18.dp))
             Surface(
@@ -5151,7 +5155,7 @@ fun WorkerDayViewAdjustedScreen(
                         .padding(18.dp),
                 ) {
                     Text(
-                        text = "Total",
+                        text = copy.total,
                         color = Color(0xFF8C8C91),
                         fontSize = 12.sp,
                         lineHeight = 15.sp,
@@ -5189,13 +5193,13 @@ fun WorkerDayViewAdjustedScreen(
             }
             Spacer(modifier = Modifier.height(14.dp))
             ProfileSectionCard {
-                DayInfoRow(label = "Clock in", value = dayDetail.clockIn)
+                DayInfoRow(label = copy.clockIn, value = dayDetail.clockIn)
                 ProfileDivider()
-                DayInfoRow(label = "Clock out", value = dayDetail.clockOut)
+                DayInfoRow(label = copy.clockOut, value = dayDetail.clockOut)
                 ProfileDivider()
-                DayInfoRow(label = "Break", value = dayDetail.breakLabel)
+                DayInfoRow(label = copy.breakLabel, value = dayDetail.breakLabel)
                 ProfileDivider()
-                DayInfoRow(label = "Hourly rate", value = dayDetail.hourlyRate)
+                DayInfoRow(label = copy.hourlyRate, value = dayDetail.hourlyRate)
             }
             if (dayDetail.photoUris.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(14.dp))
@@ -5212,7 +5216,7 @@ fun WorkerDayViewAdjustedScreen(
                             .padding(16.dp),
                     ) {
                         Text(
-                            text = "Proof photos",
+                            text = copy.proofPhotos,
                             color = Color(0xFF17171B),
                             fontSize = 14.sp,
                             lineHeight = 17.sp,
@@ -5223,6 +5227,7 @@ fun WorkerDayViewAdjustedScreen(
                             dayDetail.photoUris.take(2).forEach { uri ->
                                 ShiftProofPhotoTile(
                                     uri = uri,
+                                    unavailableLabel = copy.photoUnavailable,
                                     modifier = Modifier.weight(1f),
                                 )
                             }
@@ -5247,7 +5252,7 @@ fun WorkerDayViewAdjustedScreen(
                         .padding(16.dp),
                 ) {
                     Text(
-                        text = "Adjustment note",
+                        text = copy.adjustmentNote,
                         color = Color(0xFF17171B),
                         fontSize = 14.sp,
                         lineHeight = 17.sp,
@@ -5255,7 +5260,7 @@ fun WorkerDayViewAdjustedScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = dayDetail.note,
+                        text = language.localizedWorkerShiftNote(dayDetail),
                         color = Color(0xFF73737A),
                         fontSize = 13.sp,
                         lineHeight = 17.sp,
@@ -5276,7 +5281,7 @@ fun WorkerDayViewAdjustedScreen(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
             ) {
                 Text(
-                    text = dayDetail.actionLabel,
+                    text = language.localizedShiftActionLabel(dayDetail.status),
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -5295,12 +5300,14 @@ fun WorkerDayViewAdjustedScreen(
 @Composable
 fun WorkerChatWithEmployerScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     dayDetail: WorkerDayDetail = defaultAdjustedWorkerDayDetail(),
     sentMessages: List<WorkerShiftMessage> = emptyList(),
     onBack: () -> Unit = {},
     onSendMessage: (WorkerShiftMessage) -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
+    val copy = language.workerShiftDetailCopy()
     var draftMessage by remember { mutableStateOf("") }
 
     Box(
@@ -5337,7 +5344,7 @@ fun WorkerChatWithEmployerScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "Employer",
+                        text = copy.employer,
                         color = Color(0xFF73737A),
                         fontSize = 12.sp,
                         lineHeight = 15.sp,
@@ -5375,7 +5382,7 @@ fun WorkerChatWithEmployerScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "${dayDetail.title} \u00B7 ${dayDetail.status.chatLabel}",
+                            text = "${dayDetail.title} - ${language.localizedWeekStatusChatLabel(dayDetail.status)}",
                             color = Color(0xFF73737A),
                             fontSize = 12.sp,
                             lineHeight = 15.sp,
@@ -5415,7 +5422,7 @@ fun WorkerChatWithEmployerScreen(
                 }
                 item {
                     ChatMessageBubble(
-                        message = "Send a note here and your employer can review this exact shift.",
+                        message = copy.shiftChatHelper,
                         time = "09:13",
                         isWorker = false,
                     )
@@ -5442,7 +5449,7 @@ fun WorkerChatWithEmployerScreen(
                         .height(54.dp),
                     placeholder = {
                         Text(
-                            text = "Write a message",
+                            text = copy.writeMessage,
                             color = Color(0xFFA7A7AC),
                             fontSize = 13.sp,
                         )
@@ -5469,7 +5476,7 @@ fun WorkerChatWithEmployerScreen(
                                 WorkerShiftMessage(
                                     workerName = "Sven de Vries",
                                     shiftTitle = dayDetail.title,
-                                    shiftStatus = dayDetail.status.chatLabel,
+                                    shiftStatus = language.localizedWeekStatusChatLabel(dayDetail.status),
                                     shiftSummary = dayDetail.chatSummary,
                                     pay = dayDetail.pay,
                                     message = message,
@@ -5494,7 +5501,7 @@ fun WorkerChatWithEmployerScreen(
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
                 ) {
                     Text(
-                        text = "Send",
+                        text = copy.send,
                         fontSize = 12.sp,
                         lineHeight = 16.sp,
                         fontWeight = FontWeight.Medium,
@@ -6244,12 +6251,11 @@ private fun WeekOverviewRow(
 }
 
 @Composable
-private fun WeekStatusPill(status: WeekStatus) {
-    val label = when (status) {
-        WeekStatus.Approved -> "Approved"
-        WeekStatus.Pending -> "Pending"
-        WeekStatus.Adjusted -> "Adjusted"
-    }
+private fun WeekStatusPill(
+    status: WeekStatus,
+    language: WorkerLanguage = WorkerLanguage.English,
+) {
+    val label = language.localizedShortWeekStatus(status)
     val background = when (status) {
         WeekStatus.Approved -> Color(0xFFE1F7EF)
         WeekStatus.Pending -> Color(0xFFFFF0DB)
@@ -7334,6 +7340,7 @@ private fun ShiftPhotoTile(
 @Composable
 private fun ShiftProofPhotoTile(
     uri: Uri,
+    unavailableLabel: String = "Photo unavailable",
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -7354,7 +7361,7 @@ private fun ShiftProofPhotoTile(
             )
         } else {
             Text(
-                text = "Photo unavailable",
+                text = unavailableLabel,
                 color = Color(0xFF73737A),
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center,
@@ -8112,6 +8119,169 @@ private fun WorkerLanguage.workerShiftFlowCopy(): WorkerShiftFlowCopy {
             photoUnavailable = "Photo indisponible",
             save = "Enregistrer",
         )
+    }
+}
+
+private data class WorkerShiftDetailCopy(
+    val total: String,
+    val clockIn: String,
+    val clockOut: String,
+    val breakLabel: String,
+    val hourlyRate: String,
+    val proofPhotos: String,
+    val photoUnavailable: String,
+    val adjustmentNote: String,
+    val employer: String,
+    val shiftChatHelper: String,
+    val writeMessage: String,
+    val send: String,
+)
+
+private fun WorkerLanguage.workerShiftDetailCopy(): WorkerShiftDetailCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerShiftDetailCopy(
+            total = "Total",
+            clockIn = "Clock in",
+            clockOut = "Clock out",
+            breakLabel = "Break",
+            hourlyRate = "Hourly rate",
+            proofPhotos = "Proof photos",
+            photoUnavailable = "Photo unavailable",
+            adjustmentNote = "Adjustment note",
+            employer = "Employer",
+            shiftChatHelper = "Send a note here and your employer can review this exact shift.",
+            writeMessage = "Write a message",
+            send = "Send",
+        )
+        WorkerLanguage.Dutch -> WorkerShiftDetailCopy(
+            total = "Totaal",
+            clockIn = "Inklokken",
+            clockOut = "Uitklokken",
+            breakLabel = "Pauze",
+            hourlyRate = "Uurloon",
+            proofPhotos = "Bewijsfoto's",
+            photoUnavailable = "Foto niet beschikbaar",
+            adjustmentNote = "Aanpassingsnotitie",
+            employer = "Werkgever",
+            shiftChatHelper = "Stuur hier een notitie zodat je werkgever deze dienst kan bekijken.",
+            writeMessage = "Schrijf een bericht",
+            send = "Sturen",
+        )
+        WorkerLanguage.German -> WorkerShiftDetailCopy(
+            total = "Gesamt",
+            clockIn = "Einstempeln",
+            clockOut = "Ausstempeln",
+            breakLabel = "Pause",
+            hourlyRate = "Stundenlohn",
+            proofPhotos = "Nachweisfotos",
+            photoUnavailable = "Foto nicht verfugbar",
+            adjustmentNote = "Anpassungsnotiz",
+            employer = "Arbeitgeber",
+            shiftChatHelper = "Sende hier eine Notiz, damit dein Arbeitgeber diese Schicht prufen kann.",
+            writeMessage = "Nachricht schreiben",
+            send = "Senden",
+        )
+        WorkerLanguage.French -> WorkerShiftDetailCopy(
+            total = "Total",
+            clockIn = "Arrivee",
+            clockOut = "Depart",
+            breakLabel = "Pause",
+            hourlyRate = "Taux horaire",
+            proofPhotos = "Photos preuve",
+            photoUnavailable = "Photo indisponible",
+            adjustmentNote = "Note d'ajustement",
+            employer = "Employeur",
+            shiftChatHelper = "Envoyez une note ici pour que votre employeur verifie ce service.",
+            writeMessage = "Ecrire un message",
+            send = "Envoyer",
+        )
+    }
+}
+
+private fun WorkerLanguage.localizedShiftActionLabel(status: WeekStatus): String {
+    return when (status) {
+        WeekStatus.Approved,
+        WeekStatus.Pending -> when (this) {
+            WorkerLanguage.English -> "Ask about this shift"
+            WorkerLanguage.Dutch -> "Vraag over deze dienst"
+            WorkerLanguage.German -> "Zu dieser Schicht fragen"
+            WorkerLanguage.French -> "Question sur ce service"
+        }
+        WeekStatus.Adjusted -> when (this) {
+            WorkerLanguage.English -> "Ask about this adjustment"
+            WorkerLanguage.Dutch -> "Vraag over deze aanpassing"
+            WorkerLanguage.German -> "Zu dieser Anpassung fragen"
+            WorkerLanguage.French -> "Question sur cet ajustement"
+        }
+    }
+}
+
+private fun WorkerLanguage.localizedWorkerShiftNote(dayDetail: WorkerDayDetail): String {
+    return when (dayDetail.status) {
+        WeekStatus.Approved -> when (this) {
+            WorkerLanguage.English -> "Your employer approved this shift and included it in payroll."
+            WorkerLanguage.Dutch -> "Je werkgever heeft deze dienst goedgekeurd en meegenomen in de loonlijst."
+            WorkerLanguage.German -> "Dein Arbeitgeber hat diese Schicht genehmigt und in die Lohnabrechnung aufgenommen."
+            WorkerLanguage.French -> "Votre employeur a approuve ce service et l'a inclus dans la paie."
+        }
+        WeekStatus.Pending -> when (this) {
+            WorkerLanguage.English -> "Your submitted hours are waiting for employer approval."
+            WorkerLanguage.Dutch -> "Je ingediende uren wachten op goedkeuring van je werkgever."
+            WorkerLanguage.German -> "Deine eingereichten Stunden warten auf die Genehmigung deines Arbeitgebers."
+            WorkerLanguage.French -> "Vos heures envoyees attendent l'approbation de votre employeur."
+        }
+        WeekStatus.Adjusted -> when (this) {
+            WorkerLanguage.English -> dayDetail.note
+            WorkerLanguage.Dutch -> "Je werkgever heeft deze dag aangepast aan het goedgekeurde rooster."
+            WorkerLanguage.German -> "Dein Arbeitgeber hat diesen Tag an den genehmigten Plan angepasst."
+            WorkerLanguage.French -> "Votre employeur a ajuste cette journee selon le planning approuve."
+        }
+    }
+}
+
+private fun WorkerLanguage.localizedShortWeekStatus(status: WeekStatus): String {
+    return when (status) {
+        WeekStatus.Approved -> when (this) {
+            WorkerLanguage.English -> "Approved"
+            WorkerLanguage.Dutch -> "Goedgekeurd"
+            WorkerLanguage.German -> "Genehmigt"
+            WorkerLanguage.French -> "Approuve"
+        }
+        WeekStatus.Pending -> when (this) {
+            WorkerLanguage.English -> "Pending"
+            WorkerLanguage.Dutch -> "In behandeling"
+            WorkerLanguage.German -> "Offen"
+            WorkerLanguage.French -> "En attente"
+        }
+        WeekStatus.Adjusted -> when (this) {
+            WorkerLanguage.English -> "Adjusted"
+            WorkerLanguage.Dutch -> "Aangepast"
+            WorkerLanguage.German -> "Angepasst"
+            WorkerLanguage.French -> "Modifie"
+        }
+    }
+}
+
+private fun WorkerLanguage.localizedWeekStatusChatLabel(status: WeekStatus): String {
+    return when (status) {
+        WeekStatus.Approved -> when (this) {
+            WorkerLanguage.English -> "Approved shift"
+            WorkerLanguage.Dutch -> "Goedgekeurde dienst"
+            WorkerLanguage.German -> "Genehmigte Schicht"
+            WorkerLanguage.French -> "Service approuve"
+        }
+        WeekStatus.Pending -> when (this) {
+            WorkerLanguage.English -> "Pending shift"
+            WorkerLanguage.Dutch -> "Dienst in behandeling"
+            WorkerLanguage.German -> "Offene Schicht"
+            WorkerLanguage.French -> "Service en attente"
+        }
+        WeekStatus.Adjusted -> when (this) {
+            WorkerLanguage.English -> "Hours adjusted"
+            WorkerLanguage.Dutch -> "Uren aangepast"
+            WorkerLanguage.German -> "Stunden angepasst"
+            WorkerLanguage.French -> "Heures modifiees"
+        }
     }
 }
 
