@@ -1447,6 +1447,7 @@ fun AdminDashboardHomeScreen(
                                 name = request.name,
                                 detail = "${request.period} - ${request.hours}",
                                 amount = request.pay,
+                                proofLabel = request.proofLabel,
                                 onClick = {
                                     onReviewWorker(request.name, request.period)
                                 },
@@ -3204,13 +3205,14 @@ private fun AdminApprovalRow(
     name: String,
     detail: String,
     amount: String,
+    proofLabel: String = "",
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(62.dp)
+            .height(if (proofLabel.isBlank()) 62.dp else 76.dp)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -3230,6 +3232,16 @@ private fun AdminApprovalRow(
                 fontSize = 10.sp,
                 lineHeight = 13.sp,
             )
+            if (proofLabel.isNotBlank()) {
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = "Proof: $proofLabel",
+                    color = Color(0xFF4973A9),
+                    fontSize = 9.sp,
+                    lineHeight = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
         }
         Text(
             text = amount,
