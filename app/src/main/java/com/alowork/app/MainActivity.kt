@@ -3783,7 +3783,22 @@ fun WorkerCalendarEarningsScreen(
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     var displayedMonth by remember { mutableStateOf(YearMonth.of(2026, 6)) }
-    val monthSummary = workerMonthSummary(manualSubmission, gpsShiftSubmission)
+    val context = LocalContext.current
+    val adminRequests = loadWorkerAdminHoursRequests(context)
+    val manualAdminRequest = adminRequests.firstOrNull { it.period == "17 Jun" }
+    val gpsAdminRequest = adminRequests.firstOrNull { it.period == "Today" }
+    val monthSummary = workerMonthSummary(
+        manualSubmission = manualSubmission,
+        gpsShiftSubmission = gpsShiftSubmission,
+        manualAdminRequest = manualAdminRequest,
+        gpsAdminRequest = gpsAdminRequest,
+    )
+    val calendarData = workerCalendarData(
+        manualSubmission = manualSubmission,
+        gpsShiftSubmission = gpsShiftSubmission,
+        manualAdminRequest = manualAdminRequest,
+        gpsAdminRequest = gpsAdminRequest,
+    )
 
     Box(
         modifier = modifier
@@ -3834,6 +3849,7 @@ fun WorkerCalendarEarningsScreen(
             Spacer(modifier = Modifier.height(14.dp))
             WorkerMonthCalendar(
                 month = displayedMonth,
+                calendarData = calendarData,
                 onPreviousMonth = { displayedMonth = displayedMonth.minusMonths(1) },
                 onNextMonth = { displayedMonth = displayedMonth.plusMonths(1) },
                 onDaySelected = onDaySelected,
@@ -3944,6 +3960,7 @@ private fun EarningsLegendItem(color: Color, label: String) {
 @Composable
 private fun WorkerMonthCalendar(
     month: YearMonth,
+    calendarData: Map<Int, CalendarDayData>,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onDaySelected: () -> Unit,
@@ -4009,7 +4026,7 @@ private fun WorkerMonthCalendar(
                             contentAlignment = Alignment.Center,
                         ) {
                             if (dayNumber in 1..month.lengthOfMonth()) {
-                                val dayData = calendarDayData(month, dayNumber)
+                                val dayData = calendarDayData(month, dayNumber, calendarData)
                                 WorkerCalendarDayCell(
                                     day = dayNumber,
                                     data = dayData,
@@ -4129,10 +4146,14 @@ private fun CalendarLegendItem(status: CalendarDayStatus, label: String) {
     }
 }
 
-private fun calendarDayData(month: YearMonth, day: Int): CalendarDayData? {
+private fun calendarDayData(
+    month: YearMonth,
+    day: Int,
+    calendarData: Map<Int, CalendarDayData>,
+): CalendarDayData? {
     if (month != YearMonth.of(2026, 6)) return null
 
-    return when (day) {
+    return calendarData[day] ?: when (day) {
         2, 3, 4, 6, 9, 10, 11, 12, 16, 17 ->
             CalendarDayData(CalendarDayStatus.Approved, "8h")
         13 -> CalendarDayData(CalendarDayStatus.Approved, "4h")
@@ -4140,6 +4161,38 @@ private fun calendarDayData(month: YearMonth, day: Int): CalendarDayData? {
         18, 19 -> CalendarDayData(CalendarDayStatus.Pending, "8h")
         else -> null
     }
+}
+
+private fun workerCalendarData(
+    manualSubmission: WorkerManualHoursSubmission?,
+    gpsShiftSubmission: WorkerGpsShiftSubmission?,
+    manualAdminRequest: AdminHoursRequest?,
+    gpsAdminRequest: AdminHoursRequest?,
+): Map<Int, CalendarDayData> = buildMap {
+    manualSubmission?.let { submission ->
+        put(
+            17,
+            CalendarDayData(
+                status = manualAdminRequest.workerWeekStatus().calendarDayStatus(),
+                hours = manualAdminRequest?.hours ?: submission.hours,
+            ),
+        )
+    }
+    gpsShiftSubmission?.let { submission ->
+        put(
+            19,
+            CalendarDayData(
+                status = gpsAdminRequest.workerWeekStatus().calendarDayStatus(),
+                hours = gpsAdminRequest?.hours ?: submission.hours,
+            ),
+        )
+    }
+}
+
+private fun WeekStatus.calendarDayStatus(): CalendarDayStatus = when (this) {
+    WeekStatus.Approved -> CalendarDayStatus.Approved
+    WeekStatus.Pending -> CalendarDayStatus.Pending
+    WeekStatus.Adjusted -> CalendarDayStatus.Adjusted
 }
 
 @Composable
