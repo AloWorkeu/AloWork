@@ -438,46 +438,58 @@ fun AloworkApp() {
             onTabSelected = ::openWorkerTab,
         )
 
-        AppScreen.WorkerAddEmployer -> WorkerAddEmployerScreen(
-            onBack = {
-                screen = AppScreen.WorkerSwitchEmployer
-            },
-            onCompanyAdded = { companyCode ->
-                val invitedEmployer = findKnownWorkerEmployerByCode(companyCode)
-                if (invitedEmployer == null) {
-                    Toast.makeText(context, "Company code not found", Toast.LENGTH_SHORT).show()
-                } else {
-                    val existingEmployer = workerEmployers.firstOrNull { it.name == invitedEmployer.name }
-                    if (existingEmployer == null) {
-                        workerEmployers = workerEmployers + invitedEmployer.copy(status = "Pending")
-                        saveWorkerEmployers(context, workerEmployers)
-                        Toast.makeText(context, "Approval request sent", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(context, "${existingEmployer.name} is already linked", Toast.LENGTH_SHORT).show()
-                    }
+        AppScreen.WorkerAddEmployer -> {
+            val copy = workerLanguage.employerFlowCopy()
+            WorkerAddEmployerScreen(
+                language = workerLanguage,
+                onBack = {
                     screen = AppScreen.WorkerSwitchEmployer
-                }
-            },
-        )
+                },
+                onCompanyAdded = { companyCode ->
+                    val invitedEmployer = findKnownWorkerEmployerByCode(companyCode)
+                    if (invitedEmployer == null) {
+                        Toast.makeText(context, copy.companyCodeNotFound, Toast.LENGTH_SHORT).show()
+                    } else {
+                        val existingEmployer = workerEmployers.firstOrNull { it.name == invitedEmployer.name }
+                        if (existingEmployer == null) {
+                            workerEmployers = workerEmployers + invitedEmployer.copy(status = "Pending")
+                            saveWorkerEmployers(context, workerEmployers)
+                            Toast.makeText(context, copy.approvalRequestSent, Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                copy.alreadyLinked(existingEmployer.name),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        }
+                        screen = AppScreen.WorkerSwitchEmployer
+                    }
+                },
+            )
+        }
 
-        AppScreen.WorkerSwitchEmployer -> WorkerSwitchEmployerScreen(
-            employers = workerEmployers,
-            selectedEmployerName = selectedEmployerName,
-            onBack = {
-                screen = AppScreen.WorkerProfile
-            },
-            onAddCompany = {
-                screen = AppScreen.WorkerAddEmployer
-            },
-            onEmployerSelected = { employer ->
-                if (employer.status == "Active") {
-                    selectedEmployerName = employer.name
-                    saveSelectedEmployerName(context, selectedEmployerName)
-                } else {
-                    Toast.makeText(context, "Employer approval is still pending", Toast.LENGTH_SHORT).show()
-                }
-            },
-        )
+        AppScreen.WorkerSwitchEmployer -> {
+            val copy = workerLanguage.employerFlowCopy()
+            WorkerSwitchEmployerScreen(
+                language = workerLanguage,
+                employers = workerEmployers,
+                selectedEmployerName = selectedEmployerName,
+                onBack = {
+                    screen = AppScreen.WorkerProfile
+                },
+                onAddCompany = {
+                    screen = AppScreen.WorkerAddEmployer
+                },
+                onEmployerSelected = { employer ->
+                    if (employer.status == "Active") {
+                        selectedEmployerName = employer.name
+                        saveSelectedEmployerName(context, selectedEmployerName)
+                    } else {
+                        Toast.makeText(context, copy.employerApprovalPending, Toast.LENGTH_SHORT).show()
+                    }
+                },
+            )
+        }
 
         AppScreen.WebRegisterCompanyDetails -> WebRegisterCompanyDetailsScreen(
             companyProfile = adminCompanyProfile,
@@ -5105,7 +5117,7 @@ fun WorkerDayViewAdjustedScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "‹",
+                    text = "\u2039",
                     color = Color(0xFF17171B),
                     fontSize = 30.sp,
                     lineHeight = 30.sp,
@@ -5569,7 +5581,7 @@ fun WorkerLogHoursDayDetailScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "‹",
+                    text = "\u2039",
                     color = Color(0xFF17171B),
                     fontSize = 30.sp,
                     lineHeight = 30.sp,
@@ -5730,10 +5742,12 @@ fun WorkerLogHoursDayDetailScreen(
 @Composable
 fun WorkerAddEmployerScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     onBack: () -> Unit = {},
     onCompanyAdded: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val copy = language.employerFlowCopy()
     var companyCode by remember { mutableStateOf("JANS26") }
 
     Box(
@@ -5749,7 +5763,7 @@ fun WorkerAddEmployerScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "‹",
+                    text = "\u2039",
                     color = Color(0xFF17171B),
                     fontSize = 28.sp,
                     lineHeight = 28.sp,
@@ -5758,7 +5772,7 @@ fun WorkerAddEmployerScreen(
                         .clickable(onClick = onBack),
                 )
                 Text(
-                    text = "Add company",
+                    text = copy.addCompanyTitle,
                     color = Color(0xFF17171B),
                     fontSize = 18.sp,
                     lineHeight = 22.sp,
@@ -5767,7 +5781,7 @@ fun WorkerAddEmployerScreen(
             }
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = "Enter the company code you received from your\nemployer.",
+                text = copy.addCompanyDescription,
                 color = Color(0xFF73737A),
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
@@ -5786,7 +5800,7 @@ fun WorkerAddEmployerScreen(
                         .padding(14.dp),
                 ) {
                     Text(
-                        text = "Company code",
+                        text = copy.companyCodeLabel,
                         color = Color(0xFF73737A),
                         fontSize = 12.sp,
                         lineHeight = 15.sp,
@@ -5809,7 +5823,7 @@ fun WorkerAddEmployerScreen(
                             fontSize = 21.sp,
                             lineHeight = 25.sp,
                             fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 13.sp,
+                            letterSpacing = 0.sp,
                             textAlign = TextAlign.Center,
                         ),
                         singleLine = true,
@@ -5832,7 +5846,7 @@ fun WorkerAddEmployerScreen(
                 shadowElevation = 0.dp,
             ) {
                 Text(
-                    text = "After adding, the employer still needs to approve you.",
+                    text = copy.approvalHint,
                     color = Color(0xFF4973A9),
                     fontSize = 12.sp,
                     lineHeight = 15.sp,
@@ -5844,7 +5858,7 @@ fun WorkerAddEmployerScreen(
         Button(
             onClick = {
                 if (companyCode.length < 6) {
-                    Toast.makeText(context, "Enter the 6-character company code", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, copy.enterSixCharacterCode, Toast.LENGTH_SHORT).show()
                 } else {
                     onCompanyAdded(companyCode)
                 }
@@ -5861,7 +5875,7 @@ fun WorkerAddEmployerScreen(
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
         ) {
             Text(
-                text = "Add company",
+                text = copy.addCompanyAction,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
                 fontWeight = FontWeight.Medium,
@@ -5873,12 +5887,14 @@ fun WorkerAddEmployerScreen(
 @Composable
 fun WorkerSwitchEmployerScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     employers: List<WorkerEmployer> = defaultWorkerEmployers(),
     selectedEmployerName: String = "Bakkerij Jansen",
     onBack: () -> Unit = {},
     onAddCompany: () -> Unit = {},
     onEmployerSelected: (WorkerEmployer) -> Unit = {},
 ) {
+    val copy = language.employerFlowCopy()
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -5892,7 +5908,7 @@ fun WorkerSwitchEmployerScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "‹",
+                    text = "\u2039",
                     color = Color(0xFF17171B),
                     fontSize = 28.sp,
                     lineHeight = 28.sp,
@@ -5901,7 +5917,7 @@ fun WorkerSwitchEmployerScreen(
                         .clickable(onClick = onBack),
                 )
                 Text(
-                    text = "Switch employer",
+                    text = copy.switchEmployerTitle,
                     color = Color(0xFF17171B),
                     fontSize = 18.sp,
                     lineHeight = 22.sp,
@@ -5910,7 +5926,7 @@ fun WorkerSwitchEmployerScreen(
             }
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = "You work for several companies. Choose which one to\nuse.",
+                text = copy.switchEmployerDescription,
                 color = Color(0xFF73737A),
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
@@ -5918,6 +5934,7 @@ fun WorkerSwitchEmployerScreen(
             Spacer(modifier = Modifier.height(18.dp))
             employers.forEach { employer ->
                 EmployerChoiceRow(
+                    language = language,
                     employer = employer,
                     selected = selectedEmployerName == employer.name,
                     onClick = {
@@ -5935,7 +5952,7 @@ fun WorkerSwitchEmployerScreen(
                 .height(48.dp),
         ) {
             Text(
-                text = "+ Add company",
+                text = copy.addCompanyLink,
                 color = Color(0xFF17171B),
                 fontSize = 13.sp,
                 lineHeight = 16.sp,
@@ -5947,6 +5964,7 @@ fun WorkerSwitchEmployerScreen(
 
 @Composable
 private fun EmployerChoiceRow(
+    language: WorkerLanguage,
     employer: WorkerEmployer,
     selected: Boolean,
     onClick: () -> Unit,
@@ -5981,7 +5999,7 @@ private fun EmployerChoiceRow(
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = "${employer.role} · ${employer.rate} · ${employer.status.lowercase(Locale.US)}",
+                    text = "${employer.role} - ${employer.rate} - ${language.localizedEmployerStatus(employer.status)}",
                     color = Color(0xFF73737A),
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
@@ -7747,6 +7765,105 @@ private fun WorkerLanguage.profileCopy(): WorkerProfileCopy {
             changePassword = "Modifier le mot de passe",
             logOut = "Se deconnecter",
         )
+    }
+}
+
+private data class WorkerEmployerFlowCopy(
+    val addCompanyTitle: String,
+    val addCompanyDescription: String,
+    val companyCodeLabel: String,
+    val approvalHint: String,
+    val enterSixCharacterCode: String,
+    val addCompanyAction: String,
+    val switchEmployerTitle: String,
+    val switchEmployerDescription: String,
+    val addCompanyLink: String,
+    val companyCodeNotFound: String,
+    val approvalRequestSent: String,
+    val employerApprovalPending: String,
+    val alreadyLinked: (String) -> String,
+)
+
+private fun WorkerLanguage.employerFlowCopy(): WorkerEmployerFlowCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerEmployerFlowCopy(
+            addCompanyTitle = "Add company",
+            addCompanyDescription = "Enter the company code you received from your employer.",
+            companyCodeLabel = "Company code",
+            approvalHint = "After adding, the employer still needs to approve you.",
+            enterSixCharacterCode = "Enter the 6-character company code",
+            addCompanyAction = "Add company",
+            switchEmployerTitle = "Switch employer",
+            switchEmployerDescription = "You work for several companies. Choose which one to use.",
+            addCompanyLink = "+ Add company",
+            companyCodeNotFound = "Company code not found",
+            approvalRequestSent = "Approval request sent",
+            employerApprovalPending = "Employer approval is still pending",
+            alreadyLinked = { name -> "$name is already linked" },
+        )
+        WorkerLanguage.Dutch -> WorkerEmployerFlowCopy(
+            addCompanyTitle = "Bedrijf toevoegen",
+            addCompanyDescription = "Voer de bedrijfscode in die je van je werkgever hebt gekregen.",
+            companyCodeLabel = "Bedrijfscode",
+            approvalHint = "Na het toevoegen moet de werkgever je nog goedkeuren.",
+            enterSixCharacterCode = "Voer de 6-tekens bedrijfscode in",
+            addCompanyAction = "Bedrijf toevoegen",
+            switchEmployerTitle = "Wissel werkgever",
+            switchEmployerDescription = "Je werkt voor meerdere bedrijven. Kies welke je wilt gebruiken.",
+            addCompanyLink = "+ Bedrijf toevoegen",
+            companyCodeNotFound = "Bedrijfscode niet gevonden",
+            approvalRequestSent = "Goedkeuringsverzoek verzonden",
+            employerApprovalPending = "Goedkeuring door werkgever is nog in behandeling",
+            alreadyLinked = { name -> "$name is al gekoppeld" },
+        )
+        WorkerLanguage.German -> WorkerEmployerFlowCopy(
+            addCompanyTitle = "Firma hinzufugen",
+            addCompanyDescription = "Gib den Firmencode ein, den du von deinem Arbeitgeber erhalten hast.",
+            companyCodeLabel = "Firmencode",
+            approvalHint = "Nach dem Hinzufugen muss der Arbeitgeber dich noch genehmigen.",
+            enterSixCharacterCode = "Gib den 6-stelligen Firmencode ein",
+            addCompanyAction = "Firma hinzufugen",
+            switchEmployerTitle = "Arbeitgeber wechseln",
+            switchEmployerDescription = "Du arbeitest fur mehrere Firmen. Wahle aus, welche du verwenden willst.",
+            addCompanyLink = "+ Firma hinzufugen",
+            companyCodeNotFound = "Firmencode nicht gefunden",
+            approvalRequestSent = "Genehmigungsanfrage gesendet",
+            employerApprovalPending = "Arbeitgeber-Genehmigung ist noch offen",
+            alreadyLinked = { name -> "$name ist bereits verknupft" },
+        )
+        WorkerLanguage.French -> WorkerEmployerFlowCopy(
+            addCompanyTitle = "Ajouter une entreprise",
+            addCompanyDescription = "Saisissez le code d'entreprise recu de votre employeur.",
+            companyCodeLabel = "Code entreprise",
+            approvalHint = "Apres l'ajout, l'employeur doit encore vous approuver.",
+            enterSixCharacterCode = "Saisissez le code entreprise a 6 caracteres",
+            addCompanyAction = "Ajouter l'entreprise",
+            switchEmployerTitle = "Changer d'employeur",
+            switchEmployerDescription = "Vous travaillez pour plusieurs entreprises. Choisissez celle a utiliser.",
+            addCompanyLink = "+ Ajouter une entreprise",
+            companyCodeNotFound = "Code entreprise introuvable",
+            approvalRequestSent = "Demande d'approbation envoyee",
+            employerApprovalPending = "L'approbation de l'employeur est encore en attente",
+            alreadyLinked = { name -> "$name est deja lie" },
+        )
+    }
+}
+
+private fun WorkerLanguage.localizedEmployerStatus(status: String): String {
+    return when (status) {
+        "Active" -> when (this) {
+            WorkerLanguage.English -> "active"
+            WorkerLanguage.Dutch -> "actief"
+            WorkerLanguage.German -> "aktiv"
+            WorkerLanguage.French -> "actif"
+        }
+        "Pending" -> when (this) {
+            WorkerLanguage.English -> "pending"
+            WorkerLanguage.Dutch -> "in behandeling"
+            WorkerLanguage.German -> "offen"
+            WorkerLanguage.French -> "en attente"
+        }
+        else -> status.lowercase(Locale.US)
     }
 }
 
