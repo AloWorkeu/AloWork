@@ -366,6 +366,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerChangePassword -> WorkerChangePasswordScreen(
+            language = workerLanguage,
             onBack = {
                 screen = AppScreen.WorkerProfile
             },
@@ -4725,10 +4726,12 @@ fun WorkerProfileScreen(
 @Composable
 fun WorkerChangePasswordScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     onBack: () -> Unit = {},
     onPasswordChanged: (String, String) -> Boolean = { _, _ -> true },
 ) {
     val context = LocalContext.current
+    val copy = language.changePasswordCopy()
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -4746,7 +4749,7 @@ fun WorkerChangePasswordScreen(
                 contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
             ) {
                 Text(
-                    text = "Back",
+                    text = copy.back,
                     color = Color(0xFF73737A),
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
@@ -4755,7 +4758,7 @@ fun WorkerChangePasswordScreen(
             }
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = "Change password",
+                text = copy.title,
                 color = Color(0xFF17171B),
                 fontSize = 22.sp,
                 lineHeight = 27.sp,
@@ -4763,28 +4766,28 @@ fun WorkerChangePasswordScreen(
             )
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = "Use at least 8 characters. Your new password must\nmatch before it can be saved.",
+                text = copy.description,
                 color = Color(0xFF73737A),
                 fontSize = 13.sp,
                 lineHeight = 16.sp,
             )
             Spacer(modifier = Modifier.height(24.dp))
             SignUpField(
-                label = "Current password",
+                label = copy.currentPassword,
                 value = currentPassword,
                 onValueChange = { currentPassword = it },
                 isPassword = true,
             )
             Spacer(modifier = Modifier.height(16.dp))
             SignUpField(
-                label = "New password",
+                label = copy.newPassword,
                 value = newPassword,
                 onValueChange = { newPassword = it },
                 isPassword = true,
             )
             Spacer(modifier = Modifier.height(16.dp))
             SignUpField(
-                label = "Repeat new password",
+                label = copy.repeatNewPassword,
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
                 isPassword = true,
@@ -4794,16 +4797,16 @@ fun WorkerChangePasswordScreen(
         Button(
             onClick = {
                 val message = when {
-                    currentPassword.isBlank() -> "Enter your current password"
-                    newPassword.length < 8 -> "Use at least 8 characters"
-                    confirmPassword != newPassword -> "Passwords do not match"
+                    currentPassword.isBlank() -> copy.enterCurrentPassword
+                    newPassword.length < 8 -> copy.useAtLeastEightCharacters
+                    confirmPassword != newPassword -> copy.passwordsDoNotMatch
                     else -> null
                 }
                 if (message == null) {
                     if (onPasswordChanged(currentPassword, newPassword)) {
-                        Toast.makeText(context, "Password changed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, copy.passwordChanged, Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(context, "Current password is incorrect", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, copy.currentPasswordIncorrect, Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -4821,7 +4824,7 @@ fun WorkerChangePasswordScreen(
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
         ) {
             Text(
-                text = "Save password",
+                text = copy.savePassword,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
                 fontWeight = FontWeight.Medium,
@@ -7771,6 +7774,82 @@ private fun WorkerLanguage.profileCopy(): WorkerProfileCopy {
             language = "Langue",
             changePassword = "Modifier le mot de passe",
             logOut = "Se deconnecter",
+        )
+    }
+}
+
+private data class WorkerChangePasswordCopy(
+    val back: String,
+    val title: String,
+    val description: String,
+    val currentPassword: String,
+    val newPassword: String,
+    val repeatNewPassword: String,
+    val enterCurrentPassword: String,
+    val useAtLeastEightCharacters: String,
+    val passwordsDoNotMatch: String,
+    val passwordChanged: String,
+    val currentPasswordIncorrect: String,
+    val savePassword: String,
+)
+
+private fun WorkerLanguage.changePasswordCopy(): WorkerChangePasswordCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerChangePasswordCopy(
+            back = "Back",
+            title = "Change password",
+            description = "Use at least 8 characters. Your new password must match before it can be saved.",
+            currentPassword = "Current password",
+            newPassword = "New password",
+            repeatNewPassword = "Repeat new password",
+            enterCurrentPassword = "Enter your current password",
+            useAtLeastEightCharacters = "Use at least 8 characters",
+            passwordsDoNotMatch = "Passwords do not match",
+            passwordChanged = "Password changed",
+            currentPasswordIncorrect = "Current password is incorrect",
+            savePassword = "Save password",
+        )
+        WorkerLanguage.Dutch -> WorkerChangePasswordCopy(
+            back = "Terug",
+            title = "Wachtwoord wijzigen",
+            description = "Gebruik minimaal 8 tekens. Je nieuwe wachtwoord moet overeenkomen voordat het kan worden opgeslagen.",
+            currentPassword = "Huidig wachtwoord",
+            newPassword = "Nieuw wachtwoord",
+            repeatNewPassword = "Herhaal nieuw wachtwoord",
+            enterCurrentPassword = "Voer je huidige wachtwoord in",
+            useAtLeastEightCharacters = "Gebruik minimaal 8 tekens",
+            passwordsDoNotMatch = "Wachtwoorden komen niet overeen",
+            passwordChanged = "Wachtwoord gewijzigd",
+            currentPasswordIncorrect = "Huidig wachtwoord is onjuist",
+            savePassword = "Wachtwoord opslaan",
+        )
+        WorkerLanguage.German -> WorkerChangePasswordCopy(
+            back = "Zuruck",
+            title = "Passwort andern",
+            description = "Nutze mindestens 8 Zeichen. Dein neues Passwort muss ubereinstimmen, bevor es gespeichert wird.",
+            currentPassword = "Aktuelles Passwort",
+            newPassword = "Neues Passwort",
+            repeatNewPassword = "Neues Passwort wiederholen",
+            enterCurrentPassword = "Gib dein aktuelles Passwort ein",
+            useAtLeastEightCharacters = "Nutze mindestens 8 Zeichen",
+            passwordsDoNotMatch = "Passworter stimmen nicht uberein",
+            passwordChanged = "Passwort geandert",
+            currentPasswordIncorrect = "Aktuelles Passwort ist falsch",
+            savePassword = "Passwort speichern",
+        )
+        WorkerLanguage.French -> WorkerChangePasswordCopy(
+            back = "Retour",
+            title = "Modifier le mot de passe",
+            description = "Utilisez au moins 8 caracteres. Le nouveau mot de passe doit correspondre avant enregistrement.",
+            currentPassword = "Mot de passe actuel",
+            newPassword = "Nouveau mot de passe",
+            repeatNewPassword = "Repeter le nouveau mot de passe",
+            enterCurrentPassword = "Saisissez votre mot de passe actuel",
+            useAtLeastEightCharacters = "Utilisez au moins 8 caracteres",
+            passwordsDoNotMatch = "Les mots de passe ne correspondent pas",
+            passwordChanged = "Mot de passe modifie",
+            currentPasswordIncorrect = "Le mot de passe actuel est incorrect",
+            savePassword = "Enregistrer le mot de passe",
         )
     }
 }
