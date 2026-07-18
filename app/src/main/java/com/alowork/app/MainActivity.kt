@@ -238,6 +238,7 @@ fun AloworkApp() {
                     period = "Today",
                     hours = submission.hours,
                     pay = submission.pay,
+                    proofLabel = proofLabelForPhotoCount(submission.photoCount),
                 )
                 pendingGpsShiftSeconds = null
                 workerShiftPhotoUris = emptyList()
@@ -1657,6 +1658,7 @@ fun AdminHoursApprovalQueueScreen(
                                     hours = request.hours,
                                     pay = request.pay,
                                     status = request.status,
+                                    proofLabel = request.proofLabel,
                                     onReview = {
                                         selectedRequest = request
                                     },
@@ -1677,6 +1679,7 @@ fun AdminHoursApprovalQueueScreen(
                 period = requestToReview.period,
                 submittedHours = requestToReview.hours,
                 submittedPay = requestToReview.pay,
+                proofLabel = requestToReview.proofLabel,
                 messages = workerMessages.filter { message ->
                     message.workerName == requestToReview.name && message.shiftTitle == requestToReview.period
                 },
@@ -2548,6 +2551,7 @@ private fun AdminAdjustHoursModal(
     period: String,
     submittedHours: String,
     submittedPay: String,
+    proofLabel: String = "",
     messages: List<WorkerShiftMessage> = emptyList(),
     onDismiss: () -> Unit,
     onSendReply: (String) -> Unit = {},
@@ -2602,6 +2606,23 @@ private fun AdminAdjustHoursModal(
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
                 )
+                if (proofLabel.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFE9F2FF),
+                        shadowElevation = 0.dp,
+                    ) {
+                        Text(
+                            text = "Proof: $proofLabel",
+                            color = Color(0xFF4973A9),
+                            fontSize = 10.sp,
+                            lineHeight = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(14.dp))
                 Row(modifier = Modifier.fillMaxWidth()) {
                     AdminAdjustField(
@@ -3101,13 +3122,14 @@ private fun AdminApprovalQueueRow(
     hours: String,
     pay: String,
     status: String,
+    proofLabel: String = "",
     onReview: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(74.dp)
+            .height(if (proofLabel.isBlank()) 74.dp else 88.dp)
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -3126,6 +3148,16 @@ private fun AdminApprovalQueueRow(
                 fontSize = 10.sp,
                 lineHeight = 13.sp,
             )
+            if (proofLabel.isNotBlank()) {
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = "Proof: $proofLabel",
+                    color = Color(0xFF4973A9),
+                    fontSize = 9.sp,
+                    lineHeight = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
@@ -7326,6 +7358,10 @@ private fun formatPhotoCount(count: Int): String {
     return if (count == 1) "1 photo" else "$count photos"
 }
 
+private fun proofLabelForPhotoCount(count: Int): String {
+    return if (count > 0) formatPhotoCount(count) else ""
+}
+
 private fun formatWholeEuro(value: Double): String {
     return "\u20AC%,.0f".format(Locale.US, value)
 }
@@ -7839,6 +7875,7 @@ private fun saveWorkerSubmittedHoursForAdmin(
     period: String,
     hours: String,
     pay: String,
+    proofLabel: String = "",
 ) {
     val submittedRequest = AdminHoursRequest(
         name = "Sven de Vries",
@@ -7846,6 +7883,7 @@ private fun saveWorkerSubmittedHoursForAdmin(
         hours = hours,
         pay = pay,
         status = "Submitted",
+        proofLabel = proofLabel,
     )
     val existingRequests = loadAdminHoursRequests(context)
     val updatedRequests = existingRequests
@@ -7984,6 +8022,7 @@ data class AdminHoursRequest(
     val hours: String,
     val pay: String,
     val status: String,
+    val proofLabel: String = "",
 )
 
 private fun AdminHoursRequest.isSameAdminRequest(other: AdminHoursRequest): Boolean {
@@ -8068,13 +8107,14 @@ private fun loadAdminHoursRequests(context: Context): List<AdminHoursRequest> {
         ?: return defaultAdminHoursRequests()
     return stored.lineSequence().mapNotNull { row ->
         val parts = row.split('|')
-        if (parts.size == 5) {
+        if (parts.size == 5 || parts.size == 6) {
             AdminHoursRequest(
                 name = parts[0],
                 period = parts[1],
                 hours = parts[2],
                 pay = parts[3],
                 status = parts[4],
+                proofLabel = parts.getOrNull(5).orEmpty(),
             )
         } else {
             null
@@ -8088,7 +8128,7 @@ private fun saveAdminHoursRequests(context: Context, requests: List<AdminHoursRe
         .putString(
             "requests",
             requests.joinToString("\n") {
-                "${it.name}|${it.period}|${it.hours}|${it.pay}|${it.status}"
+                "${it.name}|${it.period}|${it.hours}|${it.pay}|${it.status}|${it.proofLabel}"
             },
         )
         .apply()
