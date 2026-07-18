@@ -426,17 +426,20 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerSwitchEmployer
             },
             onCompanyAdded = { companyCode ->
-                val newEmployer = resolveWorkerEmployerByCode(companyCode)
-                val existingEmployer = workerEmployers.firstOrNull { it.name == newEmployer.name }
-                workerEmployers = if (existingEmployer == null) {
-                    workerEmployers + newEmployer
+                val invitedEmployer = findKnownWorkerEmployerByCode(companyCode)
+                if (invitedEmployer == null) {
+                    Toast.makeText(context, "Company code not found", Toast.LENGTH_SHORT).show()
                 } else {
-                    workerEmployers
+                    val existingEmployer = workerEmployers.firstOrNull { it.name == invitedEmployer.name }
+                    if (existingEmployer == null) {
+                        workerEmployers = workerEmployers + invitedEmployer.copy(status = "Pending")
+                        saveWorkerEmployers(context, workerEmployers)
+                        Toast.makeText(context, "Approval request sent", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "${existingEmployer.name} is already linked", Toast.LENGTH_SHORT).show()
+                    }
+                    screen = AppScreen.WorkerSwitchEmployer
                 }
-                saveWorkerEmployers(context, workerEmployers)
-                selectedEmployerName = existingEmployer?.name ?: newEmployer.name
-                saveSelectedEmployerName(context, selectedEmployerName)
-                screen = AppScreen.WorkerSwitchEmployer
             },
         )
 
@@ -450,8 +453,12 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerAddEmployer
             },
             onEmployerSelected = { employer ->
-                selectedEmployerName = employer.name
-                saveSelectedEmployerName(context, selectedEmployerName)
+                if (employer.status == "Active") {
+                    selectedEmployerName = employer.name
+                    saveSelectedEmployerName(context, selectedEmployerName)
+                } else {
+                    Toast.makeText(context, "Employer approval is still pending", Toast.LENGTH_SHORT).show()
+                }
             },
         )
 
@@ -7579,12 +7586,17 @@ fun defaultWorkerEmployers(): List<WorkerEmployer> {
 }
 
 private fun resolveWorkerEmployerByCode(companyCode: String): WorkerEmployer {
+    return findKnownWorkerEmployerByCode(companyCode)
+        ?: WorkerEmployer("Company ${companyCode.uppercase(Locale.US)}", "Pending approval", "Rate pending", "Pending")
+}
+
+private fun findKnownWorkerEmployerByCode(companyCode: String): WorkerEmployer? {
     return when (companyCode.uppercase(Locale.US)) {
         "JANS26" -> WorkerEmployer("Bakkerij Jansen", "Shift worker", "\u20AC16.00/hr", "Active")
         "CAFE24" -> WorkerEmployer("Cafe De Hoek", "Service", "\u20AC14.50/hr", "Active")
         "BOS013" -> WorkerEmployer("Tuincentrum Bos", "Weekend help", "\u20AC13.00/hr", "Active")
         "ROOS24" -> WorkerEmployer("Roos Logistics", "Warehouse assistant", "\u20AC15.25/hr", "Pending")
-        else -> WorkerEmployer("Company $companyCode", "Pending approval", "Rate pending", "Pending")
+        else -> null
     }
 }
 
