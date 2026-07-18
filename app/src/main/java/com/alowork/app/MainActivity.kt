@@ -267,6 +267,12 @@ fun AloworkApp() {
         AppScreen.WorkerNotifications -> WorkerNotificationsScreen(
             sentMessages = workerChatMessages,
             adminRequests = loadWorkerAdminHoursRequests(context),
+            manualSubmission = manualHoursSubmission,
+            gpsShiftSubmission = gpsShiftSubmission,
+            onOpenShiftChat = { dayDetail ->
+                selectedWorkerDayDetail = dayDetail
+                screen = AppScreen.WorkerChatWithEmployer
+            },
             onTabSelected = ::openWorkerTab,
         )
 
@@ -4292,6 +4298,9 @@ fun WorkerNotificationsScreen(
     modifier: Modifier = Modifier,
     sentMessages: List<WorkerShiftMessage> = emptyList(),
     adminRequests: List<AdminHoursRequest> = emptyList(),
+    manualSubmission: WorkerManualHoursSubmission? = null,
+    gpsShiftSubmission: WorkerGpsShiftSubmission? = null,
+    onOpenShiftChat: (WorkerDayDetail) -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val latestWorkerMessage = sentMessages.lastOrNull { it.isWorker }
@@ -4323,6 +4332,9 @@ fun WorkerNotificationsScreen(
                     body = employerReplyNotificationBody(message),
                     time = "Now",
                     unread = true,
+                    onClick = {
+                        onOpenShiftChat(message.workerDayDetail(manualSubmission, gpsShiftSubmission, adminRequests))
+                    },
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
@@ -4333,6 +4345,9 @@ fun WorkerNotificationsScreen(
                     body = shortenNotificationBody(message.message),
                     time = "Now",
                     unread = true,
+                    onClick = {
+                        onOpenShiftChat(message.workerDayDetail(manualSubmission, gpsShiftSubmission, adminRequests))
+                    },
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
@@ -4347,6 +4362,9 @@ fun WorkerNotificationsScreen(
                     body = workerAdminDecisionBody(request),
                     time = "Now",
                     unread = true,
+                    onClick = {
+                        onOpenShiftChat(request.workerDayDetail(manualSubmission, gpsShiftSubmission))
+                    },
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
@@ -6179,11 +6197,13 @@ private fun NotificationCard(
     time: String,
     unread: Boolean,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(96.dp),
+            .height(96.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
         border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
@@ -7419,6 +7439,62 @@ private fun manualWorkerDayDetail(
         clockIn = "08:00",
         clockOut = "16:30",
         breakLabel = "30 min",
+        hourlyRate = "\u20AC16.00",
+        note = workerSubmissionNote(status),
+        actionLabel = workerSubmissionActionLabel(status),
+    )
+}
+
+private fun WorkerShiftMessage.workerDayDetail(
+    manualSubmission: WorkerManualHoursSubmission?,
+    gpsShiftSubmission: WorkerGpsShiftSubmission?,
+    adminRequests: List<AdminHoursRequest>,
+): WorkerDayDetail {
+    val request = adminRequests.firstOrNull { it.period == shiftTitle }
+    return when (shiftTitle) {
+        "Today" -> gpsShiftSubmission?.let { gpsShiftWorkerDayDetail(it, request) }
+        "17 Jun", "Wed 17 Jun" -> manualSubmission?.let { manualWorkerDayDetail(it, request) }
+        else -> null
+    } ?: workerMessageFallbackDayDetail(this, request)
+}
+
+private fun AdminHoursRequest.workerDayDetail(
+    manualSubmission: WorkerManualHoursSubmission?,
+    gpsShiftSubmission: WorkerGpsShiftSubmission?,
+): WorkerDayDetail {
+    return when (period) {
+        "Today" -> gpsShiftSubmission?.let { gpsShiftWorkerDayDetail(it, this) }
+        "17 Jun", "Wed 17 Jun" -> manualSubmission?.let { manualWorkerDayDetail(it, this) }
+        else -> null
+    } ?: WorkerDayDetail(
+        title = period,
+        status = workerWeekStatus(),
+        hours = hours,
+        pay = pay,
+        summary = workerSubmissionSummary(workerWeekStatus(), "Waiting for employer approval"),
+        clockIn = "08:00",
+        clockOut = if (workerWeekStatus() == WeekStatus.Pending) "Now" else "Clocked out",
+        breakLabel = "0 min",
+        hourlyRate = "\u20AC16.00",
+        note = workerSubmissionNote(workerWeekStatus()),
+        actionLabel = workerSubmissionActionLabel(workerWeekStatus()),
+    )
+}
+
+private fun workerMessageFallbackDayDetail(
+    message: WorkerShiftMessage,
+    adminRequest: AdminHoursRequest?,
+): WorkerDayDetail {
+    val status = adminRequest.workerWeekStatus()
+    return WorkerDayDetail(
+        title = message.shiftTitle,
+        status = status,
+        hours = adminRequest?.hours ?: message.shiftSummary.substringBefore(" - "),
+        pay = adminRequest?.pay ?: message.pay,
+        summary = adminRequest?.let { workerSubmissionSummary(status, message.shiftSummary) } ?: message.shiftSummary,
+        clockIn = "08:00",
+        clockOut = if (status == WeekStatus.Pending) "Now" else "Clocked out",
+        breakLabel = "0 min",
         hourlyRate = "\u20AC16.00",
         note = workerSubmissionNote(status),
         actionLabel = workerSubmissionActionLabel(status),
