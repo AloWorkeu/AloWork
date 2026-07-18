@@ -231,6 +231,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerShiftInProgress -> GpsShiftInProgressScreen(
+            language = workerLanguage,
             hourlyRate = selectedEmployerHourlyRate,
             onClockOut = { elapsedSeconds ->
                 pendingGpsShiftSeconds = elapsedSeconds
@@ -239,6 +240,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerShiftPhotos -> WorkerShiftPhotosScreen(
+            language = workerLanguage,
             photoUris = workerShiftPhotoUris,
             onBack = {
                 screen = AppScreen.WorkerShiftInProgress
@@ -6987,9 +6989,11 @@ fun GpsLocationDeniedScreen(
 @Composable
 fun GpsShiftInProgressScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     hourlyRate: Double = 13.05,
     onClockOut: (Long) -> Unit = {},
 ) {
+    val copy = language.workerShiftFlowCopy()
     var elapsedSeconds by remember { mutableStateOf(3.hours + 24.minutes + 11.seconds) }
     val earnings = elapsedSeconds / 3600.0 * hourlyRate
 
@@ -7027,7 +7031,7 @@ fun GpsShiftInProgressScreen(
                 .padding(top = 286.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            ShiftStatusPill()
+            ShiftStatusPill(status = copy.shiftInProgressStatus)
             Spacer(modifier = Modifier.height(12.dp))
             Surface(
                 modifier = Modifier
@@ -7044,7 +7048,7 @@ fun GpsShiftInProgressScreen(
                 ) {
                     Spacer(modifier = Modifier.height(18.dp))
                     Text(
-                        text = "Time worked",
+                        text = copy.timeWorked,
                         color = Color(0xFF858585),
                         fontSize = 10.sp,
                         lineHeight = 12.sp,
@@ -7060,7 +7064,7 @@ fun GpsShiftInProgressScreen(
                     )
                     Spacer(modifier = Modifier.height(5.dp))
                     Text(
-                        text = "Earning so far - ${formatCurrency(earnings)}",
+                        text = "${copy.earningSoFarPrefix} - ${formatCurrency(earnings)}",
                         color = Color(0xFF22A77A),
                         fontSize = 10.sp,
                         lineHeight = 12.sp,
@@ -7085,7 +7089,7 @@ fun GpsShiftInProgressScreen(
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
         ) {
             Text(
-                text = "Clock out",
+                text = copy.clockOut,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
                 fontWeight = FontWeight.Medium,
@@ -7097,12 +7101,14 @@ fun GpsShiftInProgressScreen(
 @Composable
 fun WorkerShiftPhotosScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     photoUris: List<Uri> = emptyList(),
     onBack: () -> Unit = {},
     onPhotoAdded: (Uri) -> Unit = {},
     onPhotoRemoved: (Uri) -> Unit = {},
     onSave: () -> Unit = {},
 ) {
+    val copy = language.workerShiftFlowCopy()
     val photoPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
@@ -7140,7 +7146,7 @@ fun WorkerShiftPhotosScreen(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Shift photos",
+                    text = copy.shiftPhotosTitle,
                     color = Color(0xFF17171C),
                     fontSize = 18.sp,
                     lineHeight = 22.sp,
@@ -7149,7 +7155,7 @@ fun WorkerShiftPhotosScreen(
             }
             Spacer(modifier = Modifier.height(14.dp))
             Text(
-                text = "Add photos as proof of your shift. Your employer may require this for certain shifts.",
+                text = copy.shiftPhotosDescription,
                 color = Color(0xFF73737A),
                 fontSize = 13.sp,
                 lineHeight = 17.sp,
@@ -7166,12 +7172,14 @@ fun WorkerShiftPhotosScreen(
                         rowItems.forEach { uri ->
                             if (uri == null) {
                                 AddShiftPhotoTile(
+                                    label = copy.addPhoto,
                                     modifier = Modifier.weight(1f),
                                     onClick = { photoPicker.launch("image/*") },
                                 )
                             } else {
                                 ShiftPhotoTile(
                                     uri = uri,
+                                    unavailableLabel = copy.photoUnavailable,
                                     onRemove = { onPhotoRemoved(uri) },
                                     modifier = Modifier.weight(1f),
                                 )
@@ -7199,7 +7207,7 @@ fun WorkerShiftPhotosScreen(
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
         ) {
             Text(
-                text = "Save",
+                text = copy.save,
                 fontSize = 15.sp,
                 lineHeight = 19.sp,
                 fontWeight = FontWeight.Medium,
@@ -7211,6 +7219,7 @@ fun WorkerShiftPhotosScreen(
 @Composable
 private fun AddShiftPhotoTile(
     modifier: Modifier = Modifier,
+    label: String = "Add photo",
     onClick: () -> Unit,
 ) {
     Column(
@@ -7240,7 +7249,7 @@ private fun AddShiftPhotoTile(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Add photo",
+            text = label,
             color = Color(0xFF73737A),
             fontSize = 12.sp,
             lineHeight = 16.sp,
@@ -7252,6 +7261,7 @@ private fun AddShiftPhotoTile(
 @Composable
 private fun ShiftPhotoTile(
     uri: Uri,
+    unavailableLabel: String = "Photo unavailable",
     onRemove: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -7274,7 +7284,7 @@ private fun ShiftPhotoTile(
                 )
             } else {
                 Text(
-                    text = "Photo unavailable",
+                    text = unavailableLabel,
                     color = Color(0xFF73737A),
                     fontSize = 12.sp,
                     modifier = Modifier.align(Alignment.Center),
@@ -7366,7 +7376,7 @@ private fun loadShiftPhotoPreview(
 }.getOrNull()
 
 @Composable
-private fun ShiftStatusPill() {
+private fun ShiftStatusPill(status: String) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -7387,7 +7397,7 @@ private fun ShiftStatusPill() {
             )
             Spacer(modifier = Modifier.width(7.dp))
             Text(
-                text = "Shift in progress - clocked in at 08:00",
+                text = status,
                 color = Color(0xFF167A5B),
                 fontSize = 10.sp,
                 lineHeight = 12.sp,
@@ -7923,6 +7933,67 @@ private fun WorkerLanguage.workerTimeEntryCopy(): WorkerTimeEntryCopy {
             optionalPlaceholder = "Facultatif",
             submitHours = "Envoyer les heures",
             checkStartEndTime = "Verifiez l'heure de debut et de fin",
+        )
+    }
+}
+
+private data class WorkerShiftFlowCopy(
+    val shiftInProgressStatus: String,
+    val timeWorked: String,
+    val earningSoFarPrefix: String,
+    val clockOut: String,
+    val shiftPhotosTitle: String,
+    val shiftPhotosDescription: String,
+    val addPhoto: String,
+    val photoUnavailable: String,
+    val save: String,
+)
+
+private fun WorkerLanguage.workerShiftFlowCopy(): WorkerShiftFlowCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerShiftFlowCopy(
+            shiftInProgressStatus = "Shift in progress - clocked in at 08:00",
+            timeWorked = "Time worked",
+            earningSoFarPrefix = "Earning so far",
+            clockOut = "Clock out",
+            shiftPhotosTitle = "Shift photos",
+            shiftPhotosDescription = "Add photos as proof of your shift. Your employer may require this for certain shifts.",
+            addPhoto = "Add photo",
+            photoUnavailable = "Photo unavailable",
+            save = "Save",
+        )
+        WorkerLanguage.Dutch -> WorkerShiftFlowCopy(
+            shiftInProgressStatus = "Dienst bezig - ingeklokt om 08:00",
+            timeWorked = "Gewerkte tijd",
+            earningSoFarPrefix = "Verdienste tot nu toe",
+            clockOut = "Uitklokken",
+            shiftPhotosTitle = "Dienstfoto's",
+            shiftPhotosDescription = "Voeg foto's toe als bewijs van je dienst. Je werkgever kan dit voor bepaalde diensten vragen.",
+            addPhoto = "Foto toevoegen",
+            photoUnavailable = "Foto niet beschikbaar",
+            save = "Opslaan",
+        )
+        WorkerLanguage.German -> WorkerShiftFlowCopy(
+            shiftInProgressStatus = "Schicht lauft - eingestempelt um 08:00",
+            timeWorked = "Gearbeitete Zeit",
+            earningSoFarPrefix = "Bisher verdient",
+            clockOut = "Ausstempeln",
+            shiftPhotosTitle = "Schichtfotos",
+            shiftPhotosDescription = "Fuge Fotos als Nachweis deiner Schicht hinzu. Dein Arbeitgeber kann dies fur bestimmte Schichten verlangen.",
+            addPhoto = "Foto hinzufugen",
+            photoUnavailable = "Foto nicht verfugbar",
+            save = "Speichern",
+        )
+        WorkerLanguage.French -> WorkerShiftFlowCopy(
+            shiftInProgressStatus = "Service en cours - pointe a 08:00",
+            timeWorked = "Temps travaille",
+            earningSoFarPrefix = "Gain jusqu'ici",
+            clockOut = "Pointer depart",
+            shiftPhotosTitle = "Photos du service",
+            shiftPhotosDescription = "Ajoutez des photos comme preuve de votre service. Votre employeur peut les demander pour certains services.",
+            addPhoto = "Ajouter une photo",
+            photoUnavailable = "Photo indisponible",
+            save = "Enregistrer",
         )
     }
 }
