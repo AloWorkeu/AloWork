@@ -261,6 +261,7 @@ fun AloworkApp() {
 
         AppScreen.WorkerNotifications -> WorkerNotificationsScreen(
             sentMessages = workerChatMessages,
+            adminRequests = loadWorkerAdminHoursRequests(context),
             onTabSelected = ::openWorkerTab,
         )
 
@@ -4077,9 +4078,13 @@ private fun WorkerTabIcon(
 fun WorkerNotificationsScreen(
     modifier: Modifier = Modifier,
     sentMessages: List<String> = emptyList(),
+    adminRequests: List<AdminHoursRequest> = emptyList(),
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val latestMessage = sentMessages.lastOrNull()
+    val latestAdminDecision = adminRequests
+        .filter { it.status == "Approved" || it.status == "Adjusted" }
+        .lastOrNull()
 
     Box(
         modifier = modifier
@@ -4102,6 +4107,20 @@ fun WorkerNotificationsScreen(
                     type = NotificationType.MessageSent,
                     title = "Message sent",
                     body = shortenNotificationBody(message),
+                    time = "Now",
+                    unread = true,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+            latestAdminDecision?.let { request ->
+                NotificationCard(
+                    type = if (request.status == "Adjusted") {
+                        NotificationType.HoursAdjusted
+                    } else {
+                        NotificationType.WeekApproved
+                    },
+                    title = if (request.status == "Adjusted") "Hours adjusted" else "Hours approved",
+                    body = workerAdminDecisionBody(request),
                     time = "Now",
                     unread = true,
                 )
@@ -4448,7 +4467,15 @@ fun WorkerHistoryOverviewScreen(
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val context = LocalContext.current
-    val monthSummary = workerMonthSummary(manualSubmission, gpsShiftSubmission)
+    val adminRequests = loadWorkerAdminHoursRequests(context)
+    val gpsAdminRequest = adminRequests.firstOrNull { it.period == "Today" }
+    val manualAdminRequest = adminRequests.firstOrNull { it.period == "17 Jun" }
+    val monthSummary = workerMonthSummary(
+        manualSubmission = manualSubmission,
+        gpsShiftSubmission = gpsShiftSubmission,
+        manualAdminRequest = manualAdminRequest,
+        gpsAdminRequest = gpsAdminRequest,
+    )
 
     Box(
         modifier = modifier
@@ -4509,25 +4536,33 @@ fun WorkerHistoryOverviewScreen(
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     gpsShiftSubmission?.let { submission ->
+                        val request = gpsAdminRequest
+                        val status = request.workerWeekStatus()
+                        val hours = request?.hours ?: submission.hours
+                        val pay = request?.pay ?: submission.pay
                         WeekOverviewRow(
                             week = "Week 25",
-                            amount = submission.pay,
-                            detail = "${submission.hours} - Today - ${formatPhotoCount(submission.photoCount)}",
-                            status = WeekStatus.Pending,
+                            amount = pay,
+                            detail = "$hours - Today - ${formatPhotoCount(submission.photoCount)}",
+                            status = status,
                             onClick = {
-                                onDaySelected(gpsShiftWorkerDayDetail(submission))
+                                onDaySelected(gpsShiftWorkerDayDetail(submission, request))
                             },
                         )
                         ProfileDivider()
                     }
                     manualSubmission?.let { submission ->
+                        val request = manualAdminRequest
+                        val status = request.workerWeekStatus()
+                        val hours = request?.hours ?: submission.hours
+                        val pay = request?.pay ?: submission.pay
                         WeekOverviewRow(
                             week = "Week 25",
-                            amount = submission.pay,
-                            detail = "${submission.hours} · 17 Jun",
-                            status = WeekStatus.Pending,
+                            amount = pay,
+                            detail = "$hours - 17 Jun",
+                            status = status,
                             onClick = {
-                                onDaySelected(manualWorkerDayDetail(submission))
+                                onDaySelected(manualWorkerDayDetail(submission, request))
                             },
                         )
                         ProfileDivider()
@@ -7109,35 +7144,47 @@ private fun defaultAdjustedWorkerDayDetail(): WorkerDayDetail {
     )
 }
 
-private fun gpsShiftWorkerDayDetail(submission: WorkerGpsShiftSubmission): WorkerDayDetail {
+private fun gpsShiftWorkerDayDetail(
+    submission: WorkerGpsShiftSubmission,
+    adminRequest: AdminHoursRequest? = null,
+): WorkerDayDetail {
+    val status = adminRequest.workerWeekStatus()
+    val hours = adminRequest?.hours ?: submission.hours
+    val pay = adminRequest?.pay ?: submission.pay
     return WorkerDayDetail(
         title = "Today",
-        status = WeekStatus.Pending,
-        hours = submission.hours,
-        pay = submission.pay,
-        summary = "Submitted with ${formatPhotoCount(submission.photoCount)}",
+        status = status,
+        hours = hours,
+        pay = pay,
+        summary = workerSubmissionSummary(status, "Submitted with ${formatPhotoCount(submission.photoCount)}"),
         clockIn = "08:00",
-        clockOut = "Now",
+        clockOut = if (status == WeekStatus.Pending) "Now" else "Clocked out",
         breakLabel = "0 min",
         hourlyRate = "\u20AC13.05",
-        note = "Your clocked shift is waiting for employer approval.",
-        actionLabel = "Ask about this shift",
+        note = workerSubmissionNote(status),
+        actionLabel = workerSubmissionActionLabel(status),
     )
 }
 
-private fun manualWorkerDayDetail(submission: WorkerManualHoursSubmission): WorkerDayDetail {
+private fun manualWorkerDayDetail(
+    submission: WorkerManualHoursSubmission,
+    adminRequest: AdminHoursRequest? = null,
+): WorkerDayDetail {
+    val status = adminRequest.workerWeekStatus()
+    val hours = adminRequest?.hours ?: submission.hours
+    val pay = adminRequest?.pay ?: submission.pay
     return WorkerDayDetail(
         title = "Wed 17 Jun",
-        status = WeekStatus.Pending,
-        hours = submission.hours,
-        pay = submission.pay,
-        summary = "Manual hours waiting for approval",
+        status = status,
+        hours = hours,
+        pay = pay,
+        summary = workerSubmissionSummary(status, "Manual hours waiting for approval"),
         clockIn = "08:00",
         clockOut = "16:30",
         breakLabel = "30 min",
         hourlyRate = "\u20AC16.00",
-        note = "Your manually entered hours were submitted to your employer.",
-        actionLabel = "Ask about this entry",
+        note = workerSubmissionNote(status),
+        actionLabel = workerSubmissionActionLabel(status),
     )
 }
 
@@ -7188,22 +7235,48 @@ private data class WorkerMonthSummary(
 private fun workerMonthSummary(
     manualSubmission: WorkerManualHoursSubmission? = null,
     gpsShiftSubmission: WorkerGpsShiftSubmission? = null,
+    manualAdminRequest: AdminHoursRequest? = null,
+    gpsAdminRequest: AdminHoursRequest? = null,
 ): WorkerMonthSummary {
     val submissions = listOfNotNull(
-        manualSubmission?.let { it.hours to it.pay },
-        gpsShiftSubmission?.let { it.hours to it.pay },
+        manualSubmission?.let { submission ->
+            WorkerSummaryEntry(
+                hours = manualAdminRequest?.hours ?: submission.hours,
+                pay = manualAdminRequest?.pay ?: submission.pay,
+                status = manualAdminRequest.workerWeekStatus(),
+            )
+        },
+        gpsShiftSubmission?.let { submission ->
+            WorkerSummaryEntry(
+                hours = gpsAdminRequest?.hours ?: submission.hours,
+                pay = gpsAdminRequest?.pay ?: submission.pay,
+                status = gpsAdminRequest.workerWeekStatus(),
+            )
+        },
     )
-    val submittedPay = submissions.sumOf { (_, pay) -> parseEuroValue(pay) }
-    val submittedHours = submissions.sumOf { (hours, _) -> parseHoursValue(hours) }
+    val submittedPay = submissions.sumOf { entry -> parseEuroValue(entry.pay) }
+    val submittedHours = submissions.sumOf { entry -> parseHoursValue(entry.hours) }
+    val approvedSubmittedPay = submissions
+        .filter { it.status == WeekStatus.Approved || it.status == WeekStatus.Adjusted }
+        .sumOf { entry -> parseEuroValue(entry.pay) }
+    val pendingSubmittedPay = submissions
+        .filter { it.status == WeekStatus.Pending }
+        .sumOf { entry -> parseEuroValue(entry.pay) }
 
     return WorkerMonthSummary(
         totalPay = 1284.0 + submittedPay,
-        approvedPay = 1092.0,
-        pendingPay = 192.0 + submittedPay,
+        approvedPay = 1092.0 + approvedSubmittedPay,
+        pendingPay = 192.0 + pendingSubmittedPay,
         totalHours = 78.5 + submittedHours,
         workdays = 14 + submissions.size,
     )
 }
+
+private data class WorkerSummaryEntry(
+    val hours: String,
+    val pay: String,
+    val status: WeekStatus,
+)
 
 private const val ManualHoursPreferences = "manual_hours"
 private const val WorkerGpsShiftPreferences = "gps_shift"
@@ -7351,7 +7424,7 @@ private fun saveAdminCompanyProfile(context: Context, profile: AdminCompanyProfi
         .apply()
 }
 
-private data class AdminHoursRequest(
+data class AdminHoursRequest(
     val name: String,
     val period: String,
     val hours: String,
@@ -7361,6 +7434,50 @@ private data class AdminHoursRequest(
 
 private fun AdminHoursRequest.isSameAdminRequest(other: AdminHoursRequest): Boolean {
     return name == other.name && period == other.period
+}
+
+private fun AdminHoursRequest?.workerWeekStatus(): WeekStatus {
+    return when (this?.status) {
+        "Approved" -> WeekStatus.Approved
+        "Adjusted" -> WeekStatus.Adjusted
+        else -> WeekStatus.Pending
+    }
+}
+
+private fun workerSubmissionSummary(status: WeekStatus, pendingSummary: String): String {
+    return when (status) {
+        WeekStatus.Approved -> "Approved by your employer"
+        WeekStatus.Pending -> pendingSummary
+        WeekStatus.Adjusted -> "Adjusted by your employer"
+    }
+}
+
+private fun workerSubmissionNote(status: WeekStatus): String {
+    return when (status) {
+        WeekStatus.Approved -> "Your employer approved this shift and included it in payroll."
+        WeekStatus.Pending -> "Your submitted hours are waiting for employer approval."
+        WeekStatus.Adjusted -> "Your employer adjusted this shift before payroll."
+    }
+}
+
+private fun workerSubmissionActionLabel(status: WeekStatus): String {
+    return when (status) {
+        WeekStatus.Approved -> "Ask about this shift"
+        WeekStatus.Pending -> "Ask about this shift"
+        WeekStatus.Adjusted -> "Ask about this adjustment"
+    }
+}
+
+private fun workerAdminDecisionBody(request: AdminHoursRequest): String {
+    return if (request.status == "Adjusted") {
+        "Your ${request.period} hours were adjusted to ${request.hours} (${request.pay})."
+    } else {
+        "Your ${request.period} hours were approved (${request.hours}, ${request.pay})."
+    }
+}
+
+private fun loadWorkerAdminHoursRequests(context: Context): List<AdminHoursRequest> {
+    return loadAdminHoursRequests(context).filter { it.name == "Sven de Vries" }
 }
 
 private const val AdminHoursPreferences = "admin_hours"
