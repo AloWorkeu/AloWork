@@ -260,6 +260,8 @@ fun AloworkApp() {
 
         AppScreen.WorkerProfile -> WorkerProfileScreen(
             language = workerLanguage,
+            selectedEmployer = workerEmployers.firstOrNull { it.name == selectedEmployerName }
+                ?: defaultWorkerEmployers().first(),
             onSwitchEmployer = {
                 screen = AppScreen.WorkerSwitchEmployer
             },
@@ -4124,6 +4126,7 @@ fun WorkerNotificationsScreen(
 fun WorkerProfileScreen(
     modifier: Modifier = Modifier,
     language: WorkerLanguage = WorkerLanguage.English,
+    selectedEmployer: WorkerEmployer = defaultWorkerEmployers().first(),
     onSwitchEmployer: () -> Unit = {},
     onAddEmployer: () -> Unit = {},
     onChangeLanguage: () -> Unit = {},
@@ -4150,18 +4153,20 @@ fun WorkerProfileScreen(
             ProfileHeaderCard()
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Pay (set by employer)",
+                text = "Pay (selected employer)",
                 color = Color(0xFF73737A),
                 fontSize = 13.sp,
                 lineHeight = 16.sp,
             )
             Spacer(modifier = Modifier.height(12.dp))
             ProfileSectionCard {
-                ProfileInfoRow(label = "Hourly rate", value = "€16.00")
+                ProfileInfoRow(label = "Company", value = selectedEmployer.name)
                 ProfileDivider()
-                ProfileInfoRow(label = "Payout", value = "Net")
+                ProfileInfoRow(label = "Role", value = selectedEmployer.role)
                 ProfileDivider()
-                ProfileInfoRow(label = "Weekend premium", value = "1.5× (Sunday)")
+                ProfileInfoRow(label = "Hourly rate", value = selectedEmployer.rate)
+                ProfileDivider()
+                ProfileInfoRow(label = "Status", value = selectedEmployer.status)
             }
             Spacer(modifier = Modifier.height(16.dp))
             ProfileSectionCard {
