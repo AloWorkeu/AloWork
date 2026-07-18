@@ -1674,6 +1674,8 @@ fun AdminHoursApprovalQueueScreen(
             AdminAdjustHoursModal(
                 workerName = requestToReview.name,
                 period = requestToReview.period,
+                submittedHours = requestToReview.hours,
+                submittedPay = requestToReview.pay,
                 messages = workerMessages.filter { message ->
                     message.workerName == requestToReview.name && message.shiftTitle == requestToReview.period
                 },
@@ -2543,6 +2545,8 @@ private fun AdminQueueFilter(
 private fun AdminAdjustHoursModal(
     workerName: String,
     period: String,
+    submittedHours: String,
+    submittedPay: String,
     messages: List<WorkerShiftMessage> = emptyList(),
     onDismiss: () -> Unit,
     onSendReply: (String) -> Unit = {},
@@ -2555,6 +2559,7 @@ private fun AdminAdjustHoursModal(
     var breakMinutes by remember(workerName, period) { mutableStateOf("30") }
     var note by remember(workerName, period) { mutableStateOf("Adjusted after manager review") }
     var reply by remember(workerName, period) { mutableStateOf("") }
+    val submittedHourlyRate = effectiveHourlyRateValue(submittedHours, submittedPay)
     fun sendReply() {
         val trimmedReply = reply.trim()
         if (trimmedReply.isNotEmpty()) {
@@ -2716,7 +2721,7 @@ private fun AdminAdjustHoursModal(
                     Button(
                         onClick = {
                             val adjustedHours = calculateManualHours(clockIn, clockOut, breakMinutes)
-                            onSave("${"%.1f".format(Locale.US, adjustedHours)}h", "\u20AC${"%.0f".format(Locale.US, adjustedHours * 16.0)}")
+                            onSave(formatHours(adjustedHours), formatEuro(adjustedHours * submittedHourlyRate))
                         },
                         modifier = Modifier
                             .width(112.dp)
@@ -7268,14 +7273,21 @@ private fun effectiveHourlyRateLabel(
     pay: String,
     fallbackRate: Double = 16.0,
 ): String {
+    return formatEuro(effectiveHourlyRateValue(hours, pay, fallbackRate))
+}
+
+private fun effectiveHourlyRateValue(
+    hours: String,
+    pay: String,
+    fallbackRate: Double = 16.0,
+): Double {
     val hourValue = parseHoursValue(hours)
     val payValue = parseEuroValue(pay)
-    val rate = if (hourValue > 0.0 && payValue > 0.0) {
+    return if (hourValue > 0.0 && payValue > 0.0) {
         payValue / hourValue
     } else {
         fallbackRate
     }
-    return formatEuro(rate)
 }
 
 private enum class AppScreen {
