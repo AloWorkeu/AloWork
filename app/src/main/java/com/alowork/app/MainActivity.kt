@@ -254,6 +254,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerNotifications -> WorkerNotificationsScreen(
+            sentMessages = workerChatMessages,
             onTabSelected = ::openWorkerTab,
         )
 
@@ -4055,8 +4056,11 @@ private fun WorkerTabIcon(
 @Composable
 fun WorkerNotificationsScreen(
     modifier: Modifier = Modifier,
+    sentMessages: List<String> = emptyList(),
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
+    val latestMessage = sentMessages.lastOrNull()
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -4073,6 +4077,16 @@ fun WorkerNotificationsScreen(
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(18.dp))
+            latestMessage?.let { message ->
+                NotificationCard(
+                    type = NotificationType.MessageSent,
+                    title = "Message sent",
+                    body = shortenNotificationBody(message),
+                    time = "Now",
+                    unread = true,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
             NotificationCard(
                 type = NotificationType.HoursAdjusted,
                 title = "Hours adjusted",
@@ -5856,6 +5870,15 @@ private fun ProfileDivider() {
     )
 }
 
+private fun shortenNotificationBody(message: String): String {
+    val cleaned = message.replace('_', ' ').trim()
+    return if (cleaned.length <= 52) {
+        cleaned
+    } else {
+        cleaned.take(49).trimEnd() + "..."
+    }
+}
+
 @Composable
 private fun NotificationCard(
     type: NotificationType,
@@ -5919,11 +5942,13 @@ private fun NotificationCard(
 @Composable
 private fun NotificationIcon(type: NotificationType, iconSize: Dp) {
     val background = when (type) {
+        NotificationType.MessageSent -> Color(0xFFF0EDFF)
         NotificationType.HoursAdjusted -> Color(0xFFE7F3FF)
         NotificationType.WeekApproved -> Color(0xFFE3F8EF)
         NotificationType.AccountApproved -> Color(0xFFE3F8EF)
     }
     val iconColor = when (type) {
+        NotificationType.MessageSent -> Color(0xFF6E55D8)
         NotificationType.HoursAdjusted -> Color(0xFF3D95DD)
         NotificationType.WeekApproved -> Color(0xFF20A977)
         NotificationType.AccountApproved -> Color(0xFF20A977)
@@ -5938,6 +5963,30 @@ private fun NotificationIcon(type: NotificationType, iconSize: Dp) {
             val strokeWidth = 2.dp.toPx()
             val canvasSize = this.size
             when (type) {
+                NotificationType.MessageSent -> {
+                    drawRoundRect(
+                        color = iconColor,
+                        topLeft = Offset(canvasSize.width * 0.16f, canvasSize.height * 0.22f),
+                        size = Size(canvasSize.width * 0.68f, canvasSize.height * 0.48f),
+                        cornerRadius = CornerRadius(canvasSize.width * 0.12f, canvasSize.width * 0.12f),
+                        style = Stroke(width = strokeWidth),
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(canvasSize.width * 0.34f, canvasSize.height * 0.70f),
+                        end = Offset(canvasSize.width * 0.24f, canvasSize.height * 0.86f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        color = iconColor,
+                        start = Offset(canvasSize.width * 0.34f, canvasSize.height * 0.70f),
+                        end = Offset(canvasSize.width * 0.48f, canvasSize.height * 0.70f),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round,
+                    )
+                }
+
                 NotificationType.HoursAdjusted -> {
                     drawLine(
                         color = iconColor,
@@ -7382,6 +7431,7 @@ private fun saveAdminWorkers(context: Context, workers: List<AdminWorker>) {
 }
 
 private enum class NotificationType {
+    MessageSent,
     HoursAdjusted,
     WeekApproved,
     AccountApproved,
