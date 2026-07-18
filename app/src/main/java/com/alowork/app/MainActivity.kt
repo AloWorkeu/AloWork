@@ -1446,11 +1446,11 @@ fun AdminHoursApprovalQueueScreen(
     onOpenWeekendPremium: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    var selectedWorker by remember { mutableStateOf<String?>(initialSelectedWorker) }
     var selectedFilter by remember { mutableStateOf("Pending") }
     var hourRequests by remember {
         mutableStateOf(loadAdminHoursRequests(context))
     }
+    var selectedRequest by remember { mutableStateOf<AdminHoursRequest?>(null) }
     val pendingCount = hourRequests.count { it.status != "Approved" }
     val filteredRequests = when (selectedFilter) {
         "Pending" -> hourRequests.filter { it.status != "Approved" }
@@ -1460,7 +1460,11 @@ fun AdminHoursApprovalQueueScreen(
 
     LaunchedEffect(initialSelectedWorker) {
         if (initialSelectedWorker != null) {
-            selectedWorker = initialSelectedWorker
+            selectedRequest = hourRequests.firstOrNull { request ->
+                request.name == initialSelectedWorker && request.status != "Approved"
+            } ?: hourRequests.firstOrNull { request ->
+                request.name == initialSelectedWorker
+            }
             onInitialSelectionConsumed()
         }
     }
@@ -1575,7 +1579,7 @@ fun AdminHoursApprovalQueueScreen(
                                     pay = request.pay,
                                     status = request.status,
                                     onReview = {
-                                        selectedWorker = request.name
+                                        selectedRequest = request
                                     },
                                 )
                                 if (index < filteredRequests.lastIndex) {
@@ -1588,15 +1592,16 @@ fun AdminHoursApprovalQueueScreen(
             }
         }
 
-        selectedWorker?.let { workerName ->
+        selectedRequest?.let { requestToReview ->
             AdminAdjustHoursModal(
-                workerName = workerName,
+                workerName = requestToReview.name,
+                period = requestToReview.period,
                 onDismiss = {
-                    selectedWorker = null
+                    selectedRequest = null
                 },
                 onApprove = {
                     val updatedRequests = hourRequests.map { request ->
-                        if (request.name == workerName) {
+                        if (request.isSameAdminRequest(requestToReview)) {
                             request.copy(status = "Approved")
                         } else {
                             request
@@ -1604,12 +1609,12 @@ fun AdminHoursApprovalQueueScreen(
                     }
                     hourRequests = updatedRequests
                     saveAdminHoursRequests(context, updatedRequests)
-                    Toast.makeText(context, "Hours approved for $workerName", Toast.LENGTH_SHORT).show()
-                    selectedWorker = null
+                    Toast.makeText(context, "Hours approved for ${requestToReview.name}", Toast.LENGTH_SHORT).show()
+                    selectedRequest = null
                 },
                 onSave = { updatedHours, updatedPay ->
                     val updatedRequests = hourRequests.map { request ->
-                        if (request.name == workerName) {
+                        if (request.isSameAdminRequest(requestToReview)) {
                             request.copy(hours = updatedHours, pay = updatedPay, status = "Adjusted")
                         } else {
                             request
@@ -1617,8 +1622,8 @@ fun AdminHoursApprovalQueueScreen(
                     }
                     hourRequests = updatedRequests
                     saveAdminHoursRequests(context, updatedRequests)
-                    Toast.makeText(context, "Hours updated for $workerName", Toast.LENGTH_SHORT).show()
-                    selectedWorker = null
+                    Toast.makeText(context, "Hours updated for ${requestToReview.name}", Toast.LENGTH_SHORT).show()
+                    selectedRequest = null
                 },
             )
         }
@@ -2441,15 +2446,16 @@ private fun AdminQueueFilter(
 @Composable
 private fun AdminAdjustHoursModal(
     workerName: String,
+    period: String,
     onDismiss: () -> Unit,
     onApprove: () -> Unit,
     onSave: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var clockIn by remember(workerName) { mutableStateOf("09:00") }
-    var clockOut by remember(workerName) { mutableStateOf("17:30") }
-    var breakMinutes by remember(workerName) { mutableStateOf("30") }
-    var note by remember(workerName) { mutableStateOf("Adjusted after manager review") }
+    var clockIn by remember(workerName, period) { mutableStateOf("09:00") }
+    var clockOut by remember(workerName, period) { mutableStateOf("17:30") }
+    var breakMinutes by remember(workerName, period) { mutableStateOf("30") }
+    var note by remember(workerName, period) { mutableStateOf("Adjusted after manager review") }
 
     Box(
         modifier = modifier
@@ -2478,7 +2484,7 @@ private fun AdminAdjustHoursModal(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "$workerName · Week 25",
+                    text = "$workerName - $period",
                     color = Color(0xFF73737A),
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
@@ -7352,6 +7358,10 @@ private data class AdminHoursRequest(
     val pay: String,
     val status: String,
 )
+
+private fun AdminHoursRequest.isSameAdminRequest(other: AdminHoursRequest): Boolean {
+    return name == other.name && period == other.period
+}
 
 private const val AdminHoursPreferences = "admin_hours"
 
