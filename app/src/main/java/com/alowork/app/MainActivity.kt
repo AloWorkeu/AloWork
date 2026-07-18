@@ -4294,7 +4294,8 @@ fun WorkerNotificationsScreen(
     adminRequests: List<AdminHoursRequest> = emptyList(),
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
-    val latestMessage = sentMessages.lastOrNull()
+    val latestWorkerMessage = sentMessages.lastOrNull { it.isWorker }
+    val latestEmployerReply = sentMessages.lastOrNull { !it.isWorker }
     val latestAdminDecision = adminRequests
         .filter { it.status == "Approved" || it.status == "Adjusted" }
         .lastOrNull()
@@ -4315,7 +4316,17 @@ fun WorkerNotificationsScreen(
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(18.dp))
-            latestMessage?.let { message ->
+            latestEmployerReply?.let { message ->
+                NotificationCard(
+                    type = NotificationType.EmployerReply,
+                    title = "Employer replied",
+                    body = employerReplyNotificationBody(message),
+                    time = "Now",
+                    unread = true,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+            latestWorkerMessage?.let { message ->
                 NotificationCard(
                     type = NotificationType.MessageSent,
                     title = "Message sent",
@@ -6224,12 +6235,14 @@ private fun NotificationCard(
 private fun NotificationIcon(type: NotificationType, iconSize: Dp) {
     val background = when (type) {
         NotificationType.MessageSent -> Color(0xFFF0EDFF)
+        NotificationType.EmployerReply -> Color(0xFFE3F8EF)
         NotificationType.HoursAdjusted -> Color(0xFFE7F3FF)
         NotificationType.WeekApproved -> Color(0xFFE3F8EF)
         NotificationType.AccountApproved -> Color(0xFFE3F8EF)
     }
     val iconColor = when (type) {
         NotificationType.MessageSent -> Color(0xFF6E55D8)
+        NotificationType.EmployerReply -> Color(0xFF20A977)
         NotificationType.HoursAdjusted -> Color(0xFF3D95DD)
         NotificationType.WeekApproved -> Color(0xFF20A977)
         NotificationType.AccountApproved -> Color(0xFF20A977)
@@ -6244,7 +6257,8 @@ private fun NotificationIcon(type: NotificationType, iconSize: Dp) {
             val strokeWidth = 2.dp.toPx()
             val canvasSize = this.size
             when (type) {
-                NotificationType.MessageSent -> {
+                NotificationType.MessageSent,
+                NotificationType.EmployerReply -> {
                     drawRoundRect(
                         color = iconColor,
                         topLeft = Offset(canvasSize.width * 0.16f, canvasSize.height * 0.22f),
@@ -7746,6 +7760,10 @@ private fun workerAdminDecisionBody(request: AdminHoursRequest): String {
     }
 }
 
+private fun employerReplyNotificationBody(message: WorkerShiftMessage): String {
+    return shortenNotificationBody("${message.shiftTitle}: ${message.message}")
+}
+
 private fun loadWorkerAdminHoursRequests(context: Context): List<AdminHoursRequest> {
     return loadAdminHoursRequests(context).filter { it.name == "Sven de Vries" }
 }
@@ -7893,6 +7911,7 @@ private fun saveAdminWorkers(context: Context, workers: List<AdminWorker>) {
 
 private enum class NotificationType {
     MessageSent,
+    EmployerReply,
     HoursAdjusted,
     WeekApproved,
     AccountApproved,
