@@ -109,6 +109,9 @@ fun AloworkApp() {
     var workerEmployers by remember {
         mutableStateOf(loadWorkerEmployers(context))
     }
+    val selectedEmployer = workerEmployers.firstOrNull { it.name == selectedEmployerName }
+        ?: defaultWorkerEmployers().first()
+    val selectedEmployerHourlyRate = selectedEmployer.hourlyRateValue()
 
     fun openWorkerTab(tab: WorkerTab) {
         screen = when (tab) {
@@ -201,6 +204,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerShiftInProgress -> GpsShiftInProgressScreen(
+            hourlyRate = selectedEmployerHourlyRate,
             onClockOut = { elapsedSeconds ->
                 pendingGpsShiftSeconds = elapsedSeconds
                 screen = AppScreen.WorkerShiftPhotos
@@ -223,7 +227,7 @@ fun AloworkApp() {
                 val hours = elapsedSeconds / 3600.0
                 val submission = WorkerGpsShiftSubmission(
                     hours = formatHours(hours),
-                    pay = formatEuro(hours * 13.05),
+                    pay = formatEuro(hours * selectedEmployerHourlyRate),
                     photoCount = workerShiftPhotoUris.size,
                 )
                 gpsShiftSubmission = submission
@@ -282,8 +286,7 @@ fun AloworkApp() {
 
         AppScreen.WorkerProfile -> WorkerProfileScreen(
             language = workerLanguage,
-            selectedEmployer = workerEmployers.firstOrNull { it.name == selectedEmployerName }
-                ?: defaultWorkerEmployers().first(),
+            selectedEmployer = selectedEmployer,
             onSwitchEmployer = {
                 screen = AppScreen.WorkerSwitchEmployer
             },
@@ -370,6 +373,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerLogHoursDayDetail -> WorkerLogHoursDayDetailScreen(
+            hourlyRate = selectedEmployerHourlyRate,
             onBack = {
                 screen = AppScreen.WorkerGpsClockIn
             },
@@ -5330,6 +5334,7 @@ private fun ChatMessageBubble(
 @Composable
 fun WorkerLogHoursDayDetailScreen(
     modifier: Modifier = Modifier,
+    hourlyRate: Double = 16.0,
     onBack: () -> Unit = {},
     onSubmitted: (String, String) -> Unit = { _, _ -> },
     onTabSelected: (WorkerTab) -> Unit = {},
@@ -5340,7 +5345,7 @@ fun WorkerLogHoursDayDetailScreen(
     var breakMinutes by remember { mutableStateOf("30") }
     var note by remember { mutableStateOf("") }
     val totalHours = calculateManualHours(clockIn, clockOut, breakMinutes)
-    val estimatedPay = totalHours * 16.0
+    val estimatedPay = totalHours * hourlyRate
 
     Box(
         modifier = modifier
@@ -5434,7 +5439,7 @@ fun WorkerLogHoursDayDetailScreen(
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Estimated with €16.00 hourly rate",
+                        text = "Estimated with ${formatEuro(hourlyRate)} hourly rate",
                         color = Color(0xFF73737A),
                         fontSize = 12.sp,
                         lineHeight = 15.sp,
@@ -6779,10 +6784,11 @@ fun GpsLocationDeniedScreen(
 @Composable
 fun GpsShiftInProgressScreen(
     modifier: Modifier = Modifier,
+    hourlyRate: Double = 13.05,
     onClockOut: (Long) -> Unit = {},
 ) {
     var elapsedSeconds by remember { mutableStateOf(3.hours + 24.minutes + 11.seconds) }
-    val earnings = elapsedSeconds / 3600.0 * 13.05
+    val earnings = elapsedSeconds / 3600.0 * hourlyRate
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -7251,6 +7257,10 @@ private fun parseEuroValue(value: String): Double {
         .filter { it.isDigit() || it == '.' || it == ',' }
         .replace(",", ".")
         .toDoubleOrNull() ?: 0.0
+}
+
+private fun WorkerEmployer.hourlyRateValue(): Double {
+    return parseEuroValue(rate).takeIf { it > 0.0 } ?: 16.0
 }
 
 private enum class AppScreen {
