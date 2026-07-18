@@ -1245,6 +1245,14 @@ fun AdminDashboardHomeScreen(
     onOpenWorkLocations: () -> Unit = {},
     onOpenWeekendPremium: () -> Unit = {},
 ) {
+    val context = LocalContext.current
+    val hourRequests = loadAdminHoursRequests(context)
+    val adminWorkers = loadAdminWorkers(context)
+    val totalHours = hourRequests.sumOf { parseHoursValue(it.hours) }
+    val estimatedPayroll = hourRequests.sumOf { parseEuroValue(it.pay) }
+    val pendingRequests = hourRequests.filter { it.status != "Approved" }
+    val activeWorkerCount = adminWorkers.count { it.status == "Active" }
+
     Row(
         modifier = modifier
             .fillMaxSize()
@@ -1307,14 +1315,14 @@ fun AdminDashboardHomeScreen(
             Row(modifier = Modifier.fillMaxWidth()) {
                 AdminMetricCard(
                     label = "Hours",
-                    value = "78.5h",
+                    value = formatHours(totalHours),
                     detail = "This month",
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 AdminMetricCard(
                     label = "Payroll",
-                    value = "\u20AC1,284",
+                    value = formatWholeEuro(estimatedPayroll),
                     detail = "Estimated",
                     modifier = Modifier.weight(1f),
                 )
@@ -1323,7 +1331,7 @@ fun AdminDashboardHomeScreen(
             Row(modifier = Modifier.fillMaxWidth()) {
                 AdminMetricCard(
                     label = "Pending",
-                    value = "3",
+                    value = pendingRequests.size.toString(),
                     detail = "Need review",
                     onClick = onOpenApprovalQueue,
                     modifier = Modifier.weight(1f),
@@ -1331,7 +1339,7 @@ fun AdminDashboardHomeScreen(
                 Spacer(modifier = Modifier.width(10.dp))
                 AdminMetricCard(
                     label = "Workers",
-                    value = "14",
+                    value = activeWorkerCount.toString(),
                     detail = "Active",
                     onClick = onOpenTeam,
                     modifier = Modifier.weight(1f),
@@ -1354,32 +1362,31 @@ fun AdminDashboardHomeScreen(
                 shadowElevation = 0.dp,
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    AdminApprovalRow(
-                        name = "Sven de Vries",
-                        detail = "Week 25 · 16.0h",
-                        amount = "\u20AC256",
-                        onClick = {
-                            onReviewWorker("Sven de Vries")
-                        },
-                    )
-                    ProfileDivider()
-                    AdminApprovalRow(
-                        name = "Mila Bakker",
-                        detail = "Week 25 · 12.5h",
-                        amount = "\u20AC200",
-                        onClick = {
-                            onReviewWorker("Mila Bakker")
-                        },
-                    )
-                    ProfileDivider()
-                    AdminApprovalRow(
-                        name = "Noah Visser",
-                        detail = "Week 25 · adjusted",
-                        amount = "\u20AC176",
-                        onClick = {
-                            onReviewWorker("Noah Visser")
-                        },
-                    )
+                    if (pendingRequests.isEmpty()) {
+                        Text(
+                            text = "No pending approvals",
+                            color = Color(0xFF73737A),
+                            fontSize = 12.sp,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(18.dp),
+                        )
+                    } else {
+                        val previewRequests = pendingRequests.take(3)
+                        previewRequests.forEachIndexed { index, request ->
+                            AdminApprovalRow(
+                                name = request.name,
+                                detail = "${request.period} - ${request.hours}",
+                                amount = request.pay,
+                                onClick = {
+                                    onReviewWorker(request.name)
+                                },
+                            )
+                            if (index < previewRequests.lastIndex) {
+                                ProfileDivider()
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -6736,6 +6743,21 @@ private fun formatHours(value: Double): String {
 
 private fun formatEuro(value: Double): String {
     return "\u20AC%.2f".format(Locale.US, value)
+}
+
+private fun formatWholeEuro(value: Double): String {
+    return "\u20AC%,.0f".format(Locale.US, value)
+}
+
+private fun parseHoursValue(value: String): Double {
+    return value.removeSuffix("h").replace(",", ".").toDoubleOrNull() ?: 0.0
+}
+
+private fun parseEuroValue(value: String): Double {
+    return value
+        .filter { it.isDigit() || it == '.' || it == ',' }
+        .replace(",", ".")
+        .toDoubleOrNull() ?: 0.0
 }
 
 private enum class AppScreen {
