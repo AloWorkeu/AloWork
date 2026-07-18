@@ -154,13 +154,14 @@ fun AloworkApp() {
 
     when (screen) {
         AppScreen.WorkerSignUp -> WorkerSignUpScreen(
-            onAccountCreated = { fullName, email, companyCode ->
+            onAccountCreated = { fullName, email, companyCode, password ->
                 submitWorkerSignupForApproval(
                     context = context,
                     fullName = fullName,
                     email = email,
                     companyCode = companyCode,
                 )
+                saveWorkerPassword(context, email, password)
                 pendingWorkerEmail = email
                 screen = AppScreen.WorkerAwaitingApproval
             },
@@ -173,16 +174,20 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerLogin -> WorkerLoginScreen(
-            onLogin = { email ->
+            onLogin = { email, password ->
                 pendingWorkerEmail = email
-                val worker = findAdminWorkerByEmail(context, email)
-                if (worker?.status == "Active") {
-                    val approval = WorkerAccountApproval(name = worker.name, email = worker.email)
-                    workerAccountApproval = approval
-                    saveWorkerAccountApproval(context, approval)
-                    screen = AppScreen.WorkerGpsClockIn
+                if (isWorkerPasswordValid(context, email, password)) {
+                    val worker = findAdminWorkerByEmail(context, email)
+                    if (worker?.status == "Active") {
+                        val approval = WorkerAccountApproval(name = worker.name, email = worker.email)
+                        workerAccountApproval = approval
+                        saveWorkerAccountApproval(context, approval)
+                        screen = AppScreen.WorkerGpsClockIn
+                    } else {
+                        screen = AppScreen.WorkerAwaitingApproval
+                    }
                 } else {
-                    screen = AppScreen.WorkerAwaitingApproval
+                    Toast.makeText(context, "Email or password is incorrect", Toast.LENGTH_SHORT).show()
                 }
             },
             onCreateAccount = {
@@ -359,8 +364,13 @@ fun AloworkApp() {
             onBack = {
                 screen = AppScreen.WorkerProfile
             },
-            onPasswordChanged = {
-                screen = AppScreen.WorkerProfile
+            onPasswordChanged = { currentPassword, newPassword ->
+                if (updateWorkerPassword(context, pendingWorkerEmail, currentPassword, newPassword)) {
+                    screen = AppScreen.WorkerProfile
+                    true
+                } else {
+                    false
+                }
             },
         )
 
@@ -614,7 +624,7 @@ fun AloworkApp() {
 @Composable
 fun WorkerSignUpScreen(
     modifier: Modifier = Modifier,
-    onAccountCreated: (String, String, String) -> Unit = { _, _, _ -> },
+    onAccountCreated: (String, String, String, String) -> Unit = { _, _, _, _ -> },
     onLoginSelected: () -> Unit = {},
     onRegisterCompany: () -> Unit = {},
 ) {
@@ -691,7 +701,7 @@ fun WorkerSignUpScreen(
                         else -> null
                     }
                     if (message == null) {
-                        onAccountCreated(fullName.trim(), email.trim(), companyCode.trim())
+                        onAccountCreated(fullName.trim(), email.trim(), companyCode.trim(), password)
                     } else {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
@@ -759,7 +769,7 @@ fun WorkerSignUpScreen(
 @Composable
 fun WorkerLoginScreen(
     modifier: Modifier = Modifier,
-    onLogin: (String) -> Unit = {},
+    onLogin: (String, String) -> Unit = { _, _ -> },
     onCreateAccount: () -> Unit = {},
     onRegisterCompany: () -> Unit = {},
 ) {
@@ -819,7 +829,7 @@ fun WorkerLoginScreen(
                         else -> null
                     }
                     if (message == null) {
-                        onLogin(email.trim())
+                        onLogin(email.trim(), password)
                     } else {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
@@ -4688,7 +4698,7 @@ fun WorkerProfileScreen(
 fun WorkerChangePasswordScreen(
     modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
-    onPasswordChanged: () -> Unit = {},
+    onPasswordChanged: (String, String) -> Boolean = { _, _ -> true },
 ) {
     val context = LocalContext.current
     var currentPassword by remember { mutableStateOf("") }
@@ -4762,8 +4772,11 @@ fun WorkerChangePasswordScreen(
                     else -> null
                 }
                 if (message == null) {
-                    Toast.makeText(context, "Password changed", Toast.LENGTH_SHORT).show()
-                    onPasswordChanged()
+                    if (onPasswordChanged(currentPassword, newPassword)) {
+                        Toast.makeText(context, "Password changed", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Current password is incorrect", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 }
@@ -7653,6 +7666,48 @@ private fun saveWorkerLanguage(context: Context, language: WorkerLanguage) {
         .edit()
         .putString("language", language.name)
         .apply()
+}
+
+private const val WorkerPasswordsPreferences = "worker_passwords"
+
+private fun workerPasswordKey(email: String): String {
+    return email.trim().lowercase(Locale.US)
+}
+
+private fun defaultWorkerPassword(context: Context, email: String): String? {
+    return if (findAdminWorkerByEmail(context, email) != null) "password" else null
+}
+
+private fun loadWorkerPassword(context: Context, email: String): String? {
+    val key = workerPasswordKey(email)
+    if (key.isBlank()) return null
+    return context.getSharedPreferences(WorkerPasswordsPreferences, Context.MODE_PRIVATE)
+        .getString(key, null)
+        ?: defaultWorkerPassword(context, email)
+}
+
+private fun saveWorkerPassword(context: Context, email: String, password: String) {
+    val key = workerPasswordKey(email)
+    if (key.isBlank()) return
+    context.getSharedPreferences(WorkerPasswordsPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putString(key, password)
+        .apply()
+}
+
+private fun isWorkerPasswordValid(context: Context, email: String, password: String): Boolean {
+    return loadWorkerPassword(context, email) == password
+}
+
+private fun updateWorkerPassword(
+    context: Context,
+    email: String,
+    currentPassword: String,
+    newPassword: String,
+): Boolean {
+    if (!isWorkerPasswordValid(context, email, currentPassword)) return false
+    saveWorkerPassword(context, email, newPassword)
+    return true
 }
 
 data class WorkerAccountApproval(
