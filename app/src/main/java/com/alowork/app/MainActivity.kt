@@ -199,6 +199,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerAwaitingApproval -> WorkerAwaitingApprovalScreen(
+            language = workerLanguage,
             isApproved = isWorkerApproved(context, pendingWorkerEmail),
             onCheckApproval = {
                 isWorkerApproved(context, pendingWorkerEmail)
@@ -209,6 +210,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerLocationPermission -> WorkerLocationPermissionScreen(
+            language = workerLanguage,
             onLocationAllowed = {
                 screen = AppScreen.WorkerGpsClockIn
             },
@@ -292,6 +294,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerLocationDenied -> GpsLocationDeniedScreen(
+            language = workerLanguage,
             onLocationEnabled = {
                 screen = AppScreen.WorkerGpsClockIn
             },
@@ -3511,11 +3514,13 @@ private fun WebRegisterStep(
 @Composable
 fun WorkerAwaitingApprovalScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     isApproved: Boolean = false,
     onCheckApproval: () -> Boolean = { isApproved },
     onApprovalReceived: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val copy = language.workerAccessCopy()
 
     if (isApproved) {
         LaunchedEffect(Unit) {
@@ -3539,7 +3544,7 @@ fun WorkerAwaitingApprovalScreen(
             AwaitingApprovalIcon(size = 34.dp)
             Spacer(modifier = Modifier.height(22.dp))
             Text(
-                text = "Account created",
+                text = copy.accountCreatedTitle,
                 color = Color(0xFF17171B),
                 fontSize = 20.sp,
                 lineHeight = 24.sp,
@@ -3548,7 +3553,7 @@ fun WorkerAwaitingApprovalScreen(
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Your account has been created. Your employer still needs to approve it. You'll be notified once you can start.",
+                text = copy.accountCreatedDescription,
                 color = Color(0xFF73737A),
                 fontSize = 13.sp,
                 lineHeight = 17.sp,
@@ -3561,7 +3566,7 @@ fun WorkerAwaitingApprovalScreen(
                 if (isApproved || onCheckApproval()) {
                     onApprovalReceived()
                 } else {
-                    Toast.makeText(context, "Still waiting for employer approval", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, copy.stillWaitingApproval, Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier
@@ -3577,7 +3582,7 @@ fun WorkerAwaitingApprovalScreen(
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
         ) {
             Text(
-                text = "Check approval",
+                text = copy.checkApproval,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
                 fontWeight = FontWeight.Medium,
@@ -3620,10 +3625,12 @@ private fun AwaitingApprovalIcon(size: Dp) {
 @Composable
 fun WorkerLocationPermissionScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     onLocationAllowed: () -> Unit = {},
     onManualEntry: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val copy = language.workerAccessCopy()
     val permissions = remember {
         arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -3639,7 +3646,7 @@ fun WorkerLocationPermissionScreen(
         } else {
             Toast.makeText(
                 context,
-                "Location access is required to clock in",
+                copy.locationRequired,
                 Toast.LENGTH_SHORT,
             ).show()
         }
@@ -3661,7 +3668,7 @@ fun WorkerLocationPermissionScreen(
             LocationPermissionIcon(size = 28.dp)
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = "Enable location",
+                text = copy.enableLocationTitle,
                 color = Color(0xFF17171B),
                 fontSize = 18.sp,
                 lineHeight = 22.sp,
@@ -3670,7 +3677,7 @@ fun WorkerLocationPermissionScreen(
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "To clock in at the workplace we need your\nlocation. It's only used to confirm your shift, not\nto track you.",
+                text = copy.locationPermissionDescription,
                 color = Color(0xFF747474),
                 fontSize = 10.sp,
                 lineHeight = 13.sp,
@@ -3704,7 +3711,7 @@ fun WorkerLocationPermissionScreen(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
             ) {
                 Text(
-                    text = "Allow location",
+                    text = copy.allowLocation,
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -3714,11 +3721,11 @@ fun WorkerLocationPermissionScreen(
             TextButton(
                 onClick = {
                     onManualEntry()
-                    Toast.makeText(context, "Manual entry selected", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, copy.manualEntrySelected, Toast.LENGTH_SHORT).show()
                 },
             ) {
                 Text(
-                    text = "Prefer to enter hours manually",
+                    text = copy.preferManualEntry,
                     color = Color(0xFF1D1D22),
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
@@ -6904,10 +6911,12 @@ private fun WorkLocationMapHeader() {
 @Composable
 fun GpsLocationDeniedScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     onLocationEnabled: () -> Unit = {},
     onManualEntry: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val copy = language.workerAccessCopy()
     val permissions = remember {
         arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -6923,7 +6932,7 @@ fun GpsLocationDeniedScreen(
         } else {
             Toast.makeText(
                 context,
-                "Location access is required to clock in",
+                copy.locationRequired,
                 Toast.LENGTH_SHORT,
             ).show()
         }
@@ -6944,7 +6953,7 @@ fun GpsLocationDeniedScreen(
             DeniedLocationIcon(size = 28.dp)
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = "Can't clock in",
+                text = copy.cantClockInTitle,
                 color = Color(0xFF17171B),
                 fontSize = 18.sp,
                 lineHeight = 22.sp,
@@ -6953,7 +6962,7 @@ fun GpsLocationDeniedScreen(
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "Without location access you can't clock in.\nEnable location in your settings, or enter your\nhours manually.",
+                text = copy.locationDeniedDescription,
                 color = Color(0xFF747474),
                 fontSize = 10.sp,
                 lineHeight = 13.sp,
@@ -6988,7 +6997,7 @@ fun GpsLocationDeniedScreen(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
             ) {
                 Text(
-                    text = "Enable location",
+                    text = copy.enableLocationAction,
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -6998,11 +7007,11 @@ fun GpsLocationDeniedScreen(
             TextButton(
                 onClick = {
                     onManualEntry()
-                    Toast.makeText(context, "Manual entry selected", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, copy.manualEntrySelected, Toast.LENGTH_SHORT).show()
                 },
             ) {
                 Text(
-                    text = "Enter hours manually",
+                    text = copy.enterHoursManually,
                     color = Color(0xFF1D1D22),
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
@@ -7850,6 +7859,92 @@ private fun WorkerLanguage.changePasswordCopy(): WorkerChangePasswordCopy {
             passwordChanged = "Mot de passe modifie",
             currentPasswordIncorrect = "Le mot de passe actuel est incorrect",
             savePassword = "Enregistrer le mot de passe",
+        )
+    }
+}
+
+private data class WorkerAccessCopy(
+    val accountCreatedTitle: String,
+    val accountCreatedDescription: String,
+    val stillWaitingApproval: String,
+    val checkApproval: String,
+    val locationRequired: String,
+    val enableLocationTitle: String,
+    val locationPermissionDescription: String,
+    val allowLocation: String,
+    val preferManualEntry: String,
+    val manualEntrySelected: String,
+    val cantClockInTitle: String,
+    val locationDeniedDescription: String,
+    val enableLocationAction: String,
+    val enterHoursManually: String,
+)
+
+private fun WorkerLanguage.workerAccessCopy(): WorkerAccessCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerAccessCopy(
+            accountCreatedTitle = "Account created",
+            accountCreatedDescription = "Your account has been created. Your employer still needs to approve it. You'll be notified once you can start.",
+            stillWaitingApproval = "Still waiting for employer approval",
+            checkApproval = "Check approval",
+            locationRequired = "Location access is required to clock in",
+            enableLocationTitle = "Enable location",
+            locationPermissionDescription = "To clock in at the workplace we need your location. It's only used to confirm your shift, not to track you.",
+            allowLocation = "Allow location",
+            preferManualEntry = "Prefer to enter hours manually",
+            manualEntrySelected = "Manual entry selected",
+            cantClockInTitle = "Can't clock in",
+            locationDeniedDescription = "Without location access you can't clock in. Enable location in your settings, or enter your hours manually.",
+            enableLocationAction = "Enable location",
+            enterHoursManually = "Enter hours manually",
+        )
+        WorkerLanguage.Dutch -> WorkerAccessCopy(
+            accountCreatedTitle = "Account aangemaakt",
+            accountCreatedDescription = "Je account is aangemaakt. Je werkgever moet het nog goedkeuren. Je krijgt bericht zodra je kunt starten.",
+            stillWaitingApproval = "Nog in afwachting van goedkeuring",
+            checkApproval = "Goedkeuring controleren",
+            locationRequired = "Locatie is nodig om in te klokken",
+            enableLocationTitle = "Locatie inschakelen",
+            locationPermissionDescription = "Om op het werk in te klokken hebben we je locatie nodig. Die wordt alleen gebruikt om je dienst te bevestigen.",
+            allowLocation = "Locatie toestaan",
+            preferManualEntry = "Liever uren handmatig invoeren",
+            manualEntrySelected = "Handmatige invoer geselecteerd",
+            cantClockInTitle = "Kan niet inklokken",
+            locationDeniedDescription = "Zonder locatie kun je niet inklokken. Schakel locatie in bij instellingen of voer je uren handmatig in.",
+            enableLocationAction = "Locatie inschakelen",
+            enterHoursManually = "Uren handmatig invoeren",
+        )
+        WorkerLanguage.German -> WorkerAccessCopy(
+            accountCreatedTitle = "Konto erstellt",
+            accountCreatedDescription = "Dein Konto wurde erstellt. Dein Arbeitgeber muss es noch genehmigen. Du wirst benachrichtigt, sobald du starten kannst.",
+            stillWaitingApproval = "Wartet noch auf Arbeitgeber-Genehmigung",
+            checkApproval = "Genehmigung prufen",
+            locationRequired = "Standortzugriff ist zum Einstempeln erforderlich",
+            enableLocationTitle = "Standort aktivieren",
+            locationPermissionDescription = "Zum Einstempeln am Arbeitsplatz benotigen wir deinen Standort. Er wird nur zur Bestatigung deiner Schicht genutzt.",
+            allowLocation = "Standort erlauben",
+            preferManualEntry = "Stunden lieber manuell eingeben",
+            manualEntrySelected = "Manuelle Eingabe ausgewahlt",
+            cantClockInTitle = "Einstempeln nicht moglich",
+            locationDeniedDescription = "Ohne Standortzugriff kannst du nicht einstempeln. Aktiviere den Standort in den Einstellungen oder gib deine Stunden manuell ein.",
+            enableLocationAction = "Standort aktivieren",
+            enterHoursManually = "Stunden manuell erfassen",
+        )
+        WorkerLanguage.French -> WorkerAccessCopy(
+            accountCreatedTitle = "Compte cree",
+            accountCreatedDescription = "Votre compte a ete cree. Votre employeur doit encore l'approuver. Vous serez averti des que vous pouvez commencer.",
+            stillWaitingApproval = "Approbation employeur encore en attente",
+            checkApproval = "Verifier l'approbation",
+            locationRequired = "L'acces a la localisation est requis pour pointer",
+            enableLocationTitle = "Activer la localisation",
+            locationPermissionDescription = "Pour pointer au travail, nous avons besoin de votre localisation. Elle sert uniquement a confirmer votre service.",
+            allowLocation = "Autoriser la localisation",
+            preferManualEntry = "Preferer saisir les heures manuellement",
+            manualEntrySelected = "Saisie manuelle selectionnee",
+            cantClockInTitle = "Impossible de pointer",
+            locationDeniedDescription = "Sans localisation, vous ne pouvez pas pointer. Activez-la dans les reglages ou saisissez vos heures manuellement.",
+            enableLocationAction = "Activer la localisation",
+            enterHoursManually = "Saisir les heures manuellement",
         )
     }
 }
