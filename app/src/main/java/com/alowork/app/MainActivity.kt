@@ -4622,6 +4622,7 @@ fun WorkerProfileScreen(
     onLogout: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
+    val copy = language.profileCopy()
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -4631,7 +4632,7 @@ fun WorkerProfileScreen(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Profile",
+                text = copy.title,
                 color = Color(0xFF17171B),
                 fontSize = 22.sp,
                 lineHeight = 27.sp,
@@ -4641,46 +4642,46 @@ fun WorkerProfileScreen(
             ProfileHeaderCard()
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Pay (selected employer)",
+                text = copy.paySection,
                 color = Color(0xFF73737A),
                 fontSize = 13.sp,
                 lineHeight = 16.sp,
             )
             Spacer(modifier = Modifier.height(12.dp))
             ProfileSectionCard {
-                ProfileInfoRow(label = "Company", value = selectedEmployer.name)
+                ProfileInfoRow(label = copy.company, value = selectedEmployer.name)
                 ProfileDivider()
-                ProfileInfoRow(label = "Role", value = selectedEmployer.role)
+                ProfileInfoRow(label = copy.role, value = selectedEmployer.role)
                 ProfileDivider()
-                ProfileInfoRow(label = "Hourly rate", value = selectedEmployer.rate)
+                ProfileInfoRow(label = copy.hourlyRate, value = selectedEmployer.rate)
                 ProfileDivider()
-                ProfileInfoRow(label = "Status", value = selectedEmployer.status)
+                ProfileInfoRow(label = copy.status, value = selectedEmployer.status)
             }
             Spacer(modifier = Modifier.height(16.dp))
             ProfileSectionCard {
                 ProfileActionRow(
-                    label = "Switch company",
+                    label = copy.switchCompany,
                     onClick = onSwitchEmployer,
                 )
                 ProfileDivider()
                 ProfileActionRow(
-                    label = "Add company",
+                    label = copy.addCompany,
                     onClick = onAddEmployer,
                 )
                 ProfileDivider()
                 ProfileActionValueRow(
-                    label = "Language",
-                    value = language.label,
+                    label = copy.language,
+                    value = language.localName,
                     onClick = onChangeLanguage,
                 )
                 ProfileDivider()
                 ProfileActionRow(
-                    label = "Change password",
+                    label = copy.changePassword,
                     onClick = onChangePassword,
                 )
                 ProfileDivider()
                 ProfileActionRow(
-                    label = "Log out",
+                    label = copy.logOut,
                     onClick = onLogout,
                 )
             }
@@ -4809,6 +4810,7 @@ fun WorkerLanguageSettingsScreen(
     onBack: () -> Unit = {},
     onLanguageSelected: (WorkerLanguage) -> Unit = {},
 ) {
+    val copy = selectedLanguage.languageSettingsCopy()
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -4822,7 +4824,7 @@ fun WorkerLanguageSettingsScreen(
                 contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
             ) {
                 Text(
-                    text = "Back",
+                    text = copy.back,
                     color = Color(0xFF73737A),
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
@@ -4831,7 +4833,7 @@ fun WorkerLanguageSettingsScreen(
             }
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = "Language",
+                text = copy.title,
                 color = Color(0xFF17171B),
                 fontSize = 22.sp,
                 lineHeight = 27.sp,
@@ -4839,7 +4841,7 @@ fun WorkerLanguageSettingsScreen(
             )
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = "Choose the language used for your worker app.",
+                text = copy.description,
                 color = Color(0xFF73737A),
                 fontSize = 13.sp,
                 lineHeight = 16.sp,
@@ -7650,6 +7652,108 @@ enum class WorkerLanguage(val label: String, val localName: String) {
     Dutch("Dutch", "Nederlands"),
     German("German", "Deutsch"),
     French("French", "Francais"),
+}
+
+private data class WorkerProfileCopy(
+    val title: String,
+    val paySection: String,
+    val company: String,
+    val role: String,
+    val hourlyRate: String,
+    val status: String,
+    val switchCompany: String,
+    val addCompany: String,
+    val language: String,
+    val changePassword: String,
+    val logOut: String,
+)
+
+private fun WorkerLanguage.profileCopy(): WorkerProfileCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerProfileCopy(
+            title = "Profile",
+            paySection = "Pay (selected employer)",
+            company = "Company",
+            role = "Role",
+            hourlyRate = "Hourly rate",
+            status = "Status",
+            switchCompany = "Switch company",
+            addCompany = "Add company",
+            language = "Language",
+            changePassword = "Change password",
+            logOut = "Log out",
+        )
+        WorkerLanguage.Dutch -> WorkerProfileCopy(
+            title = "Profiel",
+            paySection = "Loon (gekozen werkgever)",
+            company = "Bedrijf",
+            role = "Functie",
+            hourlyRate = "Uurloon",
+            status = "Status",
+            switchCompany = "Wissel bedrijf",
+            addCompany = "Bedrijf toevoegen",
+            language = "Taal",
+            changePassword = "Wachtwoord wijzigen",
+            logOut = "Uitloggen",
+        )
+        WorkerLanguage.German -> WorkerProfileCopy(
+            title = "Profil",
+            paySection = "Lohn (ausgewahlter Arbeitgeber)",
+            company = "Firma",
+            role = "Rolle",
+            hourlyRate = "Stundenlohn",
+            status = "Status",
+            switchCompany = "Firma wechseln",
+            addCompany = "Firma hinzufugen",
+            language = "Sprache",
+            changePassword = "Passwort andern",
+            logOut = "Abmelden",
+        )
+        WorkerLanguage.French -> WorkerProfileCopy(
+            title = "Profil",
+            paySection = "Paie (employeur choisi)",
+            company = "Entreprise",
+            role = "Role",
+            hourlyRate = "Taux horaire",
+            status = "Statut",
+            switchCompany = "Changer d'entreprise",
+            addCompany = "Ajouter une entreprise",
+            language = "Langue",
+            changePassword = "Modifier le mot de passe",
+            logOut = "Se deconnecter",
+        )
+    }
+}
+
+private data class WorkerLanguageSettingsCopy(
+    val back: String,
+    val title: String,
+    val description: String,
+)
+
+private fun WorkerLanguage.languageSettingsCopy(): WorkerLanguageSettingsCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerLanguageSettingsCopy(
+            back = "Back",
+            title = "Language",
+            description = "Choose the language used for your worker app.",
+        )
+        WorkerLanguage.Dutch -> WorkerLanguageSettingsCopy(
+            back = "Terug",
+            title = "Taal",
+            description = "Kies de taal voor je worker-app.",
+        )
+        WorkerLanguage.German -> WorkerLanguageSettingsCopy(
+            back = "Zuruck",
+            title = "Sprache",
+            description = "Wahle die Sprache fur deine Worker-App.",
+        )
+        WorkerLanguage.French -> WorkerLanguageSettingsCopy(
+            back = "Retour",
+            title = "Langue",
+            description = "Choisissez la langue de votre app worker.",
+        )
+    }
 }
 
 private const val WorkerSettingsPreferences = "worker_settings"
