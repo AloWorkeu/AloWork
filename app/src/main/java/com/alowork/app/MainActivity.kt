@@ -16,6 +16,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -1499,6 +1501,9 @@ fun AdminHoursApprovalQueueScreen(
     var hourRequests by remember {
         mutableStateOf(loadAdminHoursRequests(context))
     }
+    var workerMessages by remember {
+        mutableStateOf(loadWorkerChatMessages(context))
+    }
     var selectedRequest by remember { mutableStateOf<AdminHoursRequest?>(null) }
     val pendingCount = hourRequests.count { it.status != "Approved" }
     val filteredRequests = when (selectedFilter) {
@@ -1651,8 +1656,25 @@ fun AdminHoursApprovalQueueScreen(
             AdminAdjustHoursModal(
                 workerName = requestToReview.name,
                 period = requestToReview.period,
+                messages = workerMessages.filter { message ->
+                    message.workerName == requestToReview.name && message.shiftTitle == requestToReview.period
+                },
                 onDismiss = {
                     selectedRequest = null
+                },
+                onSendReply = { reply ->
+                    val replyMessage = WorkerShiftMessage(
+                        workerName = requestToReview.name,
+                        shiftTitle = requestToReview.period,
+                        shiftStatus = requestToReview.status.workerChatLabel(),
+                        shiftSummary = "${requestToReview.hours} - ${requestToReview.status.workerSummaryLabel()}",
+                        pay = requestToReview.pay,
+                        message = reply,
+                        isWorker = false,
+                    )
+                    workerMessages = workerMessages + replyMessage
+                    saveWorkerChatMessages(context, workerMessages)
+                    Toast.makeText(context, "Reply sent to ${requestToReview.name}", Toast.LENGTH_SHORT).show()
                 },
                 onApprove = {
                     val updatedRequests = hourRequests.map { request ->
@@ -2502,7 +2524,9 @@ private fun AdminQueueFilter(
 private fun AdminAdjustHoursModal(
     workerName: String,
     period: String,
+    messages: List<WorkerShiftMessage> = emptyList(),
     onDismiss: () -> Unit,
+    onSendReply: (String) -> Unit = {},
     onApprove: () -> Unit,
     onSave: (String, String) -> Unit,
     modifier: Modifier = Modifier,
@@ -2511,6 +2535,14 @@ private fun AdminAdjustHoursModal(
     var clockOut by remember(workerName, period) { mutableStateOf("17:30") }
     var breakMinutes by remember(workerName, period) { mutableStateOf("30") }
     var note by remember(workerName, period) { mutableStateOf("Adjusted after manager review") }
+    var reply by remember(workerName, period) { mutableStateOf("") }
+    fun sendReply() {
+        val trimmedReply = reply.trim()
+        if (trimmedReply.isNotEmpty()) {
+            onSendReply(trimmedReply)
+            reply = ""
+        }
+    }
 
     Box(
         modifier = modifier
@@ -2528,6 +2560,7 @@ private fun AdminAdjustHoursModal(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(16.dp),
             ) {
                 Text(
@@ -2576,6 +2609,52 @@ private fun AdminAdjustHoursModal(
                     singleLine = false,
                     minHeight = 84.dp,
                 )
+                if (messages.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Messages",
+                        color = Color(0xFF17171B),
+                        fontSize = 12.sp,
+                        lineHeight = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    messages.takeLast(3).forEach { message ->
+                        AdminShiftMessagePreview(message = message)
+                        Spacer(modifier = Modifier.height(6.dp))
+                    }
+                    AdminAdjustField(
+                        label = "Reply",
+                        value = reply,
+                        onValueChange = { reply = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = false,
+                        minHeight = 64.dp,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = ::sendReply,
+                        enabled = reply.isNotBlank(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(38.dp),
+                        shape = RoundedCornerShape(7.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFE3F8EF),
+                            contentColor = Color(0xFF167A5B),
+                            disabledContainerColor = Color(0xFFE8E8E3),
+                            disabledContentColor = Color(0xFF9A9A9F),
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+                    ) {
+                        Text(
+                            text = "Send reply",
+                            fontSize = 12.sp,
+                            lineHeight = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2684,6 +2763,37 @@ private fun AdminAdjustField(
                 cursorColor = Color(0xFF111116),
             ),
         )
+    }
+}
+
+@Composable
+private fun AdminShiftMessagePreview(
+    message: WorkerShiftMessage,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = if (message.isWorker) Color(0xFFF5F5F2) else Color(0xFFE3F8EF),
+        border = BorderStroke(1.dp, if (message.isWorker) Color(0xFFE1E1DC) else Color(0xFFC7ECDD)),
+        shadowElevation = 0.dp,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+            Text(
+                text = if (message.isWorker) message.workerName else "Admin reply",
+                color = Color(0xFF73737A),
+                fontSize = 10.sp,
+                lineHeight = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = message.message,
+                color = Color(0xFF17171B),
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+            )
+        }
     }
 }
 
@@ -5003,7 +5113,7 @@ fun WorkerChatWithEmployerScreen(
                     ChatMessageBubble(
                         message = message.message,
                         time = "Now",
-                        isWorker = true,
+                        isWorker = message.isWorker,
                     )
                 }
             }
@@ -5052,6 +5162,7 @@ fun WorkerChatWithEmployerScreen(
                                     shiftSummary = dayDetail.chatSummary,
                                     pay = dayDetail.pay,
                                     message = message,
+                                    isWorker = true,
                                 ),
                             )
                             draftMessage = ""
@@ -7467,6 +7578,7 @@ data class WorkerShiftMessage(
     val shiftSummary: String,
     val pay: String,
     val message: String,
+    val isWorker: Boolean = true,
 )
 
 private const val WorkerChatPreferences = "worker_chat"
@@ -7506,12 +7618,13 @@ private fun encodeWorkerShiftMessage(message: WorkerShiftMessage): String {
         message.shiftSummary,
         message.pay,
         message.message,
+        message.isWorker.toString(),
     ).joinToString("|") { Uri.encode(it) }
 }
 
 private fun decodeWorkerShiftMessage(row: String): WorkerShiftMessage {
     val parts = row.split('|')
-    return if (parts.size == 6) {
+    return if (parts.size == 6 || parts.size == 7) {
         WorkerShiftMessage(
             workerName = Uri.decode(parts[0]),
             shiftTitle = Uri.decode(parts[1]),
@@ -7519,6 +7632,7 @@ private fun decodeWorkerShiftMessage(row: String): WorkerShiftMessage {
             shiftSummary = Uri.decode(parts[3]),
             pay = Uri.decode(parts[4]),
             message = Uri.decode(parts[5]),
+            isWorker = parts.getOrNull(6)?.let { Uri.decode(it).toBooleanStrictOrNull() } ?: true,
         )
     } else {
         WorkerShiftMessage(
@@ -7528,6 +7642,7 @@ private fun decodeWorkerShiftMessage(row: String): WorkerShiftMessage {
             shiftSummary = "Worker message",
             pay = "",
             message = row,
+            isWorker = true,
         )
     }
 }
@@ -7633,6 +7748,22 @@ private fun workerAdminDecisionBody(request: AdminHoursRequest): String {
 
 private fun loadWorkerAdminHoursRequests(context: Context): List<AdminHoursRequest> {
     return loadAdminHoursRequests(context).filter { it.name == "Sven de Vries" }
+}
+
+private fun String.workerChatLabel(): String {
+    return when (this) {
+        "Approved" -> WeekStatus.Approved.chatLabel
+        "Adjusted" -> WeekStatus.Adjusted.chatLabel
+        else -> WeekStatus.Pending.chatLabel
+    }
+}
+
+private fun String.workerSummaryLabel(): String {
+    return when (this) {
+        "Approved" -> "Approved by your employer"
+        "Adjusted" -> "Adjusted by your employer"
+        else -> "Waiting for review"
+    }
 }
 
 private const val AdminHoursPreferences = "admin_hours"
