@@ -273,6 +273,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerCalendarEarnings -> WorkerCalendarEarningsScreen(
+            language = workerLanguage,
             manualSubmission = manualHoursSubmission,
             gpsShiftSubmission = gpsShiftSubmission,
             onDaySelected = {
@@ -297,6 +298,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerNotifications -> WorkerNotificationsScreen(
+            language = workerLanguage,
             sentMessages = workerChatMessages,
             adminRequests = loadWorkerAdminHoursRequests(context),
             accountApproval = workerAccountApproval,
@@ -375,6 +377,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerHistoryOverview -> WorkerHistoryOverviewScreen(
+            language = workerLanguage,
             manualSubmission = manualHoursSubmission,
             gpsShiftSubmission = gpsShiftSubmission,
             onDaySelected = { dayDetail ->
@@ -3909,6 +3912,7 @@ fun GpsClockInScreen(
 @Composable
 fun WorkerCalendarEarningsScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     manualSubmission: WorkerManualHoursSubmission? = null,
     gpsShiftSubmission: WorkerGpsShiftSubmission? = null,
     onDaySelected: () -> Unit = {},
@@ -3916,6 +3920,7 @@ fun WorkerCalendarEarningsScreen(
     onProfileSelected: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
+    val copy = language.workerTabCopy()
     var displayedMonth by remember { mutableStateOf(YearMonth.of(2026, 6)) }
     val context = LocalContext.current
     val adminRequests = loadWorkerAdminHoursRequests(context)
@@ -3952,7 +3957,7 @@ fun WorkerCalendarEarningsScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Hi, Sven",
+                    text = copy.greeting,
                     color = Color(0xFF17171C),
                     fontSize = 18.sp,
                     lineHeight = 22.sp,
@@ -4005,7 +4010,7 @@ fun WorkerCalendarEarningsScreen(
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
         ) {
             Text(
-                text = "+  Log today's hours",
+                text = copy.logTodayHours,
                 fontSize = 15.sp,
                 lineHeight = 18.sp,
                 fontWeight = FontWeight.Medium,
@@ -4492,6 +4497,7 @@ private fun WorkerTabIcon(
 @Composable
 fun WorkerNotificationsScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     sentMessages: List<WorkerShiftMessage> = emptyList(),
     adminRequests: List<AdminHoursRequest> = emptyList(),
     accountApproval: WorkerAccountApproval? = null,
@@ -4501,6 +4507,7 @@ fun WorkerNotificationsScreen(
     onOpenShiftChat: (WorkerDayDetail) -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
+    val copy = language.workerTabCopy()
     val latestWorkerMessage = sentMessages.lastOrNull { it.isWorker }
     val latestEmployerReply = sentMessages.lastOrNull { !it.isWorker }
     val latestAdminDecision = adminRequests
@@ -4516,7 +4523,7 @@ fun WorkerNotificationsScreen(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Alerts",
+                text = copy.alertsTitle,
                 color = Color(0xFF17171B),
                 fontSize = 22.sp,
                 lineHeight = 27.sp,
@@ -4526,9 +4533,9 @@ fun WorkerNotificationsScreen(
             latestEmployerReply?.let { message ->
                 NotificationCard(
                     type = NotificationType.EmployerReply,
-                    title = "Employer replied",
+                    title = copy.employerReplied,
                     body = employerReplyNotificationBody(message),
-                    time = "Now",
+                    time = copy.now,
                     unread = true,
                     onClick = {
                         onOpenShiftChat(message.workerDayDetail(manualSubmission, gpsShiftSubmission, adminRequests))
@@ -4539,9 +4546,9 @@ fun WorkerNotificationsScreen(
             latestWorkerMessage?.let { message ->
                 NotificationCard(
                     type = NotificationType.MessageSent,
-                    title = "Message sent",
+                    title = copy.messageSent,
                     body = shortenNotificationBody(message.message),
-                    time = "Now",
+                    time = copy.now,
                     unread = true,
                     onClick = {
                         onOpenShiftChat(message.workerDayDetail(manualSubmission, gpsShiftSubmission, adminRequests))
@@ -4556,9 +4563,9 @@ fun WorkerNotificationsScreen(
                     } else {
                         NotificationType.WeekApproved
                     },
-                    title = if (request.status == "Adjusted") "Hours adjusted" else "Hours approved",
+                    title = if (request.status == "Adjusted") copy.hoursAdjusted else copy.hoursApproved,
                     body = workerAdminDecisionBody(request),
-                    time = "Now",
+                    time = copy.now,
                     unread = true,
                     onClick = {
                         onOpenShiftDetail(request.workerDayDetail(manualSubmission, gpsShiftSubmission))
@@ -4569,16 +4576,16 @@ fun WorkerNotificationsScreen(
             accountApproval?.let { approval ->
                 NotificationCard(
                     type = NotificationType.AccountApproved,
-                    title = "Account approved",
-                    body = "Welcome, ${approval.name}. Your employer approved your account.",
-                    time = "Now",
+                    title = copy.accountApproved,
+                    body = "${copy.welcome}, ${approval.name}. ${copy.accountApprovedBody}",
+                    time = copy.now,
                     unread = true,
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
             NotificationCard(
                 type = NotificationType.HoursAdjusted,
-                title = "Hours adjusted",
+                title = copy.hoursAdjusted,
                 body = "Your hours for 5 June were adjusted to 6.0\nhrs.",
                 time = "2 hours ago",
                 unread = true,
@@ -4586,7 +4593,7 @@ fun WorkerNotificationsScreen(
             Spacer(modifier = Modifier.height(10.dp))
             NotificationCard(
                 type = NotificationType.WeekApproved,
-                title = "Week approved",
+                title = copy.weekApproved,
                 body = "Your hours for week 23 were approved.\n€608.",
                 time = "yesterday",
                 unread = true,
@@ -4594,7 +4601,7 @@ fun WorkerNotificationsScreen(
             Spacer(modifier = Modifier.height(10.dp))
             NotificationCard(
                 type = NotificationType.AccountApproved,
-                title = "Account approved",
+                title = copy.accountApproved,
                 body = accountApproval?.let { "Your worker account is active." }
                     ?: "Welcome! Your employer approved your\naccount.",
                 time = if (accountApproval == null) "3 days ago" else "Earlier",
@@ -4917,11 +4924,13 @@ private fun WorkerLanguageRow(
 @Composable
 fun WorkerHistoryOverviewScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     manualSubmission: WorkerManualHoursSubmission? = null,
     gpsShiftSubmission: WorkerGpsShiftSubmission? = null,
     onDaySelected: (WorkerDayDetail) -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
+    val copy = language.workerTabCopy()
     val context = LocalContext.current
     val adminRequests = loadWorkerAdminHoursRequests(context)
     val gpsAdminRequest = adminRequests.firstOrNull { it.period == "Today" }
@@ -4946,7 +4955,7 @@ fun WorkerHistoryOverviewScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Overview",
+                    text = copy.overviewTitle,
                     color = Color(0xFF17171B),
                     fontSize = 22.sp,
                     lineHeight = 27.sp,
@@ -7721,6 +7730,87 @@ private fun WorkerLanguage.profileCopy(): WorkerProfileCopy {
             language = "Langue",
             changePassword = "Modifier le mot de passe",
             logOut = "Se deconnecter",
+        )
+    }
+}
+
+private data class WorkerTabCopy(
+    val greeting: String,
+    val logTodayHours: String,
+    val overviewTitle: String,
+    val alertsTitle: String,
+    val employerReplied: String,
+    val messageSent: String,
+    val hoursAdjusted: String,
+    val hoursApproved: String,
+    val weekApproved: String,
+    val accountApproved: String,
+    val accountApprovedBody: String,
+    val welcome: String,
+    val now: String,
+)
+
+private fun WorkerLanguage.workerTabCopy(): WorkerTabCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerTabCopy(
+            greeting = "Hi, Sven",
+            logTodayHours = "+  Log today's hours",
+            overviewTitle = "Overview",
+            alertsTitle = "Alerts",
+            employerReplied = "Employer replied",
+            messageSent = "Message sent",
+            hoursAdjusted = "Hours adjusted",
+            hoursApproved = "Hours approved",
+            weekApproved = "Week approved",
+            accountApproved = "Account approved",
+            accountApprovedBody = "Your employer approved your account.",
+            welcome = "Welcome",
+            now = "Now",
+        )
+        WorkerLanguage.Dutch -> WorkerTabCopy(
+            greeting = "Hoi, Sven",
+            logTodayHours = "+  Uren van vandaag loggen",
+            overviewTitle = "Overzicht",
+            alertsTitle = "Meldingen",
+            employerReplied = "Werkgever reageerde",
+            messageSent = "Bericht verzonden",
+            hoursAdjusted = "Uren aangepast",
+            hoursApproved = "Uren goedgekeurd",
+            weekApproved = "Week goedgekeurd",
+            accountApproved = "Account goedgekeurd",
+            accountApprovedBody = "Je werkgever heeft je account goedgekeurd.",
+            welcome = "Welkom",
+            now = "Nu",
+        )
+        WorkerLanguage.German -> WorkerTabCopy(
+            greeting = "Hallo, Sven",
+            logTodayHours = "+  Heutige Stunden erfassen",
+            overviewTitle = "Ubersicht",
+            alertsTitle = "Hinweise",
+            employerReplied = "Arbeitgeber hat geantwortet",
+            messageSent = "Nachricht gesendet",
+            hoursAdjusted = "Stunden angepasst",
+            hoursApproved = "Stunden genehmigt",
+            weekApproved = "Woche genehmigt",
+            accountApproved = "Konto genehmigt",
+            accountApprovedBody = "Dein Arbeitgeber hat dein Konto genehmigt.",
+            welcome = "Willkommen",
+            now = "Jetzt",
+        )
+        WorkerLanguage.French -> WorkerTabCopy(
+            greeting = "Bonjour, Sven",
+            logTodayHours = "+  Saisir les heures du jour",
+            overviewTitle = "Apercu",
+            alertsTitle = "Alertes",
+            employerReplied = "L'employeur a repondu",
+            messageSent = "Message envoye",
+            hoursAdjusted = "Heures modifiees",
+            hoursApproved = "Heures approuvees",
+            weekApproved = "Semaine approuvee",
+            accountApproved = "Compte approuve",
+            accountApprovedBody = "Votre employeur a approuve votre compte.",
+            welcome = "Bienvenue",
+            now = "Maintenant",
         )
     }
 }
