@@ -96,6 +96,7 @@ fun AloworkApp() {
     var manualHoursSubmission by remember { mutableStateOf(loadManualHoursSubmission(context)) }
     var gpsShiftSubmission by remember { mutableStateOf(loadWorkerGpsShiftSubmission(context)) }
     var pendingGpsShiftSeconds by remember { mutableStateOf<Long?>(null) }
+    var selectedWorkerDayDetail by remember { mutableStateOf(defaultAdjustedWorkerDayDetail()) }
     var workerChatMessages by remember { mutableStateOf(loadWorkerChatMessages(context)) }
     var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
     var weekendPremiumSettings by remember { mutableStateOf(loadWeekendPremiumSettings(context)) }
@@ -276,6 +277,7 @@ fun AloworkApp() {
                 gpsShiftSubmission = null
                 clearWorkerGpsShiftSubmission(context)
                 pendingGpsShiftSeconds = null
+                selectedWorkerDayDetail = defaultAdjustedWorkerDayDetail()
                 workerChatMessages = emptyList()
                 clearWorkerChatMessages(context)
                 workerShiftPhotoUris = emptyList()
@@ -311,13 +313,15 @@ fun AloworkApp() {
         AppScreen.WorkerHistoryOverview -> WorkerHistoryOverviewScreen(
             manualSubmission = manualHoursSubmission,
             gpsShiftSubmission = gpsShiftSubmission,
-            onDaySelected = {
+            onDaySelected = { dayDetail ->
+                selectedWorkerDayDetail = dayDetail
                 screen = AppScreen.WorkerDayViewAdjusted
             },
             onTabSelected = ::openWorkerTab,
         )
 
         AppScreen.WorkerDayViewAdjusted -> WorkerDayViewAdjustedScreen(
+            dayDetail = selectedWorkerDayDetail,
             onBack = {
                 screen = AppScreen.WorkerHistoryOverview
             },
@@ -4402,7 +4406,7 @@ fun WorkerHistoryOverviewScreen(
     modifier: Modifier = Modifier,
     manualSubmission: WorkerManualHoursSubmission? = null,
     gpsShiftSubmission: WorkerGpsShiftSubmission? = null,
-    onDaySelected: () -> Unit = {},
+    onDaySelected: (WorkerDayDetail) -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -4472,7 +4476,9 @@ fun WorkerHistoryOverviewScreen(
                             amount = submission.pay,
                             detail = "${submission.hours} - Today - ${formatPhotoCount(submission.photoCount)}",
                             status = WeekStatus.Pending,
-                            onClick = onDaySelected,
+                            onClick = {
+                                onDaySelected(gpsShiftWorkerDayDetail(submission))
+                            },
                         )
                         ProfileDivider()
                     }
@@ -4482,7 +4488,9 @@ fun WorkerHistoryOverviewScreen(
                             amount = submission.pay,
                             detail = "${submission.hours} · 17 Jun",
                             status = WeekStatus.Pending,
-                            onClick = onDaySelected,
+                            onClick = {
+                                onDaySelected(manualWorkerDayDetail(submission))
+                            },
                         )
                         ProfileDivider()
                     }
@@ -4491,7 +4499,9 @@ fun WorkerHistoryOverviewScreen(
                         amount = "€608",
                         detail = "38.0 hrs · 2–6 Jun",
                         status = WeekStatus.Approved,
-                        onClick = onDaySelected,
+                        onClick = {
+                            onDaySelected(approvedWorkerDayDetail())
+                        },
                     )
                     ProfileDivider()
                     WeekOverviewRow(
@@ -4499,7 +4509,9 @@ fun WorkerHistoryOverviewScreen(
                         amount = "€584",
                         detail = "36.5 hrs · 9–13 Jun",
                         status = WeekStatus.Approved,
-                        onClick = onDaySelected,
+                        onClick = {
+                            onDaySelected(approvedWorkerDayDetail(title = "Wed 10 Jun", hours = "7.5h", pay = "\u20AC120.00"))
+                        },
                     )
                     ProfileDivider()
                     WeekOverviewRow(
@@ -4507,7 +4519,9 @@ fun WorkerHistoryOverviewScreen(
                         amount = "€256",
                         detail = "16.0 hrs · 16–19 Jun",
                         status = WeekStatus.Pending,
-                        onClick = onDaySelected,
+                        onClick = {
+                            onDaySelected(pendingWorkerDayDetail())
+                        },
                     )
                 }
             }
@@ -4524,6 +4538,7 @@ fun WorkerHistoryOverviewScreen(
 @Composable
 fun WorkerDayViewAdjustedScreen(
     modifier: Modifier = Modifier,
+    dayDetail: WorkerDayDetail = defaultAdjustedWorkerDayDetail(),
     onBack: () -> Unit = {},
     onAskQuestion: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
@@ -4550,14 +4565,14 @@ fun WorkerDayViewAdjustedScreen(
                         .clickable(onClick = onBack),
                 )
                 Text(
-                    text = "Tue 3 Jun",
+                    text = dayDetail.title,
                     color = Color(0xFF17171B),
                     fontSize = 22.sp,
                     lineHeight = 27.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
-                WeekStatusPill(status = WeekStatus.Adjusted)
+                WeekStatusPill(status = dayDetail.status)
             }
             Spacer(modifier = Modifier.height(18.dp))
             Surface(
@@ -4586,7 +4601,7 @@ fun WorkerDayViewAdjustedScreen(
                         verticalAlignment = Alignment.Bottom,
                     ) {
                         Text(
-                            text = "6.0h",
+                            text = dayDetail.hours,
                             color = Color(0xFF17171B),
                             fontSize = 34.sp,
                             lineHeight = 38.sp,
@@ -4594,7 +4609,7 @@ fun WorkerDayViewAdjustedScreen(
                             modifier = Modifier.weight(1f),
                         )
                         Text(
-                            text = "€96.00",
+                            text = dayDetail.pay,
                             color = Color(0xFF17171B),
                             fontSize = 20.sp,
                             lineHeight = 24.sp,
@@ -4604,7 +4619,7 @@ fun WorkerDayViewAdjustedScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Adjusted from 7.5h by your employer",
+                        text = dayDetail.summary,
                         color = Color(0xFFE0A12A),
                         fontSize = 12.sp,
                         lineHeight = 15.sp,
@@ -4613,13 +4628,13 @@ fun WorkerDayViewAdjustedScreen(
             }
             Spacer(modifier = Modifier.height(14.dp))
             ProfileSectionCard {
-                DayInfoRow(label = "Clock in", value = "08:00")
+                DayInfoRow(label = "Clock in", value = dayDetail.clockIn)
                 ProfileDivider()
-                DayInfoRow(label = "Clock out", value = "14:00")
+                DayInfoRow(label = "Clock out", value = dayDetail.clockOut)
                 ProfileDivider()
-                DayInfoRow(label = "Break", value = "0 min")
+                DayInfoRow(label = "Break", value = dayDetail.breakLabel)
                 ProfileDivider()
-                DayInfoRow(label = "Hourly rate", value = "€16.00")
+                DayInfoRow(label = "Hourly rate", value = dayDetail.hourlyRate)
             }
             Spacer(modifier = Modifier.height(14.dp))
             Surface(
@@ -4643,7 +4658,7 @@ fun WorkerDayViewAdjustedScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Your employer adjusted this day to match the approved schedule.",
+                        text = dayDetail.note,
                         color = Color(0xFF73737A),
                         fontSize = 13.sp,
                         lineHeight = 17.sp,
@@ -4664,7 +4679,7 @@ fun WorkerDayViewAdjustedScreen(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
             ) {
                 Text(
-                    text = "Ask about this adjustment",
+                    text = dayDetail.actionLabel,
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -6970,6 +6985,104 @@ data class WorkerGpsShiftSubmission(
     val photoCount: Int,
 )
 
+data class WorkerDayDetail(
+    val title: String,
+    val status: WeekStatus,
+    val hours: String,
+    val pay: String,
+    val summary: String,
+    val clockIn: String,
+    val clockOut: String,
+    val breakLabel: String,
+    val hourlyRate: String,
+    val note: String,
+    val actionLabel: String,
+)
+
+private fun defaultAdjustedWorkerDayDetail(): WorkerDayDetail {
+    return WorkerDayDetail(
+        title = "Tue 3 Jun",
+        status = WeekStatus.Adjusted,
+        hours = "6.0h",
+        pay = "\u20AC96.00",
+        summary = "Adjusted from 7.5h by your employer",
+        clockIn = "08:00",
+        clockOut = "14:00",
+        breakLabel = "0 min",
+        hourlyRate = "\u20AC16.00",
+        note = "Your employer adjusted this day to match the approved schedule.",
+        actionLabel = "Ask about this adjustment",
+    )
+}
+
+private fun gpsShiftWorkerDayDetail(submission: WorkerGpsShiftSubmission): WorkerDayDetail {
+    return WorkerDayDetail(
+        title = "Today",
+        status = WeekStatus.Pending,
+        hours = submission.hours,
+        pay = submission.pay,
+        summary = "Submitted with ${formatPhotoCount(submission.photoCount)}",
+        clockIn = "08:00",
+        clockOut = "Now",
+        breakLabel = "0 min",
+        hourlyRate = "\u20AC13.05",
+        note = "Your clocked shift is waiting for employer approval.",
+        actionLabel = "Ask about this shift",
+    )
+}
+
+private fun manualWorkerDayDetail(submission: WorkerManualHoursSubmission): WorkerDayDetail {
+    return WorkerDayDetail(
+        title = "Wed 17 Jun",
+        status = WeekStatus.Pending,
+        hours = submission.hours,
+        pay = submission.pay,
+        summary = "Manual hours waiting for approval",
+        clockIn = "08:00",
+        clockOut = "16:30",
+        breakLabel = "30 min",
+        hourlyRate = "\u20AC16.00",
+        note = "Your manually entered hours were submitted to your employer.",
+        actionLabel = "Ask about this entry",
+    )
+}
+
+private fun approvedWorkerDayDetail(
+    title: String = "Tue 3 Jun",
+    hours: String = "8.0h",
+    pay: String = "\u20AC128.00",
+): WorkerDayDetail {
+    return WorkerDayDetail(
+        title = title,
+        status = WeekStatus.Approved,
+        hours = hours,
+        pay = pay,
+        summary = "Approved by your employer",
+        clockIn = "08:00",
+        clockOut = "16:30",
+        breakLabel = "30 min",
+        hourlyRate = "\u20AC16.00",
+        note = "This shift has been approved and included in payroll.",
+        actionLabel = "Ask about this shift",
+    )
+}
+
+private fun pendingWorkerDayDetail(): WorkerDayDetail {
+    return WorkerDayDetail(
+        title = "Thu 18 Jun",
+        status = WeekStatus.Pending,
+        hours = "8.0h",
+        pay = "\u20AC128.00",
+        summary = "Waiting for employer approval",
+        clockIn = "08:00",
+        clockOut = "16:30",
+        breakLabel = "30 min",
+        hourlyRate = "\u20AC16.00",
+        note = "These hours are still in review before payroll.",
+        actionLabel = "Ask about this shift",
+    )
+}
+
 private data class WorkerMonthSummary(
     val totalPay: Double,
     val approvedPay: Double,
@@ -7280,7 +7393,7 @@ private data class CalendarDayData(
     val hours: String,
 )
 
-private enum class WeekStatus {
+enum class WeekStatus {
     Approved,
     Pending,
     Adjusted,
