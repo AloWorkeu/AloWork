@@ -218,6 +218,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerGpsClockIn -> GpsClockInScreen(
+            language = workerLanguage,
             onClockIn = {
                 pendingGpsShiftSeconds = null
                 workerShiftPhotoUris = emptyList()
@@ -412,6 +413,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerLogHoursDayDetail -> WorkerLogHoursDayDetailScreen(
+            language = workerLanguage,
             hourlyRate = selectedEmployerHourlyRate,
             onBack = {
                 screen = AppScreen.WorkerGpsClockIn
@@ -3777,11 +3779,13 @@ fun WorkerFlowPreviewScreen() {
 @Composable
 fun GpsClockInScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     onClockIn: () -> Unit = {},
     onManualEntry: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val copy = language.workerTimeEntryCopy()
 
     Box(
         modifier = modifier
@@ -3814,7 +3818,7 @@ fun GpsClockInScreen(
                 ) {
                     Spacer(modifier = Modifier.height(22.dp))
                     Text(
-                        text = "Ready to clock in",
+                        text = copy.readyToClockIn,
                         color = Color(0xFF17171B),
                         fontSize = 18.sp,
                         lineHeight = 22.sp,
@@ -3823,7 +3827,7 @@ fun GpsClockInScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "You are at the work location.",
+                        text = copy.atWorkLocation,
                         color = Color(0xFF747474),
                         fontSize = 11.sp,
                         lineHeight = 14.sp,
@@ -3845,7 +3849,7 @@ fun GpsClockInScreen(
                             )
                             Spacer(modifier = Modifier.width(7.dp))
                             Text(
-                                text = "Location confirmed",
+                                text = copy.locationConfirmed,
                                 color = Color(0xFF167A5B),
                                 fontSize = 10.sp,
                                 lineHeight = 12.sp,
@@ -3878,7 +3882,7 @@ fun GpsClockInScreen(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
             ) {
                 Text(
-                    text = "Clock in",
+                    text = copy.clockInAction,
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -3888,11 +3892,11 @@ fun GpsClockInScreen(
             TextButton(
                 onClick = {
                     onManualEntry()
-                    Toast.makeText(context, "Manual entry selected", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, copy.manualEntrySelected, Toast.LENGTH_SHORT).show()
                 },
             ) {
                 Text(
-                    text = "Enter hours manually",
+                    text = copy.enterHoursManually,
                     color = Color(0xFF1D1D22),
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
@@ -5531,12 +5535,14 @@ private fun ChatMessageBubble(
 @Composable
 fun WorkerLogHoursDayDetailScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     hourlyRate: Double = 16.0,
     onBack: () -> Unit = {},
     onSubmitted: (String, String) -> Unit = { _, _ -> },
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val copy = language.workerTimeEntryCopy()
     var clockIn by remember { mutableStateOf("08:00") }
     var clockOut by remember { mutableStateOf("16:30") }
     var breakMinutes by remember { mutableStateOf("30") }
@@ -5570,7 +5576,7 @@ fun WorkerLogHoursDayDetailScreen(
                         .clickable(onClick = onBack),
                 )
                 Text(
-                    text = "Log hours",
+                    text = copy.logHoursTitle,
                     color = Color(0xFF17171B),
                     fontSize = 22.sp,
                     lineHeight = 27.sp,
@@ -5582,7 +5588,7 @@ fun WorkerLogHoursDayDetailScreen(
                     color = Color(0xFFEAF5EF),
                 ) {
                     Text(
-                        text = "Manual",
+                        text = copy.manualBadge,
                         color = Color(0xFF2F8F63),
                         fontSize = 11.sp,
                         lineHeight = 14.sp,
@@ -5636,7 +5642,7 @@ fun WorkerLogHoursDayDetailScreen(
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Estimated with ${formatEuro(hourlyRate)} hourly rate",
+                        text = "${copy.estimatedWith} ${formatEuro(hourlyRate)} ${copy.hourlyRateSuffix}",
                         color = Color(0xFF73737A),
                         fontSize = 12.sp,
                         lineHeight = 15.sp,
@@ -5657,29 +5663,29 @@ fun WorkerLogHoursDayDetailScreen(
                         .padding(16.dp),
                 ) {
                     LogHoursField(
-                        label = "Clock in",
+                        label = copy.clockInLabel,
                         value = clockIn,
                         onValueChange = { clockIn = it },
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     LogHoursField(
-                        label = "Clock out",
+                        label = copy.clockOutLabel,
                         value = clockOut,
                         onValueChange = { clockOut = it },
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     LogHoursField(
-                        label = "Break",
+                        label = copy.breakLabel,
                         value = breakMinutes,
                         onValueChange = { breakMinutes = it },
-                        helper = "minutes",
+                        helper = copy.minutesHelper,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     LogHoursField(
-                        label = "Note",
+                        label = copy.noteLabel,
                         value = note,
                         onValueChange = { note = it },
-                        placeholder = "Optional",
+                        placeholder = copy.optionalPlaceholder,
                     )
                 }
             }
@@ -5687,7 +5693,7 @@ fun WorkerLogHoursDayDetailScreen(
             Button(
                 onClick = {
                     if (totalHours <= 0.0) {
-                        Toast.makeText(context, "Check your start and end time", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, copy.checkStartEndTime, Toast.LENGTH_SHORT).show()
                     } else {
                         onSubmitted(formatHours(totalHours), formatEuro(estimatedPay))
                     }
@@ -5703,7 +5709,7 @@ fun WorkerLogHoursDayDetailScreen(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
             ) {
                 Text(
-                    text = "Submit hours",
+                    text = copy.submitHours,
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -7811,6 +7817,112 @@ private fun WorkerLanguage.workerTabCopy(): WorkerTabCopy {
             accountApprovedBody = "Votre employeur a approuve votre compte.",
             welcome = "Bienvenue",
             now = "Maintenant",
+        )
+    }
+}
+
+private data class WorkerTimeEntryCopy(
+    val readyToClockIn: String,
+    val atWorkLocation: String,
+    val locationConfirmed: String,
+    val clockInAction: String,
+    val enterHoursManually: String,
+    val manualEntrySelected: String,
+    val logHoursTitle: String,
+    val manualBadge: String,
+    val estimatedWith: String,
+    val hourlyRateSuffix: String,
+    val clockInLabel: String,
+    val clockOutLabel: String,
+    val breakLabel: String,
+    val minutesHelper: String,
+    val noteLabel: String,
+    val optionalPlaceholder: String,
+    val submitHours: String,
+    val checkStartEndTime: String,
+)
+
+private fun WorkerLanguage.workerTimeEntryCopy(): WorkerTimeEntryCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerTimeEntryCopy(
+            readyToClockIn = "Ready to clock in",
+            atWorkLocation = "You are at the work location.",
+            locationConfirmed = "Location confirmed",
+            clockInAction = "Clock in",
+            enterHoursManually = "Enter hours manually",
+            manualEntrySelected = "Manual entry selected",
+            logHoursTitle = "Log hours",
+            manualBadge = "Manual",
+            estimatedWith = "Estimated with",
+            hourlyRateSuffix = "hourly rate",
+            clockInLabel = "Clock in",
+            clockOutLabel = "Clock out",
+            breakLabel = "Break",
+            minutesHelper = "minutes",
+            noteLabel = "Note",
+            optionalPlaceholder = "Optional",
+            submitHours = "Submit hours",
+            checkStartEndTime = "Check your start and end time",
+        )
+        WorkerLanguage.Dutch -> WorkerTimeEntryCopy(
+            readyToClockIn = "Klaar om in te klokken",
+            atWorkLocation = "Je bent op de werklocatie.",
+            locationConfirmed = "Locatie bevestigd",
+            clockInAction = "Inklokken",
+            enterHoursManually = "Uren handmatig invoeren",
+            manualEntrySelected = "Handmatige invoer geselecteerd",
+            logHoursTitle = "Uren loggen",
+            manualBadge = "Handmatig",
+            estimatedWith = "Geschat met",
+            hourlyRateSuffix = "uurloon",
+            clockInLabel = "Inklokken",
+            clockOutLabel = "Uitklokken",
+            breakLabel = "Pauze",
+            minutesHelper = "minuten",
+            noteLabel = "Notitie",
+            optionalPlaceholder = "Optioneel",
+            submitHours = "Uren indienen",
+            checkStartEndTime = "Controleer je start- en eindtijd",
+        )
+        WorkerLanguage.German -> WorkerTimeEntryCopy(
+            readyToClockIn = "Bereit zum Einstempeln",
+            atWorkLocation = "Du bist am Arbeitsort.",
+            locationConfirmed = "Standort bestatigt",
+            clockInAction = "Einstempeln",
+            enterHoursManually = "Stunden manuell erfassen",
+            manualEntrySelected = "Manuelle Eingabe ausgewahlt",
+            logHoursTitle = "Stunden erfassen",
+            manualBadge = "Manuell",
+            estimatedWith = "Geschatzt mit",
+            hourlyRateSuffix = "Stundenlohn",
+            clockInLabel = "Einstempeln",
+            clockOutLabel = "Ausstempeln",
+            breakLabel = "Pause",
+            minutesHelper = "Minuten",
+            noteLabel = "Notiz",
+            optionalPlaceholder = "Optional",
+            submitHours = "Stunden senden",
+            checkStartEndTime = "Prufe Start- und Endzeit",
+        )
+        WorkerLanguage.French -> WorkerTimeEntryCopy(
+            readyToClockIn = "Pret a pointer",
+            atWorkLocation = "Vous etes sur le lieu de travail.",
+            locationConfirmed = "Lieu confirme",
+            clockInAction = "Pointer",
+            enterHoursManually = "Saisir les heures manuellement",
+            manualEntrySelected = "Saisie manuelle selectionnee",
+            logHoursTitle = "Saisir les heures",
+            manualBadge = "Manuel",
+            estimatedWith = "Estime avec",
+            hourlyRateSuffix = "taux horaire",
+            clockInLabel = "Arrivee",
+            clockOutLabel = "Depart",
+            breakLabel = "Pause",
+            minutesHelper = "minutes",
+            noteLabel = "Note",
+            optionalPlaceholder = "Facultatif",
+            submitHours = "Envoyer les heures",
+            checkStartEndTime = "Verifiez l'heure de debut et de fin",
         )
     }
 }
