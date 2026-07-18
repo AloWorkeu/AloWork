@@ -102,6 +102,7 @@ fun AloworkApp() {
     var selectedWorkerDayDetail by remember { mutableStateOf(defaultAdjustedWorkerDayDetail()) }
     var workerChatMessages by remember { mutableStateOf(loadWorkerChatMessages(context)) }
     var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
+    var workerAccountApproval by remember { mutableStateOf(loadWorkerAccountApproval(context)) }
     var weekendPremiumSettings by remember { mutableStateOf(loadWeekendPremiumSettings(context)) }
     var workerLanguage by remember { mutableStateOf(loadWorkerLanguage(context)) }
     var adminCompanyProfile by remember { mutableStateOf(loadAdminCompanyProfile(context)) }
@@ -281,6 +282,7 @@ fun AloworkApp() {
         AppScreen.WorkerNotifications -> WorkerNotificationsScreen(
             sentMessages = workerChatMessages,
             adminRequests = loadWorkerAdminHoursRequests(context),
+            accountApproval = workerAccountApproval,
             manualSubmission = manualHoursSubmission,
             gpsShiftSubmission = gpsShiftSubmission,
             onOpenShiftDetail = { dayDetail ->
@@ -319,6 +321,8 @@ fun AloworkApp() {
                 workerChatMessages = emptyList()
                 clearWorkerChatMessages(context)
                 workerShiftPhotoUris = emptyList()
+                workerAccountApproval = null
+                clearWorkerAccountApproval(context)
                 selectedEmployerName = "Bakkerij Jansen"
                 workerEmployers = defaultWorkerEmployers()
                 clearWorkerEmployers(context)
@@ -550,6 +554,11 @@ fun AloworkApp() {
         )
 
         AppScreen.AdminTeam -> AdminTeamScreen(
+            onWorkerApproved = { name, email ->
+                val approval = WorkerAccountApproval(name = name, email = email)
+                workerAccountApproval = approval
+                saveWorkerAccountApproval(context, approval)
+            },
             onOpenHome = {
                 openAdminHome()
             },
@@ -2042,6 +2051,7 @@ private fun AdminAddLocationDialog(
 @Composable
 fun AdminTeamScreen(
     modifier: Modifier = Modifier,
+    onWorkerApproved: (String, String) -> Unit = { _, _ -> },
     onOpenHome: () -> Unit = {},
     onOpenHours: () -> Unit = {},
     onOpenTeam: () -> Unit = {},
@@ -2205,6 +2215,8 @@ fun AdminTeamScreen(
                                     }
                                     workers = updatedWorkers
                                     saveAdminWorkers(context, updatedWorkers)
+                                    updatedWorkers.firstOrNull { it.name == selectedWorker }
+                                        ?.let { worker -> onWorkerApproved(worker.name, worker.email) }
                                     Toast.makeText(context, "$selectedWorker approved", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier
@@ -4452,6 +4464,7 @@ fun WorkerNotificationsScreen(
     modifier: Modifier = Modifier,
     sentMessages: List<WorkerShiftMessage> = emptyList(),
     adminRequests: List<AdminHoursRequest> = emptyList(),
+    accountApproval: WorkerAccountApproval? = null,
     manualSubmission: WorkerManualHoursSubmission? = null,
     gpsShiftSubmission: WorkerGpsShiftSubmission? = null,
     onOpenShiftDetail: (WorkerDayDetail) -> Unit = {},
@@ -4523,6 +4536,16 @@ fun WorkerNotificationsScreen(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
+            accountApproval?.let { approval ->
+                NotificationCard(
+                    type = NotificationType.AccountApproved,
+                    title = "Account approved",
+                    body = "Welcome, ${approval.name}. Your employer approved your account.",
+                    time = "Now",
+                    unread = true,
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
             NotificationCard(
                 type = NotificationType.HoursAdjusted,
                 title = "Hours adjusted",
@@ -4542,8 +4565,9 @@ fun WorkerNotificationsScreen(
             NotificationCard(
                 type = NotificationType.AccountApproved,
                 title = "Account approved",
-                body = "Welcome! Your employer approved your\naccount.",
-                time = "3 days ago",
+                body = accountApproval?.let { "Your worker account is active." }
+                    ?: "Welcome! Your employer approved your\naccount.",
+                time = if (accountApproval == null) "3 days ago" else "Earlier",
                 unread = false,
             )
         }
@@ -7603,6 +7627,34 @@ private fun saveWorkerLanguage(context: Context, language: WorkerLanguage) {
     context.getSharedPreferences(WorkerSettingsPreferences, Context.MODE_PRIVATE)
         .edit()
         .putString("language", language.name)
+        .apply()
+}
+
+data class WorkerAccountApproval(
+    val name: String,
+    val email: String,
+)
+
+private fun loadWorkerAccountApproval(context: Context): WorkerAccountApproval? {
+    val preferences = context.getSharedPreferences(WorkerSettingsPreferences, Context.MODE_PRIVATE)
+    val name = preferences.getString("approved_name", null) ?: return null
+    val email = preferences.getString("approved_email", null) ?: return null
+    return WorkerAccountApproval(name = name, email = email)
+}
+
+private fun saveWorkerAccountApproval(context: Context, approval: WorkerAccountApproval) {
+    context.getSharedPreferences(WorkerSettingsPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putString("approved_name", approval.name)
+        .putString("approved_email", approval.email)
+        .apply()
+}
+
+private fun clearWorkerAccountApproval(context: Context) {
+    context.getSharedPreferences(WorkerSettingsPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .remove("approved_name")
+        .remove("approved_email")
         .apply()
 }
 
