@@ -4961,6 +4961,7 @@ fun WorkerHistoryOverviewScreen(
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val copy = language.workerTabCopy()
+    val historyCopy = language.workerHistoryCopy()
     val context = LocalContext.current
     val adminRequests = loadWorkerAdminHoursRequests(context)
     val gpsAdminRequest = adminRequests.firstOrNull { it.period == "Today" }
@@ -5003,7 +5004,7 @@ fun WorkerHistoryOverviewScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "June 2026",
+                            text = historyCopy.monthLabel,
                             color = Color(0xFF17171B),
                             fontSize = 13.sp,
                             lineHeight = 16.sp,
@@ -5011,7 +5012,7 @@ fun WorkerHistoryOverviewScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "⌄",
+                            text = "\u2304",
                             color = Color(0xFF73737A),
                             fontSize = 14.sp,
                             lineHeight = 14.sp,
@@ -5020,7 +5021,10 @@ fun WorkerHistoryOverviewScreen(
                 }
             }
             Spacer(modifier = Modifier.height(18.dp))
-            MonthlySummaryCard(summary = monthSummary)
+            MonthlySummaryCard(
+                language = language,
+                summary = monthSummary,
+            )
             Spacer(modifier = Modifier.height(14.dp))
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -5036,9 +5040,10 @@ fun WorkerHistoryOverviewScreen(
                         val hours = request?.hours ?: submission.hours
                         val pay = request?.pay ?: submission.pay
                         WeekOverviewRow(
+                            language = language,
                             week = "Week 25",
                             amount = pay,
-                            detail = "$hours - Today - ${formatPhotoCount(submission.photoCount)}",
+                            detail = "$hours - ${historyCopy.today} - ${language.localizedPhotoCount(submission.photoCount)}",
                             status = status,
                             onClick = {
                                 onDaySelected(gpsShiftWorkerDayDetail(submission, request))
@@ -5052,6 +5057,7 @@ fun WorkerHistoryOverviewScreen(
                         val hours = request?.hours ?: submission.hours
                         val pay = request?.pay ?: submission.pay
                         WeekOverviewRow(
+                            language = language,
                             week = "Week 25",
                             amount = pay,
                             detail = "$hours - 17 Jun",
@@ -5063,9 +5069,10 @@ fun WorkerHistoryOverviewScreen(
                         ProfileDivider()
                     }
                     WeekOverviewRow(
+                        language = language,
                         week = "Week 23",
-                        amount = "€608",
-                        detail = "38.0 hrs · 2–6 Jun",
+                        amount = "\u20AC608",
+                        detail = "38.0 ${historyCopy.hoursShort} - 2-6 Jun",
                         status = WeekStatus.Approved,
                         onClick = {
                             onDaySelected(approvedWorkerDayDetail())
@@ -5073,9 +5080,10 @@ fun WorkerHistoryOverviewScreen(
                     )
                     ProfileDivider()
                     WeekOverviewRow(
+                        language = language,
                         week = "Week 24",
-                        amount = "€584",
-                        detail = "36.5 hrs · 9–13 Jun",
+                        amount = "\u20AC584",
+                        detail = "36.5 ${historyCopy.hoursShort} - 9-13 Jun",
                         status = WeekStatus.Approved,
                         onClick = {
                             onDaySelected(approvedWorkerDayDetail(title = "Wed 10 Jun", hours = "7.5h", pay = "\u20AC120.00"))
@@ -5083,9 +5091,10 @@ fun WorkerHistoryOverviewScreen(
                     )
                     ProfileDivider()
                     WeekOverviewRow(
+                        language = language,
                         week = "Week 25",
-                        amount = "€256",
-                        detail = "16.0 hrs · 16–19 Jun",
+                        amount = "\u20AC256",
+                        detail = "16.0 ${historyCopy.hoursShort} - 16-19 Jun",
                         status = WeekStatus.Pending,
                         onClick = {
                             onDaySelected(pendingWorkerDayDetail())
@@ -6134,9 +6143,11 @@ private fun DayInfoRow(
 
 @Composable
 private fun MonthlySummaryCard(
+    language: WorkerLanguage = WorkerLanguage.English,
     summary: WorkerMonthSummary = workerMonthSummary(),
     modifier: Modifier = Modifier,
 ) {
+    val copy = language.workerHistoryCopy()
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -6152,7 +6163,7 @@ private fun MonthlySummaryCard(
                 .padding(18.dp),
         ) {
             Text(
-                text = "June total · net",
+                text = copy.monthTotalNet,
                 color = Color(0xFF8C8C91),
                 fontSize = 12.sp,
                 lineHeight = 15.sp,
@@ -6169,13 +6180,13 @@ private fun MonthlySummaryCard(
             Row(modifier = Modifier.fillMaxWidth()) {
                 SummaryMetricTile(
                     value = formatHours(summary.totalHours),
-                    label = "Hours worked",
+                    label = copy.hoursWorked,
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 SummaryMetricTile(
                     value = summary.workdays.toString(),
-                    label = "Workdays",
+                    label = copy.workdays,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -6214,6 +6225,7 @@ private fun SummaryMetricTile(
 
 @Composable
 private fun WeekOverviewRow(
+    language: WorkerLanguage = WorkerLanguage.English,
     week: String,
     amount: String,
     detail: String,
@@ -6255,7 +6267,7 @@ private fun WeekOverviewRow(
                 textAlign = TextAlign.End,
             )
             Spacer(modifier = Modifier.height(8.dp))
-            WeekStatusPill(status = status)
+            WeekStatusPill(status = status, language = language)
         }
     }
 }
@@ -8127,6 +8139,68 @@ private fun WorkerLanguage.workerTabCopy(): WorkerTabCopy {
             now = "Maintenant",
         )
     }
+}
+
+private data class WorkerHistoryCopy(
+    val monthLabel: String,
+    val monthTotalNet: String,
+    val hoursWorked: String,
+    val workdays: String,
+    val today: String,
+    val hoursShort: String,
+    val photoSingular: String,
+    val photoPlural: String,
+)
+
+private fun WorkerLanguage.workerHistoryCopy(): WorkerHistoryCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerHistoryCopy(
+            monthLabel = "June 2026",
+            monthTotalNet = "June total - net",
+            hoursWorked = "Hours worked",
+            workdays = "Workdays",
+            today = "Today",
+            hoursShort = "hrs",
+            photoSingular = "photo",
+            photoPlural = "photos",
+        )
+        WorkerLanguage.Dutch -> WorkerHistoryCopy(
+            monthLabel = "Juni 2026",
+            monthTotalNet = "Juni totaal - netto",
+            hoursWorked = "Gewerkte uren",
+            workdays = "Werkdagen",
+            today = "Vandaag",
+            hoursShort = "uur",
+            photoSingular = "foto",
+            photoPlural = "foto's",
+        )
+        WorkerLanguage.German -> WorkerHistoryCopy(
+            monthLabel = "Juni 2026",
+            monthTotalNet = "Juni gesamt - netto",
+            hoursWorked = "Arbeitsstunden",
+            workdays = "Arbeitstage",
+            today = "Heute",
+            hoursShort = "Std.",
+            photoSingular = "Foto",
+            photoPlural = "Fotos",
+        )
+        WorkerLanguage.French -> WorkerHistoryCopy(
+            monthLabel = "Juin 2026",
+            monthTotalNet = "Total juin - net",
+            hoursWorked = "Heures travaillees",
+            workdays = "Jours travailles",
+            today = "Aujourd'hui",
+            hoursShort = "h",
+            photoSingular = "photo",
+            photoPlural = "photos",
+        )
+    }
+}
+
+private fun WorkerLanguage.localizedPhotoCount(count: Int): String {
+    val copy = workerHistoryCopy()
+    val label = if (count == 1) copy.photoSingular else copy.photoPlural
+    return "$count $label"
 }
 
 private data class WorkerTimeEntryCopy(
