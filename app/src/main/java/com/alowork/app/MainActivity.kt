@@ -332,6 +332,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerChatWithEmployer -> WorkerChatWithEmployerScreen(
+            dayDetail = selectedWorkerDayDetail,
             sentMessages = workerChatMessages,
             onBack = {
                 screen = AppScreen.WorkerDayViewAdjusted
@@ -4698,6 +4699,7 @@ fun WorkerDayViewAdjustedScreen(
 @Composable
 fun WorkerChatWithEmployerScreen(
     modifier: Modifier = Modifier,
+    dayDetail: WorkerDayDetail = defaultAdjustedWorkerDayDetail(),
     sentMessages: List<String> = emptyList(),
     onBack: () -> Unit = {},
     onSendMessage: (String) -> Unit = {},
@@ -4777,14 +4779,14 @@ fun WorkerChatWithEmployerScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Tue 3 Jun \u00B7 Hours adjusted",
+                            text = "${dayDetail.title} \u00B7 ${dayDetail.status.chatLabel}",
                             color = Color(0xFF73737A),
                             fontSize = 12.sp,
                             lineHeight = 15.sp,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "6.0h after employer adjustment",
+                            text = dayDetail.chatSummary,
                             color = Color(0xFF17171B),
                             fontSize = 13.sp,
                             lineHeight = 17.sp,
@@ -4792,7 +4794,7 @@ fun WorkerChatWithEmployerScreen(
                         )
                     }
                     Text(
-                        text = "\u20AC96.00",
+                        text = dayDetail.pay,
                         color = Color(0xFF17171B),
                         fontSize = 14.sp,
                         lineHeight = 18.sp,
@@ -4810,14 +4812,14 @@ fun WorkerChatWithEmployerScreen(
             ) {
                 item {
                     ChatMessageBubble(
-                        message = "I adjusted Tuesday to match the approved schedule.",
+                        message = dayDetail.employerMessage,
                         time = "09:12",
                         isWorker = false,
                     )
                 }
                 item {
                     ChatMessageBubble(
-                        message = "Let me know if anything does not look right.",
+                        message = "Send a note here and your employer can review this exact shift.",
                         time = "09:13",
                         isWorker = false,
                     )
@@ -6997,7 +6999,17 @@ data class WorkerDayDetail(
     val hourlyRate: String,
     val note: String,
     val actionLabel: String,
-)
+) {
+    val chatSummary: String
+        get() = "$hours - $summary"
+
+    val employerMessage: String
+        get() = when (status) {
+            WeekStatus.Approved -> "This shift is approved and included in payroll."
+            WeekStatus.Pending -> "This shift is waiting for review. Share any extra context here."
+            WeekStatus.Adjusted -> "I adjusted this shift to match the approved schedule."
+        }
+}
 
 private fun defaultAdjustedWorkerDayDetail(): WorkerDayDetail {
     return WorkerDayDetail(
@@ -7398,6 +7410,13 @@ enum class WeekStatus {
     Pending,
     Adjusted,
 }
+
+private val WeekStatus.chatLabel: String
+    get() = when (this) {
+        WeekStatus.Approved -> "Approved shift"
+        WeekStatus.Pending -> "Pending shift"
+        WeekStatus.Adjusted -> "Hours adjusted"
+    }
 
 @Preview(showBackground = true)
 @Composable
