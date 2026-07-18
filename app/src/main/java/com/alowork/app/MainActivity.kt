@@ -173,8 +173,17 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerLogin -> WorkerLoginScreen(
-            onLogin = {
-                screen = AppScreen.WorkerGpsClockIn
+            onLogin = { email ->
+                pendingWorkerEmail = email
+                val worker = findAdminWorkerByEmail(context, email)
+                if (worker?.status == "Active") {
+                    val approval = WorkerAccountApproval(name = worker.name, email = worker.email)
+                    workerAccountApproval = approval
+                    saveWorkerAccountApproval(context, approval)
+                    screen = AppScreen.WorkerGpsClockIn
+                } else {
+                    screen = AppScreen.WorkerAwaitingApproval
+                }
             },
             onCreateAccount = {
                 screen = AppScreen.WorkerSignUp
@@ -186,6 +195,9 @@ fun AloworkApp() {
 
         AppScreen.WorkerAwaitingApproval -> WorkerAwaitingApprovalScreen(
             isApproved = isWorkerApproved(context, pendingWorkerEmail),
+            onCheckApproval = {
+                isWorkerApproved(context, pendingWorkerEmail)
+            },
             onApprovalReceived = {
                 screen = AppScreen.WorkerLocationPermission
             },
@@ -740,7 +752,7 @@ fun WorkerSignUpScreen(
 @Composable
 fun WorkerLoginScreen(
     modifier: Modifier = Modifier,
-    onLogin: () -> Unit = {},
+    onLogin: (String) -> Unit = {},
     onCreateAccount: () -> Unit = {},
     onRegisterCompany: () -> Unit = {},
 ) {
@@ -800,7 +812,7 @@ fun WorkerLoginScreen(
                         else -> null
                     }
                     if (message == null) {
-                        onLogin()
+                        onLogin(email.trim())
                     } else {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
@@ -3461,6 +3473,7 @@ private fun WebRegisterStep(
 fun WorkerAwaitingApprovalScreen(
     modifier: Modifier = Modifier,
     isApproved: Boolean = false,
+    onCheckApproval: () -> Boolean = { isApproved },
     onApprovalReceived: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -3506,7 +3519,7 @@ fun WorkerAwaitingApprovalScreen(
 
         Button(
             onClick = {
-                if (isApproved) {
+                if (isApproved || onCheckApproval()) {
                     onApprovalReceived()
                 } else {
                     Toast.makeText(context, "Still waiting for employer approval", Toast.LENGTH_SHORT).show()
@@ -8321,6 +8334,13 @@ private fun saveAdminWorkers(context: Context, workers: List<AdminWorker>) {
         .apply()
 }
 
+private fun findAdminWorkerByEmail(context: Context, email: String): AdminWorker? {
+    if (email.isBlank()) return null
+    return loadAdminWorkers(context).firstOrNull { worker ->
+        worker.email.equals(email, ignoreCase = true)
+    }
+}
+
 private fun submitWorkerSignupForApproval(
     context: Context,
     fullName: String,
@@ -8356,10 +8376,7 @@ private fun submitWorkerSignupForApproval(
 }
 
 private fun isWorkerApproved(context: Context, email: String): Boolean {
-    if (email.isBlank()) return false
-    return loadAdminWorkers(context).any { worker ->
-        worker.email.equals(email, ignoreCase = true) && worker.status == "Active"
-    }
+    return findAdminWorkerByEmail(context, email)?.status == "Active"
 }
 
 private enum class NotificationType {
