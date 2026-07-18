@@ -223,6 +223,12 @@ fun AloworkApp() {
                 )
                 gpsShiftSubmission = submission
                 saveWorkerGpsShiftSubmission(context, submission)
+                saveWorkerSubmittedHoursForAdmin(
+                    context = context,
+                    period = "Today",
+                    hours = submission.hours,
+                    pay = submission.pay,
+                )
                 pendingGpsShiftSeconds = null
                 workerShiftPhotoUris = emptyList()
                 screen = AppScreen.WorkerGpsClockIn
@@ -358,6 +364,12 @@ fun AloworkApp() {
                 )
                 manualHoursSubmission = submission
                 saveManualHoursSubmission(context, submission)
+                saveWorkerSubmittedHoursForAdmin(
+                    context = context,
+                    period = "17 Jun",
+                    hours = submission.hours,
+                    pay = submission.pay,
+                )
                 screen = AppScreen.WorkerHistoryOverview
             },
             onTabSelected = ::openWorkerTab,
@@ -7234,6 +7246,27 @@ private fun clearWorkerGpsShiftSubmission(context: Context) {
         .edit()
         .clear()
         .apply()
+}
+
+private fun saveWorkerSubmittedHoursForAdmin(
+    context: Context,
+    period: String,
+    hours: String,
+    pay: String,
+) {
+    val submittedRequest = AdminHoursRequest(
+        name = "Sven de Vries",
+        period = period,
+        hours = hours,
+        pay = pay,
+        status = "Submitted",
+    )
+    val existingRequests = loadAdminHoursRequests(context)
+    val updatedRequests = existingRequests
+        .filterNot { request ->
+            request.name == submittedRequest.name && request.period == submittedRequest.period
+        } + submittedRequest
+    saveAdminHoursRequests(context, updatedRequests)
 }
 
 private const val WorkerChatPreferences = "worker_chat"
