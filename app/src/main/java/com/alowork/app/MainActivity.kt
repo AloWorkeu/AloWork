@@ -94,6 +94,8 @@ fun AloworkApp() {
     var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
     var pendingAdminReviewWorker by remember { mutableStateOf<String?>(null) }
     var manualHoursSubmission by remember { mutableStateOf(loadManualHoursSubmission(context)) }
+    var gpsShiftSubmission by remember { mutableStateOf(loadWorkerGpsShiftSubmission(context)) }
+    var pendingGpsShiftSeconds by remember { mutableStateOf<Long?>(null) }
     var workerChatMessages by remember { mutableStateOf(loadWorkerChatMessages(context)) }
     var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
     var weekendPremiumSettings by remember { mutableStateOf(loadWeekendPremiumSettings(context)) }
@@ -182,6 +184,7 @@ fun AloworkApp() {
 
         AppScreen.WorkerGpsClockIn -> GpsClockInScreen(
             onClockIn = {
+                pendingGpsShiftSeconds = null
                 workerShiftPhotoUris = emptyList()
                 screen = AppScreen.WorkerShiftInProgress
             },
@@ -192,7 +195,8 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerShiftInProgress -> GpsShiftInProgressScreen(
-            onClockOut = {
+            onClockOut = { elapsedSeconds ->
+                pendingGpsShiftSeconds = elapsedSeconds
                 screen = AppScreen.WorkerShiftPhotos
             },
         )
@@ -209,6 +213,17 @@ fun AloworkApp() {
                 workerShiftPhotoUris = workerShiftPhotoUris.filterNot { it == uri }
             },
             onSave = {
+                val elapsedSeconds = pendingGpsShiftSeconds ?: (3.hours + 24.minutes + 11.seconds)
+                val hours = elapsedSeconds / 3600.0
+                val submission = WorkerGpsShiftSubmission(
+                    hours = formatHours(hours),
+                    pay = formatEuro(hours * 13.05),
+                    photoCount = workerShiftPhotoUris.size,
+                )
+                gpsShiftSubmission = submission
+                saveWorkerGpsShiftSubmission(context, submission)
+                pendingGpsShiftSeconds = null
+                workerShiftPhotoUris = emptyList()
                 screen = AppScreen.WorkerGpsClockIn
             },
         )
@@ -256,6 +271,9 @@ fun AloworkApp() {
             onLogout = {
                 manualHoursSubmission = null
                 clearManualHoursSubmission(context)
+                gpsShiftSubmission = null
+                clearWorkerGpsShiftSubmission(context)
+                pendingGpsShiftSeconds = null
                 workerChatMessages = emptyList()
                 clearWorkerChatMessages(context)
                 workerShiftPhotoUris = emptyList()
@@ -290,6 +308,7 @@ fun AloworkApp() {
 
         AppScreen.WorkerHistoryOverview -> WorkerHistoryOverviewScreen(
             manualSubmission = manualHoursSubmission,
+            gpsShiftSubmission = gpsShiftSubmission,
             onDaySelected = {
                 screen = AppScreen.WorkerDayViewAdjusted
             },
@@ -4371,6 +4390,7 @@ private fun WorkerLanguageRow(
 fun WorkerHistoryOverviewScreen(
     modifier: Modifier = Modifier,
     manualSubmission: WorkerManualHoursSubmission? = null,
+    gpsShiftSubmission: WorkerGpsShiftSubmission? = null,
     onDaySelected: () -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
@@ -4434,6 +4454,16 @@ fun WorkerHistoryOverviewScreen(
                 shadowElevation = 0.dp,
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
+                    gpsShiftSubmission?.let { submission ->
+                        WeekOverviewRow(
+                            week = "Week 25",
+                            amount = submission.pay,
+                            detail = "${submission.hours} - Today - ${formatPhotoCount(submission.photoCount)}",
+                            status = WeekStatus.Pending,
+                            onClick = onDaySelected,
+                        )
+                        ProfileDivider()
+                    }
                     manualSubmission?.let { submission ->
                         WeekOverviewRow(
                             week = "Week 25",
@@ -6290,7 +6320,7 @@ fun GpsLocationDeniedScreen(
 @Composable
 fun GpsShiftInProgressScreen(
     modifier: Modifier = Modifier,
-    onClockOut: () -> Unit = {},
+    onClockOut: (Long) -> Unit = {},
 ) {
     var elapsedSeconds by remember { mutableStateOf(3.hours + 24.minutes + 11.seconds) }
     val earnings = elapsedSeconds / 3600.0 * 13.05
@@ -6372,7 +6402,7 @@ fun GpsShiftInProgressScreen(
         }
 
         Button(
-            onClick = onClockOut,
+            onClick = { onClockOut(elapsedSeconds) },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
@@ -6711,7 +6741,7 @@ private fun formatElapsedTime(totalSeconds: Long): String {
 }
 
 private fun formatCurrency(value: Double): String {
-    return "£%.2f".format(Locale.US, value)
+    return formatEuro(value)
 }
 
 private fun calculateManualHours(
@@ -6743,6 +6773,10 @@ private fun formatHours(value: Double): String {
 
 private fun formatEuro(value: Double): String {
     return "\u20AC%.2f".format(Locale.US, value)
+}
+
+private fun formatPhotoCount(count: Int): String {
+    return if (count == 1) "1 photo" else "$count photos"
 }
 
 private fun formatWholeEuro(value: Double): String {
@@ -6915,7 +6949,14 @@ data class WorkerManualHoursSubmission(
     val pay: String,
 )
 
+data class WorkerGpsShiftSubmission(
+    val hours: String,
+    val pay: String,
+    val photoCount: Int,
+)
+
 private const val ManualHoursPreferences = "manual_hours"
+private const val WorkerGpsShiftPreferences = "gps_shift"
 
 private fun loadManualHoursSubmission(context: Context): WorkerManualHoursSubmission? {
     val preferences = context.getSharedPreferences(ManualHoursPreferences, Context.MODE_PRIVATE)
@@ -6934,6 +6975,30 @@ private fun saveManualHoursSubmission(context: Context, submission: WorkerManual
 
 private fun clearManualHoursSubmission(context: Context) {
     context.getSharedPreferences(ManualHoursPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .clear()
+        .apply()
+}
+
+private fun loadWorkerGpsShiftSubmission(context: Context): WorkerGpsShiftSubmission? {
+    val preferences = context.getSharedPreferences(WorkerGpsShiftPreferences, Context.MODE_PRIVATE)
+    val hours = preferences.getString("hours", null) ?: return null
+    val pay = preferences.getString("pay", null) ?: return null
+    val photoCount = preferences.getInt("photo_count", 0)
+    return WorkerGpsShiftSubmission(hours = hours, pay = pay, photoCount = photoCount)
+}
+
+private fun saveWorkerGpsShiftSubmission(context: Context, submission: WorkerGpsShiftSubmission) {
+    context.getSharedPreferences(WorkerGpsShiftPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putString("hours", submission.hours)
+        .putString("pay", submission.pay)
+        .putInt("photo_count", submission.photoCount)
+        .apply()
+}
+
+private fun clearWorkerGpsShiftSubmission(context: Context) {
+    context.getSharedPreferences(WorkerGpsShiftPreferences, Context.MODE_PRIVATE)
         .edit()
         .clear()
         .apply()
