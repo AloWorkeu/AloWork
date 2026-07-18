@@ -269,6 +269,10 @@ fun AloworkApp() {
             adminRequests = loadWorkerAdminHoursRequests(context),
             manualSubmission = manualHoursSubmission,
             gpsShiftSubmission = gpsShiftSubmission,
+            onOpenShiftDetail = { dayDetail ->
+                selectedWorkerDayDetail = dayDetail
+                screen = AppScreen.WorkerDayViewAdjusted
+            },
             onOpenShiftChat = { dayDetail ->
                 selectedWorkerDayDetail = dayDetail
                 screen = AppScreen.WorkerChatWithEmployer
@@ -4300,6 +4304,7 @@ fun WorkerNotificationsScreen(
     adminRequests: List<AdminHoursRequest> = emptyList(),
     manualSubmission: WorkerManualHoursSubmission? = null,
     gpsShiftSubmission: WorkerGpsShiftSubmission? = null,
+    onOpenShiftDetail: (WorkerDayDetail) -> Unit = {},
     onOpenShiftChat: (WorkerDayDetail) -> Unit = {},
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
@@ -4363,7 +4368,7 @@ fun WorkerNotificationsScreen(
                     time = "Now",
                     unread = true,
                     onClick = {
-                        onOpenShiftChat(request.workerDayDetail(manualSubmission, gpsShiftSubmission))
+                        onOpenShiftDetail(request.workerDayDetail(manualSubmission, gpsShiftSubmission))
                     },
                 )
                 Spacer(modifier = Modifier.height(10.dp))
