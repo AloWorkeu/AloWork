@@ -229,6 +229,7 @@ fun AloworkApp() {
                     hours = formatHours(hours),
                     pay = formatEuro(hours * selectedEmployerHourlyRate),
                     photoCount = workerShiftPhotoUris.size,
+                    photoUris = workerShiftPhotoUris,
                 )
                 gpsShiftSubmission = submission
                 saveWorkerGpsShiftSubmission(context, submission)
@@ -4937,7 +4938,12 @@ fun WorkerDayViewAdjustedScreen(
             .padding(horizontal = 20.dp)
             .padding(top = 48.dp, bottom = 20.dp),
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 190.dp),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -5022,6 +5028,42 @@ fun WorkerDayViewAdjustedScreen(
                 DayInfoRow(label = "Break", value = dayDetail.breakLabel)
                 ProfileDivider()
                 DayInfoRow(label = "Hourly rate", value = dayDetail.hourlyRate)
+            }
+            if (dayDetail.photoUris.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE4E4DF)),
+                    shadowElevation = 0.dp,
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                    ) {
+                        Text(
+                            text = "Proof photos",
+                            color = Color(0xFF17171B),
+                            fontSize = 14.sp,
+                            lineHeight = 17.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            dayDetail.photoUris.take(2).forEach { uri ->
+                                ShiftProofPhotoTile(
+                                    uri = uri,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                            if (dayDetail.photoUris.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(14.dp))
             Surface(
@@ -7105,6 +7147,41 @@ private fun ShiftPhotoTile(
     }
 }
 
+@Composable
+private fun ShiftProofPhotoTile(
+    uri: Uri,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val image = remember(uri) { loadShiftPhotoPreview(context, uri) }
+
+    Surface(
+        modifier = modifier.height(118.dp),
+        shape = RoundedCornerShape(10.dp),
+        color = Color(0xFFD6DBE0),
+        shadowElevation = 0.dp,
+    ) {
+        if (image != null) {
+            Image(
+                bitmap = image,
+                contentDescription = "Shift proof photo",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            Text(
+                text = "Photo unavailable",
+                color = Color(0xFF73737A),
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 48.dp),
+            )
+        }
+    }
+}
+
 private fun loadShiftPhotoPreview(
     context: Context,
     uri: Uri,
@@ -7459,6 +7536,7 @@ data class WorkerGpsShiftSubmission(
     val hours: String,
     val pay: String,
     val photoCount: Int,
+    val photoUris: List<Uri> = emptyList(),
 )
 
 data class WorkerDayDetail(
@@ -7473,6 +7551,7 @@ data class WorkerDayDetail(
     val hourlyRate: String,
     val note: String,
     val actionLabel: String,
+    val photoUris: List<Uri> = emptyList(),
 ) {
     val chatSummary: String
         get() = "$hours - $summary"
@@ -7520,6 +7599,7 @@ private fun gpsShiftWorkerDayDetail(
         hourlyRate = effectiveHourlyRateLabel(hours, pay, fallbackRate = 13.05),
         note = workerSubmissionNote(status),
         actionLabel = workerSubmissionActionLabel(status),
+        photoUris = submission.photoUris,
     )
 }
 
@@ -7724,7 +7804,17 @@ private fun loadWorkerGpsShiftSubmission(context: Context): WorkerGpsShiftSubmis
     val hours = preferences.getString("hours", null) ?: return null
     val pay = preferences.getString("pay", null) ?: return null
     val photoCount = preferences.getInt("photo_count", 0)
-    return WorkerGpsShiftSubmission(hours = hours, pay = pay, photoCount = photoCount)
+    val photoUris = preferences.getString("photo_uris", null)
+        ?.lineSequence()
+        ?.mapNotNull { row -> runCatching { Uri.parse(row) }.getOrNull() }
+        ?.toList()
+        .orEmpty()
+    return WorkerGpsShiftSubmission(
+        hours = hours,
+        pay = pay,
+        photoCount = maxOf(photoCount, photoUris.size),
+        photoUris = photoUris,
+    )
 }
 
 private fun saveWorkerGpsShiftSubmission(context: Context, submission: WorkerGpsShiftSubmission) {
@@ -7733,6 +7823,7 @@ private fun saveWorkerGpsShiftSubmission(context: Context, submission: WorkerGps
         .putString("hours", submission.hours)
         .putString("pay", submission.pay)
         .putInt("photo_count", submission.photoCount)
+        .putString("photo_uris", submission.photoUris.joinToString("\n") { it.toString() })
         .apply()
 }
 
