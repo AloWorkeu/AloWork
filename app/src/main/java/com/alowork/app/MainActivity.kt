@@ -4010,11 +4010,13 @@ fun WorkerCalendarEarningsScreen(
             }
             Spacer(modifier = Modifier.height(14.dp))
             WorkerEarningsCard(
+                language = language,
                 isCurrentDesignMonth = displayedMonth == YearMonth.of(2026, 6),
                 summary = monthSummary,
             )
             Spacer(modifier = Modifier.height(14.dp))
             WorkerMonthCalendar(
+                language = language,
                 month = displayedMonth,
                 calendarData = calendarData,
                 onPreviousMonth = { displayedMonth = displayedMonth.minusMonths(1) },
@@ -4055,9 +4057,11 @@ fun WorkerCalendarEarningsScreen(
 
 @Composable
 private fun WorkerEarningsCard(
+    language: WorkerLanguage = WorkerLanguage.English,
     isCurrentDesignMonth: Boolean,
     summary: WorkerMonthSummary,
 ) {
+    val copy = language.workerCalendarCopy()
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -4073,7 +4077,7 @@ private fun WorkerEarningsCard(
                 .padding(horizontal = 20.dp, vertical = 18.dp),
         ) {
             Text(
-                text = if (isCurrentDesignMonth) "Earned in June \u00B7 net" else "Earned this month \u00B7 net",
+                text = if (isCurrentDesignMonth) copy.earnedInJuneNet else copy.earnedThisMonthNet,
                 color = Color(0xFF73737A),
                 fontSize = 13.sp,
                 lineHeight = 16.sp,
@@ -4093,11 +4097,11 @@ private fun WorkerEarningsCard(
             ) {
                 EarningsLegendItem(
                     color = Color(0xFF1D9E75),
-                    label = if (isCurrentDesignMonth) "${formatWholeEuro(summary.approvedPay)} approved" else "\u20AC0 approved",
+                    label = "${if (isCurrentDesignMonth) formatWholeEuro(summary.approvedPay) else "\u20AC0"} ${copy.approved}",
                 )
                 EarningsLegendItem(
                     color = Color(0xFFEF9F27),
-                    label = if (isCurrentDesignMonth) "${formatWholeEuro(summary.pendingPay)} pending" else "\u20AC0 pending",
+                    label = "${if (isCurrentDesignMonth) formatWholeEuro(summary.pendingPay) else "\u20AC0"} ${copy.pending}",
                 )
             }
         }
@@ -4126,6 +4130,7 @@ private fun EarningsLegendItem(color: Color, label: String) {
 
 @Composable
 private fun WorkerMonthCalendar(
+    language: WorkerLanguage = WorkerLanguage.English,
     month: YearMonth,
     calendarData: Map<Int, CalendarDayData>,
     onPreviousMonth: () -> Unit,
@@ -4136,7 +4141,8 @@ private fun WorkerMonthCalendar(
     val cells = firstDayOffset + month.lengthOfMonth()
     val weekCount = ((cells + 6) / 7).coerceAtLeast(5)
     val rowHeight = if (weekCount > 5) 38.dp else 46.dp
-    val monthFormatter = remember { DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ENGLISH) }
+    val copy = language.workerCalendarCopy()
+    val monthFormatter = remember(copy.locale) { DateTimeFormatter.ofPattern("MMMM yyyy", copy.locale) }
 
     Surface(
         modifier = Modifier
@@ -4172,7 +4178,7 @@ private fun WorkerMonthCalendar(
             }
             Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
-                listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun").forEach { day ->
+                copy.weekdayLabels.forEach { day ->
                     Text(
                         text = day,
                         color = Color(0xFF9E9EA6),
@@ -4215,9 +4221,9 @@ private fun WorkerMonthCalendar(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                CalendarLegendItem(CalendarDayStatus.Approved, "approved")
-                CalendarLegendItem(CalendarDayStatus.Pending, "pending")
-                CalendarLegendItem(CalendarDayStatus.Adjusted, "adjusted")
+                CalendarLegendItem(CalendarDayStatus.Approved, copy.approved)
+                CalendarLegendItem(CalendarDayStatus.Pending, copy.pending)
+                CalendarLegendItem(CalendarDayStatus.Adjusted, copy.adjusted)
             }
         }
     }
@@ -8137,6 +8143,57 @@ private fun WorkerLanguage.workerTabCopy(): WorkerTabCopy {
             accountApprovedBody = "Votre employeur a approuve votre compte.",
             welcome = "Bienvenue",
             now = "Maintenant",
+        )
+    }
+}
+
+private data class WorkerCalendarCopy(
+    val earnedInJuneNet: String,
+    val earnedThisMonthNet: String,
+    val approved: String,
+    val pending: String,
+    val adjusted: String,
+    val weekdayLabels: List<String>,
+    val locale: Locale,
+)
+
+private fun WorkerLanguage.workerCalendarCopy(): WorkerCalendarCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerCalendarCopy(
+            earnedInJuneNet = "Earned in June - net",
+            earnedThisMonthNet = "Earned this month - net",
+            approved = "approved",
+            pending = "pending",
+            adjusted = "adjusted",
+            weekdayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
+            locale = Locale.ENGLISH,
+        )
+        WorkerLanguage.Dutch -> WorkerCalendarCopy(
+            earnedInJuneNet = "Verdienste in juni - netto",
+            earnedThisMonthNet = "Verdienste deze maand - netto",
+            approved = "goedgekeurd",
+            pending = "in afwachting",
+            adjusted = "aangepast",
+            weekdayLabels = listOf("Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"),
+            locale = Locale("nl", "NL"),
+        )
+        WorkerLanguage.German -> WorkerCalendarCopy(
+            earnedInJuneNet = "Verdient im Juni - netto",
+            earnedThisMonthNet = "Diesen Monat verdient - netto",
+            approved = "genehmigt",
+            pending = "ausstehend",
+            adjusted = "angepasst",
+            weekdayLabels = listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"),
+            locale = Locale.GERMAN,
+        )
+        WorkerLanguage.French -> WorkerCalendarCopy(
+            earnedInJuneNet = "Gagne en juin - net",
+            earnedThisMonthNet = "Gagne ce mois-ci - net",
+            approved = "approuve",
+            pending = "en attente",
+            adjusted = "modifie",
+            weekdayLabels = listOf("Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"),
+            locale = Locale.FRENCH,
         )
     }
 }
