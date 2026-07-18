@@ -106,6 +106,7 @@ fun AloworkApp() {
     var workerLanguage by remember { mutableStateOf(loadWorkerLanguage(context)) }
     var adminCompanyProfile by remember { mutableStateOf(loadAdminCompanyProfile(context)) }
     var selectedEmployerName by remember { mutableStateOf(loadSelectedEmployerName(context)) }
+    var pendingWorkerEmail by remember { mutableStateOf("") }
     var workerEmployers by remember {
         mutableStateOf(loadWorkerEmployers(context))
     }
@@ -152,7 +153,14 @@ fun AloworkApp() {
 
     when (screen) {
         AppScreen.WorkerSignUp -> WorkerSignUpScreen(
-            onAccountCreated = {
+            onAccountCreated = { fullName, email, companyCode ->
+                submitWorkerSignupForApproval(
+                    context = context,
+                    fullName = fullName,
+                    email = email,
+                    companyCode = companyCode,
+                )
+                pendingWorkerEmail = email
                 screen = AppScreen.WorkerAwaitingApproval
             },
             onLoginSelected = {
@@ -176,7 +184,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerAwaitingApproval -> WorkerAwaitingApprovalScreen(
-            autoContinue = true,
+            isApproved = isWorkerApproved(context, pendingWorkerEmail),
             onApprovalReceived = {
                 screen = AppScreen.WorkerLocationPermission
             },
@@ -578,7 +586,7 @@ fun AloworkApp() {
 @Composable
 fun WorkerSignUpScreen(
     modifier: Modifier = Modifier,
-    onAccountCreated: () -> Unit = {},
+    onAccountCreated: (String, String, String) -> Unit = { _, _, _ -> },
     onLoginSelected: () -> Unit = {},
     onRegisterCompany: () -> Unit = {},
 ) {
@@ -655,7 +663,7 @@ fun WorkerSignUpScreen(
                         else -> null
                     }
                     if (message == null) {
-                        onAccountCreated()
+                        onAccountCreated(fullName.trim(), email.trim(), companyCode.trim())
                     } else {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
@@ -3440,12 +3448,14 @@ private fun WebRegisterStep(
 @Composable
 fun WorkerAwaitingApprovalScreen(
     modifier: Modifier = Modifier,
-    autoContinue: Boolean = false,
+    isApproved: Boolean = false,
     onApprovalReceived: () -> Unit = {},
 ) {
-    if (autoContinue) {
+    val context = LocalContext.current
+
+    if (isApproved) {
         LaunchedEffect(Unit) {
-            delay(1800)
+            delay(700)
             onApprovalReceived()
         }
     }
@@ -3479,6 +3489,34 @@ fun WorkerAwaitingApprovalScreen(
                 fontSize = 13.sp,
                 lineHeight = 17.sp,
                 textAlign = TextAlign.Center,
+            )
+        }
+
+        Button(
+            onClick = {
+                if (isApproved) {
+                    onApprovalReceived()
+                } else {
+                    Toast.makeText(context, "Still waiting for employer approval", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 56.dp)
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF111116),
+                contentColor = Color.White,
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+        ) {
+            Text(
+                text = "Check approval",
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Medium,
             )
         }
     }
@@ -8229,6 +8267,47 @@ private fun saveAdminWorkers(context: Context, workers: List<AdminWorker>) {
             },
         )
         .apply()
+}
+
+private fun submitWorkerSignupForApproval(
+    context: Context,
+    fullName: String,
+    email: String,
+    companyCode: String,
+) {
+    val employer = resolveWorkerEmployerByCode(companyCode)
+    val newWorker = AdminWorker(
+        name = fullName,
+        role = employer.role,
+        email = email,
+        location = "Bakery floor",
+        rate = employer.rate.replace("/hr", " / hour"),
+        thisMonthHours = "0.0h",
+        status = "Pending",
+        reminderSent = false,
+    )
+    val existingWorkers = loadAdminWorkers(context)
+    val updatedWorkers = existingWorkers.map { worker ->
+        if (worker.email.equals(email, ignoreCase = true)) {
+            if (worker.status == "Active") {
+                worker
+            } else {
+                newWorker
+            }
+        } else {
+            worker
+        }
+    }.let { workers ->
+        if (workers.any { it.email.equals(email, ignoreCase = true) }) workers else workers + newWorker
+    }
+    saveAdminWorkers(context, updatedWorkers)
+}
+
+private fun isWorkerApproved(context: Context, email: String): Boolean {
+    if (email.isBlank()) return false
+    return loadAdminWorkers(context).any { worker ->
+        worker.email.equals(email, ignoreCase = true) && worker.status == "Active"
+    }
 }
 
 private enum class NotificationType {
