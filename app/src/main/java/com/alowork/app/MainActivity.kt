@@ -4542,6 +4542,7 @@ fun WorkerNotificationsScreen(
     onTabSelected: (WorkerTab) -> Unit = {},
 ) {
     val copy = language.workerTabCopy()
+    val alertsCopy = language.workerAlertsCopy()
     val latestWorkerMessage = sentMessages.lastOrNull { it.isWorker }
     val latestEmployerReply = sentMessages.lastOrNull { !it.isWorker }
     val latestAdminDecision = adminRequests
@@ -4598,7 +4599,7 @@ fun WorkerNotificationsScreen(
                         NotificationType.WeekApproved
                     },
                     title = if (request.status == "Adjusted") copy.hoursAdjusted else copy.hoursApproved,
-                    body = workerAdminDecisionBody(request),
+                    body = language.workerAdminDecisionBody(request),
                     time = copy.now,
                     unread = true,
                     onClick = {
@@ -4620,25 +4621,25 @@ fun WorkerNotificationsScreen(
             NotificationCard(
                 type = NotificationType.HoursAdjusted,
                 title = copy.hoursAdjusted,
-                body = "Your hours for 5 June were adjusted to 6.0\nhrs.",
-                time = "2 hours ago",
+                body = alertsCopy.adjustedSampleBody,
+                time = alertsCopy.twoHoursAgo,
                 unread = true,
             )
             Spacer(modifier = Modifier.height(10.dp))
             NotificationCard(
                 type = NotificationType.WeekApproved,
                 title = copy.weekApproved,
-                body = "Your hours for week 23 were approved.\n€608.",
-                time = "yesterday",
+                body = alertsCopy.weekApprovedSampleBody,
+                time = alertsCopy.yesterday,
                 unread = true,
             )
             Spacer(modifier = Modifier.height(10.dp))
             NotificationCard(
                 type = NotificationType.AccountApproved,
                 title = copy.accountApproved,
-                body = accountApproval?.let { "Your worker account is active." }
-                    ?: "Welcome! Your employer approved your\naccount.",
-                time = if (accountApproval == null) "3 days ago" else "Earlier",
+                body = accountApproval?.let { alertsCopy.accountActiveBody }
+                    ?: alertsCopy.accountApprovedSampleBody,
+                time = if (accountApproval == null) alertsCopy.threeDaysAgo else alertsCopy.earlier,
                 unread = false,
             )
         }
@@ -8147,6 +8148,72 @@ private fun WorkerLanguage.workerTabCopy(): WorkerTabCopy {
     }
 }
 
+private data class WorkerAlertsCopy(
+    val adjustedSampleBody: String,
+    val weekApprovedSampleBody: String,
+    val accountActiveBody: String,
+    val accountApprovedSampleBody: String,
+    val twoHoursAgo: String,
+    val yesterday: String,
+    val threeDaysAgo: String,
+    val earlier: String,
+    val adjustedBody: (AdminHoursRequest) -> String,
+    val approvedBody: (AdminHoursRequest) -> String,
+)
+
+private fun WorkerLanguage.workerAlertsCopy(): WorkerAlertsCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerAlertsCopy(
+            adjustedSampleBody = "Your hours for 5 June were adjusted to 6.0\nhrs.",
+            weekApprovedSampleBody = "Your hours for week 23 were approved.\n\u20AC608.",
+            accountActiveBody = "Your worker account is active.",
+            accountApprovedSampleBody = "Welcome! Your employer approved your\naccount.",
+            twoHoursAgo = "2 hours ago",
+            yesterday = "yesterday",
+            threeDaysAgo = "3 days ago",
+            earlier = "Earlier",
+            adjustedBody = { request -> "Your ${request.period} hours were adjusted to ${request.hours} (${request.pay})." },
+            approvedBody = { request -> "Your ${request.period} hours were approved (${request.hours}, ${request.pay})." },
+        )
+        WorkerLanguage.Dutch -> WorkerAlertsCopy(
+            adjustedSampleBody = "Je uren voor 5 juni zijn aangepast naar 6,0\nuur.",
+            weekApprovedSampleBody = "Je uren voor week 23 zijn goedgekeurd.\n\u20AC608.",
+            accountActiveBody = "Je werknemersaccount is actief.",
+            accountApprovedSampleBody = "Welkom! Je werkgever heeft je account\ngoedgekeurd.",
+            twoHoursAgo = "2 uur geleden",
+            yesterday = "gisteren",
+            threeDaysAgo = "3 dagen geleden",
+            earlier = "Eerder",
+            adjustedBody = { request -> "Je uren voor ${request.period} zijn aangepast naar ${request.hours} (${request.pay})." },
+            approvedBody = { request -> "Je uren voor ${request.period} zijn goedgekeurd (${request.hours}, ${request.pay})." },
+        )
+        WorkerLanguage.German -> WorkerAlertsCopy(
+            adjustedSampleBody = "Deine Stunden fur den 5. Juni wurden auf 6,0\nStd. angepasst.",
+            weekApprovedSampleBody = "Deine Stunden fur Woche 23 wurden genehmigt.\n\u20AC608.",
+            accountActiveBody = "Dein Mitarbeiterkonto ist aktiv.",
+            accountApprovedSampleBody = "Willkommen! Dein Arbeitgeber hat dein\nKonto genehmigt.",
+            twoHoursAgo = "vor 2 Stunden",
+            yesterday = "gestern",
+            threeDaysAgo = "vor 3 Tagen",
+            earlier = "Fruher",
+            adjustedBody = { request -> "Deine Stunden fur ${request.period} wurden auf ${request.hours} (${request.pay}) angepasst." },
+            approvedBody = { request -> "Deine Stunden fur ${request.period} wurden genehmigt (${request.hours}, ${request.pay})." },
+        )
+        WorkerLanguage.French -> WorkerAlertsCopy(
+            adjustedSampleBody = "Vos heures du 5 juin ont ete modifiees a 6,0\nh.",
+            weekApprovedSampleBody = "Vos heures de la semaine 23 ont ete approuvees.\n\u20AC608.",
+            accountActiveBody = "Votre compte travailleur est actif.",
+            accountApprovedSampleBody = "Bienvenue! Votre employeur a approuve\nvotre compte.",
+            twoHoursAgo = "il y a 2 heures",
+            yesterday = "hier",
+            threeDaysAgo = "il y a 3 jours",
+            earlier = "Plus tot",
+            adjustedBody = { request -> "Vos heures pour ${request.period} ont ete modifiees a ${request.hours} (${request.pay})." },
+            approvedBody = { request -> "Vos heures pour ${request.period} ont ete approuvees (${request.hours}, ${request.pay})." },
+        )
+    }
+}
+
 private data class WorkerCalendarCopy(
     val earnedInJuneNet: String,
     val earnedThisMonthNet: String,
@@ -9212,11 +9279,12 @@ private fun workerSubmissionActionLabel(status: WeekStatus): String {
     }
 }
 
-private fun workerAdminDecisionBody(request: AdminHoursRequest): String {
+private fun WorkerLanguage.workerAdminDecisionBody(request: AdminHoursRequest): String {
+    val copy = workerAlertsCopy()
     return if (request.status == "Adjusted") {
-        "Your ${request.period} hours were adjusted to ${request.hours} (${request.pay})."
+        copy.adjustedBody(request)
     } else {
-        "Your ${request.period} hours were approved (${request.hours}, ${request.pay})."
+        copy.approvedBody(request)
     }
 }
 
