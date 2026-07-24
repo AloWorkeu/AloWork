@@ -4693,11 +4693,11 @@ fun WorkerProfileScreen(
             ProfileSectionCard {
                 ProfileInfoRow(label = copy.company, value = selectedEmployer.name)
                 ProfileDivider()
-                ProfileInfoRow(label = copy.role, value = selectedEmployer.role)
+                ProfileInfoRow(label = copy.role, value = language.localizedEmployerRole(selectedEmployer.role))
                 ProfileDivider()
-                ProfileInfoRow(label = copy.hourlyRate, value = selectedEmployer.rate)
+                ProfileInfoRow(label = copy.hourlyRate, value = language.localizedEmployerRate(selectedEmployer.rate))
                 ProfileDivider()
-                ProfileInfoRow(label = copy.status, value = selectedEmployer.status)
+                ProfileInfoRow(label = copy.status, value = language.localizedEmployerStatus(selectedEmployer.status))
             }
             Spacer(modifier = Modifier.height(16.dp))
             ProfileSectionCard {
@@ -6032,7 +6032,7 @@ private fun EmployerChoiceRow(
                 )
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = "${employer.role} - ${employer.rate} - ${language.localizedEmployerStatus(employer.status)}",
+                    text = "${language.localizedEmployerRole(employer.role)} - ${language.localizedEmployerRate(employer.rate)} - ${language.localizedEmployerStatus(employer.status)}",
                     color = Color(0xFF73737A),
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
@@ -6455,7 +6455,7 @@ private fun ProfileActionRow(
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = "›",
+            text = "\u203A",
             color = Color(0xFF8C8C91),
             fontSize = 18.sp,
             lineHeight = 18.sp,
@@ -8064,6 +8064,54 @@ private fun WorkerLanguage.localizedEmployerStatus(status: String): String {
             WorkerLanguage.French -> "en attente"
         }
         else -> status.lowercase(Locale.US)
+    }
+}
+
+private fun WorkerLanguage.localizedEmployerRole(role: String): String {
+    return when (role) {
+        "Shift worker" -> when (this) {
+            WorkerLanguage.English -> "Shift worker"
+            WorkerLanguage.Dutch -> "Medewerker diensten"
+            WorkerLanguage.German -> "Schichtarbeiter"
+            WorkerLanguage.French -> "Employe de service"
+        }
+        "Service" -> when (this) {
+            WorkerLanguage.English -> "Service"
+            WorkerLanguage.Dutch -> "Bediening"
+            WorkerLanguage.German -> "Service"
+            WorkerLanguage.French -> "Service"
+        }
+        "Weekend help" -> when (this) {
+            WorkerLanguage.English -> "Weekend help"
+            WorkerLanguage.Dutch -> "Weekendhulp"
+            WorkerLanguage.German -> "Wochenendhilfe"
+            WorkerLanguage.French -> "Aide week-end"
+        }
+        "Warehouse assistant" -> when (this) {
+            WorkerLanguage.English -> "Warehouse assistant"
+            WorkerLanguage.Dutch -> "Magazijnmedewerker"
+            WorkerLanguage.German -> "Lagerassistent"
+            WorkerLanguage.French -> "Assistant entrepot"
+        }
+        "Pending approval" -> when (this) {
+            WorkerLanguage.English -> "Pending approval"
+            WorkerLanguage.Dutch -> "Wacht op goedkeuring"
+            WorkerLanguage.German -> "Wartet auf Genehmigung"
+            WorkerLanguage.French -> "En attente d'approbation"
+        }
+        else -> role
+    }
+}
+
+private fun WorkerLanguage.localizedEmployerRate(rate: String): String {
+    return when (rate) {
+        "Rate pending" -> when (this) {
+            WorkerLanguage.English -> "Rate pending"
+            WorkerLanguage.Dutch -> "Uurloon in behandeling"
+            WorkerLanguage.German -> "Lohn ausstehend"
+            WorkerLanguage.French -> "Taux en attente"
+        }
+        else -> rate
     }
 }
 
