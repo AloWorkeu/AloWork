@@ -1090,7 +1090,10 @@ fun WebRegisterChoosePlanScreen(
     onContinue: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
-    var currentPlan by remember { mutableStateOf(selectedPlan) }
+    val plans = remember { defaultWebRegistrationPlans() }
+    var currentPlan by remember(selectedPlan) {
+        mutableStateOf(plans.firstOrNull { it.title == selectedPlan }?.title ?: plans.first().title)
+    }
 
     Row(
         modifier = modifier
@@ -1124,21 +1127,18 @@ fun WebRegisterChoosePlanScreen(
                     lineHeight = 14.sp,
                 )
                 Spacer(modifier = Modifier.height(20.dp))
-                WebPlanOptionCard(
-                    title = "Starter",
-                    price = "\u20AC19 / month",
-                    detail = "Up to 15 workers",
-                    selected = currentPlan == "Starter",
-                    onClick = { currentPlan = "Starter" },
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                WebPlanOptionCard(
-                    title = "Business",
-                    price = "\u20AC49 / month",
-                    detail = "Up to 60 workers",
-                    selected = currentPlan == "Business",
-                    onClick = { currentPlan = "Business" },
-                )
+                plans.forEachIndexed { index, plan ->
+                    if (index > 0) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                    WebPlanOptionCard(
+                        title = plan.title,
+                        price = plan.price,
+                        detail = plan.detail,
+                        selected = currentPlan == plan.title,
+                        onClick = { currentPlan = plan.title },
+                    )
+                }
             }
 
             Button(
@@ -3385,6 +3385,27 @@ private fun AdminWorkerMessageRow(
             textAlign = TextAlign.End,
         )
     }
+}
+
+private data class WebRegistrationPlan(
+    val title: String,
+    val price: String,
+    val detail: String,
+)
+
+private fun defaultWebRegistrationPlans(): List<WebRegistrationPlan> {
+    return listOf(
+        WebRegistrationPlan(
+            title = "Starter",
+            price = "\u20AC19 / month",
+            detail = "Up to 15 workers",
+        ),
+        WebRegistrationPlan(
+            title = "Business",
+            price = "\u20AC49 / month",
+            detail = "Up to 60 workers",
+        ),
+    )
 }
 
 @Composable
