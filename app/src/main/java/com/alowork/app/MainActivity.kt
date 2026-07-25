@@ -5225,9 +5225,9 @@ fun WorkerDayViewAdjustedScreen(
             ProfileSectionCard {
                 DayInfoRow(label = copy.clockIn, value = dayDetail.clockIn)
                 ProfileDivider()
-                DayInfoRow(label = copy.clockOut, value = dayDetail.clockOut)
+                DayInfoRow(label = copy.clockOut, value = language.localizedWorkerShiftValue(dayDetail.clockOut))
                 ProfileDivider()
-                DayInfoRow(label = copy.breakLabel, value = dayDetail.breakLabel)
+                DayInfoRow(label = copy.breakLabel, value = language.localizedWorkerShiftValue(dayDetail.breakLabel))
                 ProfileDivider()
                 DayInfoRow(label = copy.hourlyRate, value = dayDetail.hourlyRate)
             }
@@ -8733,6 +8733,31 @@ private fun WorkerLanguage.localizedWorkerDaySummary(dayDetail: WorkerDayDetail)
         }
         WeekStatus.Pending -> localizedPendingWorkerDaySummary(dayDetail)
         WeekStatus.Adjusted -> localizedAdjustedWorkerDaySummary(dayDetail)
+    }
+}
+
+private fun WorkerLanguage.localizedWorkerShiftValue(value: String): String {
+    return when (value) {
+        "Now" -> workerTabCopy().now
+        "Clocked out" -> when (this) {
+            WorkerLanguage.English -> "Clocked out"
+            WorkerLanguage.Dutch -> "Uitgeklokt"
+            WorkerLanguage.German -> "Ausgestempelt"
+            WorkerLanguage.French -> "Depart pointe"
+        }
+        "0 min" -> when (this) {
+            WorkerLanguage.English -> "0 min"
+            WorkerLanguage.Dutch -> "0 min"
+            WorkerLanguage.German -> "0 Min."
+            WorkerLanguage.French -> "0 min"
+        }
+        "30 min" -> when (this) {
+            WorkerLanguage.English -> "30 min"
+            WorkerLanguage.Dutch -> "30 min"
+            WorkerLanguage.German -> "30 Min."
+            WorkerLanguage.French -> "30 min"
+        }
+        else -> value
     }
 }
 
