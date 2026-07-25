@@ -5160,7 +5160,7 @@ fun WorkerDayViewAdjustedScreen(
                         .clickable(onClick = onBack),
                 )
                 Text(
-                    text = dayDetail.title,
+                    text = language.localizedWorkerDayTitle(dayDetail.title),
                     color = Color(0xFF17171B),
                     fontSize = 22.sp,
                     lineHeight = 27.sp,
@@ -5214,7 +5214,7 @@ fun WorkerDayViewAdjustedScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = dayDetail.summary,
+                        text = language.localizedWorkerDaySummary(dayDetail),
                         color = Color(0xFFE0A12A),
                         fontSize = 12.sp,
                         lineHeight = 15.sp,
@@ -5412,14 +5412,14 @@ fun WorkerChatWithEmployerScreen(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "${dayDetail.title} - ${language.localizedWeekStatusChatLabel(dayDetail.status)}",
+                            text = "${language.localizedWorkerDayTitle(dayDetail.title)} - ${language.localizedWeekStatusChatLabel(dayDetail.status)}",
                             color = Color(0xFF73737A),
                             fontSize = 12.sp,
                             lineHeight = 15.sp,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = dayDetail.chatSummary,
+                            text = language.localizedWorkerDayChatSummary(dayDetail),
                             color = Color(0xFF17171B),
                             fontSize = 13.sp,
                             lineHeight = 17.sp,
@@ -5445,7 +5445,7 @@ fun WorkerChatWithEmployerScreen(
             ) {
                 item {
                     ChatMessageBubble(
-                        message = dayDetail.employerMessage,
+                        message = language.localizedEmployerShiftMessage(dayDetail.status),
                         time = "09:12",
                         isWorker = false,
                     )
@@ -5460,7 +5460,7 @@ fun WorkerChatWithEmployerScreen(
                 items(sentMessages) { message ->
                     ChatMessageBubble(
                         message = message.message,
-                        time = "Now",
+                        time = language.workerTabCopy().now,
                         isWorker = message.isWorker,
                     )
                 }
@@ -8688,6 +8688,118 @@ private fun WorkerLanguage.localizedWorkerShiftNote(dayDetail: WorkerDayDetail):
             WorkerLanguage.Dutch -> "Je werkgever heeft deze dag aangepast aan het goedgekeurde rooster."
             WorkerLanguage.German -> "Dein Arbeitgeber hat diesen Tag an den genehmigten Plan angepasst."
             WorkerLanguage.French -> "Votre employeur a ajuste cette journee selon le planning approuve."
+        }
+    }
+}
+
+private fun WorkerLanguage.localizedWorkerDayTitle(title: String): String {
+    return when (title) {
+        "Today" -> workerHistoryCopy().today
+        "Tue 3 Jun" -> when (this) {
+            WorkerLanguage.English -> "Tue 3 Jun"
+            WorkerLanguage.Dutch -> "Di 3 jun"
+            WorkerLanguage.German -> "Di 3. Juni"
+            WorkerLanguage.French -> "Mar 3 juin"
+        }
+        "Wed 10 Jun" -> when (this) {
+            WorkerLanguage.English -> "Wed 10 Jun"
+            WorkerLanguage.Dutch -> "Wo 10 jun"
+            WorkerLanguage.German -> "Mi 10. Juni"
+            WorkerLanguage.French -> "Mer 10 juin"
+        }
+        "Wed 17 Jun" -> when (this) {
+            WorkerLanguage.English -> "Wed 17 Jun"
+            WorkerLanguage.Dutch -> "Wo 17 jun"
+            WorkerLanguage.German -> "Mi 17. Juni"
+            WorkerLanguage.French -> "Mer 17 juin"
+        }
+        "Thu 18 Jun" -> when (this) {
+            WorkerLanguage.English -> "Thu 18 Jun"
+            WorkerLanguage.Dutch -> "Do 18 jun"
+            WorkerLanguage.German -> "Do 18. Juni"
+            WorkerLanguage.French -> "Jeu 18 juin"
+        }
+        else -> title
+    }
+}
+
+private fun WorkerLanguage.localizedWorkerDaySummary(dayDetail: WorkerDayDetail): String {
+    return when (dayDetail.status) {
+        WeekStatus.Approved -> when (this) {
+            WorkerLanguage.English -> "Approved by your employer"
+            WorkerLanguage.Dutch -> "Goedgekeurd door je werkgever"
+            WorkerLanguage.German -> "Von deinem Arbeitgeber genehmigt"
+            WorkerLanguage.French -> "Approuve par votre employeur"
+        }
+        WeekStatus.Pending -> localizedPendingWorkerDaySummary(dayDetail)
+        WeekStatus.Adjusted -> localizedAdjustedWorkerDaySummary(dayDetail)
+    }
+}
+
+private fun WorkerLanguage.localizedWorkerDayChatSummary(dayDetail: WorkerDayDetail): String {
+    return "${dayDetail.hours} - ${localizedWorkerDaySummary(dayDetail)}"
+}
+
+private fun WorkerLanguage.localizedEmployerShiftMessage(status: WeekStatus): String {
+    return when (status) {
+        WeekStatus.Approved -> when (this) {
+            WorkerLanguage.English -> "This shift is approved and included in payroll."
+            WorkerLanguage.Dutch -> "Deze dienst is goedgekeurd en meegenomen in de loonlijst."
+            WorkerLanguage.German -> "Diese Schicht ist genehmigt und in der Lohnabrechnung enthalten."
+            WorkerLanguage.French -> "Ce service est approuve et inclus dans la paie."
+        }
+        WeekStatus.Pending -> when (this) {
+            WorkerLanguage.English -> "This shift is waiting for review. Share any extra context here."
+            WorkerLanguage.Dutch -> "Deze dienst wacht op beoordeling. Deel hier extra context."
+            WorkerLanguage.German -> "Diese Schicht wartet auf Prufung. Teile hier zusatzlichen Kontext."
+            WorkerLanguage.French -> "Ce service attend une verification. Ajoutez du contexte ici."
+        }
+        WeekStatus.Adjusted -> when (this) {
+            WorkerLanguage.English -> "I adjusted this shift to match the approved schedule."
+            WorkerLanguage.Dutch -> "Ik heb deze dienst aangepast aan het goedgekeurde rooster."
+            WorkerLanguage.German -> "Ich habe diese Schicht an den genehmigten Plan angepasst."
+            WorkerLanguage.French -> "J'ai ajuste ce service selon le planning approuve."
+        }
+    }
+}
+
+private fun WorkerLanguage.localizedPendingWorkerDaySummary(dayDetail: WorkerDayDetail): String {
+    val photoCount = dayDetail.photoUris.size
+    if (photoCount > 0) {
+        return when (this) {
+            WorkerLanguage.English -> "Submitted with ${localizedPhotoCount(photoCount)}"
+            WorkerLanguage.Dutch -> "Ingediend met ${localizedPhotoCount(photoCount)}"
+            WorkerLanguage.German -> "Eingereicht mit ${localizedPhotoCount(photoCount)}"
+            WorkerLanguage.French -> "Envoye avec ${localizedPhotoCount(photoCount)}"
+        }
+    }
+    return when (this) {
+        WorkerLanguage.English -> "Waiting for employer approval"
+        WorkerLanguage.Dutch -> "Wacht op goedkeuring van je werkgever"
+        WorkerLanguage.German -> "Wartet auf Genehmigung des Arbeitgebers"
+        WorkerLanguage.French -> "En attente d'approbation de l'employeur"
+    }
+}
+
+private fun WorkerLanguage.localizedAdjustedWorkerDaySummary(dayDetail: WorkerDayDetail): String {
+    val originalHours = dayDetail.summary
+        .takeIf { it.startsWith("Adjusted from ") }
+        ?.substringAfter("Adjusted from ")
+        ?.substringBefore(" by your employer")
+        ?.takeIf { it.isNotBlank() }
+    return if (originalHours != null) {
+        when (this) {
+            WorkerLanguage.English -> "Adjusted from $originalHours by your employer"
+            WorkerLanguage.Dutch -> "Aangepast vanaf $originalHours door je werkgever"
+            WorkerLanguage.German -> "Von $originalHours durch deinen Arbeitgeber angepasst"
+            WorkerLanguage.French -> "Ajuste depuis $originalHours par votre employeur"
+        }
+    } else {
+        when (this) {
+            WorkerLanguage.English -> "Adjusted by your employer"
+            WorkerLanguage.Dutch -> "Aangepast door je werkgever"
+            WorkerLanguage.German -> "Von deinem Arbeitgeber angepasst"
+            WorkerLanguage.French -> "Ajuste par votre employeur"
         }
     }
 }
