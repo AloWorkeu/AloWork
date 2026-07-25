@@ -537,6 +537,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WebRegisterSuccessCode -> WebRegisterSuccessCodeScreen(
+            companyProfile = adminCompanyProfile,
             onOpenDashboard = {
                 screen = AppScreen.AdminDashboardHome
             },
@@ -1274,10 +1275,13 @@ fun WebRegisterAdminAccountScreen(
 @Composable
 fun WebRegisterSuccessCodeScreen(
     modifier: Modifier = Modifier,
+    companyProfile: AdminCompanyProfile = defaultAdminCompanyProfile(),
     onOpenDashboard: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    val companyCode = "JANS26"
+    val companyCode = remember(companyProfile.companyName) {
+        generateCompanyCode(companyProfile.companyName)
+    }
 
     Row(
         modifier = modifier
@@ -9604,6 +9608,18 @@ private fun saveAdminCompanyProfile(context: Context, profile: AdminCompanyProfi
 
 private fun String.isValidEmailAddress(): Boolean {
     return Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$").matches(this)
+}
+
+private fun generateCompanyCode(companyName: String): String {
+    val codePrefix = companyName
+        .split(Regex("\\s+"))
+        .lastOrNull { word -> word.any { it.isLetterOrDigit() } }
+        ?.filter { it.isLetterOrDigit() }
+        ?.uppercase(Locale.US)
+        ?.take(4)
+        ?.padEnd(4, 'X')
+        ?: "COMP"
+    return "${codePrefix}26"
 }
 
 data class AdminHoursRequest(
