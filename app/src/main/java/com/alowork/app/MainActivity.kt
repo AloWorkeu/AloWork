@@ -1044,15 +1044,19 @@ fun WebRegisterCompanyDetailsScreen(
 
             Button(
                 onClick = {
+                    val trimmedCompanyName = companyName.trim()
+                    val trimmedIndustry = industry.trim()
+                    val trimmedEmail = email.trim()
                     val message = when {
-                        companyName.isBlank() -> "Enter your company name"
-                        industry.isBlank() -> "Enter your industry"
-                        email.isBlank() -> "Enter your work email"
+                        trimmedCompanyName.isBlank() -> "Enter your company name"
+                        trimmedIndustry.isBlank() -> "Enter your industry"
+                        trimmedEmail.isBlank() -> "Enter your work email"
+                        !trimmedEmail.isValidEmailAddress() -> "Enter a valid work email"
                         else -> null
                     }
                     if (message == null) {
                         Toast.makeText(context, "Company details saved", Toast.LENGTH_SHORT).show()
-                        onContinue(companyName, industry, email)
+                        onContinue(trimmedCompanyName, trimmedIndustry, trimmedEmail)
                     } else {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
@@ -9572,6 +9576,10 @@ private fun saveAdminCompanyProfile(context: Context, profile: AdminCompanyProfi
         .putString("adminName", profile.adminName)
         .putString("adminEmail", profile.adminEmail)
         .apply()
+}
+
+private fun String.isValidEmailAddress(): Boolean {
+    return Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$").matches(this)
 }
 
 data class AdminHoursRequest(
