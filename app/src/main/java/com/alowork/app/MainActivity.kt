@@ -154,6 +154,7 @@ fun AloworkApp() {
 
     when (screen) {
         AppScreen.WorkerSignUp -> WorkerSignUpScreen(
+            language = workerLanguage,
             onAccountCreated = { fullName, email, companyCode, password ->
                 submitWorkerSignupForApproval(
                     context = context,
@@ -174,6 +175,7 @@ fun AloworkApp() {
         )
 
         AppScreen.WorkerLogin -> WorkerLoginScreen(
+            language = workerLanguage,
             onLogin = { email, password ->
                 pendingWorkerEmail = email
                 if (isWorkerPasswordValid(context, email, password)) {
@@ -187,7 +189,7 @@ fun AloworkApp() {
                         screen = AppScreen.WorkerAwaitingApproval
                     }
                 } else {
-                    Toast.makeText(context, "Email or password is incorrect", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, workerLanguage.authCopy().emailOrPasswordIncorrect, Toast.LENGTH_SHORT).show()
                 }
             },
             onCreateAccount = {
@@ -649,11 +651,13 @@ fun AloworkApp() {
 @Composable
 fun WorkerSignUpScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     onAccountCreated: (String, String, String, String) -> Unit = { _, _, _, _ -> },
     onLoginSelected: () -> Unit = {},
     onRegisterCompany: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val copy = language.authCopy()
     var fullName by remember { mutableStateOf("Sven de Vries") }
     var email by remember { mutableStateOf("sven@email.nl") }
     var companyCode by remember { mutableStateOf("") }
@@ -668,7 +672,7 @@ fun WorkerSignUpScreen(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Create account",
+                text = copy.createAccountTitle,
                 color = Color(0xFF17171B),
                 fontSize = 22.sp,
                 lineHeight = 27.sp,
@@ -676,33 +680,33 @@ fun WorkerSignUpScreen(
             )
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = "Create an account. Your employer approves it before\nyou can start.",
+                text = copy.createAccountDescription,
                 color = Color(0xFF73737A),
                 fontSize = 13.sp,
                 lineHeight = 16.sp,
             )
             Spacer(modifier = Modifier.height(24.dp))
             SignUpField(
-                label = "Full name",
+                label = copy.fullName,
                 value = fullName,
                 onValueChange = { fullName = it },
             )
             Spacer(modifier = Modifier.height(16.dp))
             SignUpField(
-                label = "Email address",
+                label = copy.emailAddress,
                 value = email,
                 onValueChange = { email = it },
             )
             Spacer(modifier = Modifier.height(16.dp))
             SignUpField(
-                label = "Company code",
+                label = copy.companyCode,
                 value = companyCode,
                 onValueChange = { companyCode = it },
-                placeholder = "Received from your employer",
+                placeholder = copy.companyCodePlaceholder,
             )
             Spacer(modifier = Modifier.height(16.dp))
             SignUpField(
-                label = "Password",
+                label = copy.password,
                 value = password,
                 onValueChange = { password = it },
                 isPassword = true,
@@ -719,10 +723,10 @@ fun WorkerSignUpScreen(
             Button(
                 onClick = {
                     val message = when {
-                        fullName.isBlank() -> "Enter your full name"
-                        email.isBlank() -> "Enter your email address"
-                        companyCode.isBlank() -> "Enter your company code"
-                        password.isBlank() -> "Enter a password"
+                        fullName.isBlank() -> copy.enterFullName
+                        email.isBlank() -> copy.enterEmailAddress
+                        companyCode.isBlank() -> copy.enterCompanyCode
+                        password.isBlank() -> copy.enterPassword
                         else -> null
                     }
                     if (message == null) {
@@ -742,7 +746,7 @@ fun WorkerSignUpScreen(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
             ) {
                 Text(
-                    text = "Create account",
+                    text = copy.createAccountAction,
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -751,7 +755,7 @@ fun WorkerSignUpScreen(
             Spacer(modifier = Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "Already have an account?",
+                    text = copy.alreadyHaveAccount,
                     color = Color(0xFF8C8C91),
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
@@ -764,7 +768,7 @@ fun WorkerSignUpScreen(
                     ),
                 ) {
                     Text(
-                        text = "Log in",
+                        text = copy.logIn,
                         color = Color(0xFF111116),
                         fontSize = 11.sp,
                         lineHeight = 14.sp,
@@ -780,7 +784,7 @@ fun WorkerSignUpScreen(
                 ),
             ) {
                 Text(
-                    text = "Register a company",
+                    text = copy.registerCompany,
                     color = Color(0xFF73737A),
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
@@ -794,11 +798,13 @@ fun WorkerSignUpScreen(
 @Composable
 fun WorkerLoginScreen(
     modifier: Modifier = Modifier,
+    language: WorkerLanguage = WorkerLanguage.English,
     onLogin: (String, String) -> Unit = { _, _ -> },
     onCreateAccount: () -> Unit = {},
     onRegisterCompany: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val copy = language.authCopy()
     var email by remember { mutableStateOf("sven@email.nl") }
     var password by remember { mutableStateOf("password") }
 
@@ -811,7 +817,7 @@ fun WorkerLoginScreen(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Log in",
+                text = copy.logInTitle,
                 color = Color(0xFF17171B),
                 fontSize = 22.sp,
                 lineHeight = 27.sp,
@@ -819,20 +825,20 @@ fun WorkerLoginScreen(
             )
             Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = "Log in to clock hours, view shifts, and send updates\nto your employer.",
+                text = copy.logInDescription,
                 color = Color(0xFF73737A),
                 fontSize = 13.sp,
                 lineHeight = 16.sp,
             )
             Spacer(modifier = Modifier.height(24.dp))
             SignUpField(
-                label = "Email address",
+                label = copy.emailAddress,
                 value = email,
                 onValueChange = { email = it },
             )
             Spacer(modifier = Modifier.height(16.dp))
             SignUpField(
-                label = "Password",
+                label = copy.password,
                 value = password,
                 onValueChange = { password = it },
                 isPassword = true,
@@ -849,8 +855,8 @@ fun WorkerLoginScreen(
             Button(
                 onClick = {
                     val message = when {
-                        email.isBlank() -> "Enter your email address"
-                        password.isBlank() -> "Enter your password"
+                        email.isBlank() -> copy.enterEmailAddress
+                        password.isBlank() -> copy.enterPassword
                         else -> null
                     }
                     if (message == null) {
@@ -870,7 +876,7 @@ fun WorkerLoginScreen(
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
             ) {
                 Text(
-                    text = "Log in",
+                    text = copy.logInAction,
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
                     fontWeight = FontWeight.Medium,
@@ -879,7 +885,7 @@ fun WorkerLoginScreen(
             Spacer(modifier = Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "New to Alowork?",
+                    text = copy.newToAlowork,
                     color = Color(0xFF8C8C91),
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
@@ -892,7 +898,7 @@ fun WorkerLoginScreen(
                     ),
                 ) {
                     Text(
-                        text = "Create account",
+                        text = copy.createAccountAction,
                         color = Color(0xFF111116),
                         fontSize = 11.sp,
                         lineHeight = 14.sp,
@@ -908,7 +914,7 @@ fun WorkerLoginScreen(
                 ),
             ) {
                 Text(
-                    text = "Register a company",
+                    text = copy.registerCompany,
                     color = Color(0xFF73737A),
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
@@ -7737,6 +7743,122 @@ enum class WorkerLanguage(val label: String, val localName: String) {
     Dutch("Dutch", "Nederlands"),
     German("German", "Deutsch"),
     French("French", "Francais"),
+}
+
+private data class WorkerAuthCopy(
+    val createAccountTitle: String,
+    val createAccountDescription: String,
+    val fullName: String,
+    val emailAddress: String,
+    val companyCode: String,
+    val companyCodePlaceholder: String,
+    val password: String,
+    val createAccountAction: String,
+    val alreadyHaveAccount: String,
+    val logIn: String,
+    val registerCompany: String,
+    val logInTitle: String,
+    val logInDescription: String,
+    val logInAction: String,
+    val newToAlowork: String,
+    val enterFullName: String,
+    val enterEmailAddress: String,
+    val enterCompanyCode: String,
+    val enterPassword: String,
+    val emailOrPasswordIncorrect: String,
+)
+
+private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
+    return when (this) {
+        WorkerLanguage.English -> WorkerAuthCopy(
+            createAccountTitle = "Create account",
+            createAccountDescription = "Create an account. Your employer approves it before\nyou can start.",
+            fullName = "Full name",
+            emailAddress = "Email address",
+            companyCode = "Company code",
+            companyCodePlaceholder = "Received from your employer",
+            password = "Password",
+            createAccountAction = "Create account",
+            alreadyHaveAccount = "Already have an account?",
+            logIn = "Log in",
+            registerCompany = "Register a company",
+            logInTitle = "Log in",
+            logInDescription = "Log in to clock hours, view shifts, and send updates\nto your employer.",
+            logInAction = "Log in",
+            newToAlowork = "New to Alowork?",
+            enterFullName = "Enter your full name",
+            enterEmailAddress = "Enter your email address",
+            enterCompanyCode = "Enter your company code",
+            enterPassword = "Enter your password",
+            emailOrPasswordIncorrect = "Email or password is incorrect",
+        )
+        WorkerLanguage.Dutch -> WorkerAuthCopy(
+            createAccountTitle = "Account maken",
+            createAccountDescription = "Maak een account. Je werkgever keurt dit goed\nvoordat je kunt starten.",
+            fullName = "Volledige naam",
+            emailAddress = "E-mailadres",
+            companyCode = "Bedrijfscode",
+            companyCodePlaceholder = "Ontvangen van je werkgever",
+            password = "Wachtwoord",
+            createAccountAction = "Account maken",
+            alreadyHaveAccount = "Heb je al een account?",
+            logIn = "Inloggen",
+            registerCompany = "Bedrijf registreren",
+            logInTitle = "Inloggen",
+            logInDescription = "Log in om uren te klokken, diensten te bekijken en updates\nnaar je werkgever te sturen.",
+            logInAction = "Inloggen",
+            newToAlowork = "Nieuw bij Alowork?",
+            enterFullName = "Vul je volledige naam in",
+            enterEmailAddress = "Vul je e-mailadres in",
+            enterCompanyCode = "Vul je bedrijfscode in",
+            enterPassword = "Vul je wachtwoord in",
+            emailOrPasswordIncorrect = "E-mail of wachtwoord is onjuist",
+        )
+        WorkerLanguage.German -> WorkerAuthCopy(
+            createAccountTitle = "Konto erstellen",
+            createAccountDescription = "Erstelle ein Konto. Dein Arbeitgeber genehmigt es,\nbevor du starten kannst.",
+            fullName = "Vollstandiger Name",
+            emailAddress = "E-Mail-Adresse",
+            companyCode = "Firmencode",
+            companyCodePlaceholder = "Von deinem Arbeitgeber erhalten",
+            password = "Passwort",
+            createAccountAction = "Konto erstellen",
+            alreadyHaveAccount = "Hast du schon ein Konto?",
+            logIn = "Anmelden",
+            registerCompany = "Firma registrieren",
+            logInTitle = "Anmelden",
+            logInDescription = "Melde dich an, um Stunden zu erfassen, Schichten anzusehen\nund Updates an deinen Arbeitgeber zu senden.",
+            logInAction = "Anmelden",
+            newToAlowork = "Neu bei Alowork?",
+            enterFullName = "Gib deinen vollstandigen Namen ein",
+            enterEmailAddress = "Gib deine E-Mail-Adresse ein",
+            enterCompanyCode = "Gib deinen Firmencode ein",
+            enterPassword = "Gib dein Passwort ein",
+            emailOrPasswordIncorrect = "E-Mail oder Passwort ist falsch",
+        )
+        WorkerLanguage.French -> WorkerAuthCopy(
+            createAccountTitle = "Creer un compte",
+            createAccountDescription = "Creez un compte. Votre employeur l'approuve avant\nque vous puissiez commencer.",
+            fullName = "Nom complet",
+            emailAddress = "Adresse e-mail",
+            companyCode = "Code entreprise",
+            companyCodePlaceholder = "Recu de votre employeur",
+            password = "Mot de passe",
+            createAccountAction = "Creer un compte",
+            alreadyHaveAccount = "Vous avez deja un compte ?",
+            logIn = "Connexion",
+            registerCompany = "Inscrire une entreprise",
+            logInTitle = "Connexion",
+            logInDescription = "Connectez-vous pour pointer vos heures, voir vos shifts\net envoyer des nouvelles a votre employeur.",
+            logInAction = "Connexion",
+            newToAlowork = "Nouveau sur Alowork ?",
+            enterFullName = "Saisissez votre nom complet",
+            enterEmailAddress = "Saisissez votre adresse e-mail",
+            enterCompanyCode = "Saisissez votre code entreprise",
+            enterPassword = "Saisissez votre mot de passe",
+            emailOrPasswordIncorrect = "E-mail ou mot de passe incorrect",
+        )
+    }
 }
 
 private data class WorkerProfileCopy(
