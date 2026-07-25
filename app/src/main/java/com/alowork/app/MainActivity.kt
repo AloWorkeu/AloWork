@@ -4048,6 +4048,7 @@ fun WorkerCalendarEarningsScreen(
         }
 
         WorkerCalendarTabBar(
+            language = language,
             selected = WorkerTab.Calendar,
             onTabSelected = onTabSelected,
             modifier = Modifier.align(Alignment.BottomCenter),
@@ -4370,6 +4371,7 @@ private fun WeekStatus.calendarDayStatus(): CalendarDayStatus = when (this) {
 
 @Composable
 private fun WorkerCalendarTabBar(
+    language: WorkerLanguage = WorkerLanguage.English,
     selected: WorkerTab,
     modifier: Modifier = Modifier,
     onTabSelected: (WorkerTab) -> Unit = {},
@@ -4396,6 +4398,7 @@ private fun WorkerCalendarTabBar(
         ) {
             WorkerTab.entries.forEach { tab ->
                 WorkerCalendarTabItem(
+                    language = language,
                     tab = tab,
                     selected = tab == selected,
                     onClick = onTabSelected,
@@ -4408,6 +4411,7 @@ private fun WorkerCalendarTabBar(
 
 @Composable
 private fun WorkerCalendarTabItem(
+    language: WorkerLanguage = WorkerLanguage.English,
     tab: WorkerTab,
     selected: Boolean,
     onClick: (WorkerTab) -> Unit,
@@ -4424,7 +4428,7 @@ private fun WorkerCalendarTabItem(
     ) {
         WorkerTabIcon(tab = tab, color = color)
         Text(
-            text = tab.label,
+            text = language.localizedWorkerTabLabel(tab),
             color = color,
             fontSize = 11.sp,
             lineHeight = 13.sp,
@@ -8193,6 +8197,35 @@ private fun WorkerLanguage.workerTabCopy(): WorkerTabCopy {
             welcome = "Bienvenue",
             now = "Maintenant",
         )
+    }
+}
+
+private fun WorkerLanguage.localizedWorkerTabLabel(tab: WorkerTab): String {
+    return when (tab) {
+        WorkerTab.Calendar -> when (this) {
+            WorkerLanguage.English -> "Calendar"
+            WorkerLanguage.Dutch -> "Kalender"
+            WorkerLanguage.German -> "Kalender"
+            WorkerLanguage.French -> "Calendrier"
+        }
+        WorkerTab.History -> when (this) {
+            WorkerLanguage.English -> "Overview"
+            WorkerLanguage.Dutch -> "Overzicht"
+            WorkerLanguage.German -> "Ubersicht"
+            WorkerLanguage.French -> "Apercu"
+        }
+        WorkerTab.Alerts -> when (this) {
+            WorkerLanguage.English -> "Alerts"
+            WorkerLanguage.Dutch -> "Meldingen"
+            WorkerLanguage.German -> "Hinweise"
+            WorkerLanguage.French -> "Alertes"
+        }
+        WorkerTab.Profile -> when (this) {
+            WorkerLanguage.English -> "Profile"
+            WorkerLanguage.Dutch -> "Profiel"
+            WorkerLanguage.German -> "Profil"
+            WorkerLanguage.French -> "Profil"
+        }
     }
 }
 
