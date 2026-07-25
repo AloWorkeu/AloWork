@@ -1233,15 +1233,18 @@ fun WebRegisterAdminAccountScreen(
 
             Button(
                 onClick = {
+                    val trimmedFullName = fullName.trim()
+                    val trimmedEmail = email.trim()
                     val message = when {
-                        fullName.isBlank() -> "Enter your full name"
-                        email.isBlank() -> "Enter your email address"
+                        trimmedFullName.isBlank() -> "Enter your full name"
+                        trimmedEmail.isBlank() -> "Enter your email address"
+                        !trimmedEmail.isValidEmailAddress() -> "Enter a valid email address"
                         password.length < 6 -> "Use at least 6 password characters"
                         else -> null
                     }
                     if (message == null) {
                         Toast.makeText(context, "Admin account created", Toast.LENGTH_SHORT).show()
-                        onAccountCreated(fullName, email)
+                        onAccountCreated(trimmedFullName, trimmedEmail)
                     } else {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
