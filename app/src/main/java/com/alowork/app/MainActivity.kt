@@ -345,6 +345,8 @@ fun AloworkApp() {
 
         AppScreen.WorkerProfile -> WorkerProfileScreen(
             language = workerLanguage,
+            workerName = currentWorkerName,
+            workerEmail = currentWorkerEmail.ifBlank { "sven@email.nl" },
             selectedEmployer = selectedEmployer,
             onSwitchEmployer = {
                 screen = AppScreen.WorkerSwitchEmployer
@@ -4822,6 +4824,8 @@ fun WorkerNotificationsScreen(
 fun WorkerProfileScreen(
     modifier: Modifier = Modifier,
     language: WorkerLanguage = WorkerLanguage.English,
+    workerName: String = "Sven de Vries",
+    workerEmail: String = "sven@email.nl",
     selectedEmployer: WorkerEmployer = defaultWorkerEmployers().first(),
     onSwitchEmployer: () -> Unit = {},
     onAddEmployer: () -> Unit = {},
@@ -4847,7 +4851,7 @@ fun WorkerProfileScreen(
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(18.dp))
-            ProfileHeaderCard()
+            ProfileHeaderCard(workerName = workerName, workerEmail = workerEmail)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = copy.paySection,
@@ -6496,7 +6500,11 @@ private fun WeekStatusPill(
 }
 
 @Composable
-private fun ProfileHeaderCard(modifier: Modifier = Modifier) {
+private fun ProfileHeaderCard(
+    modifier: Modifier = Modifier,
+    workerName: String = "Sven de Vries",
+    workerEmail: String = "sven@email.nl",
+) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -6516,7 +6524,7 @@ private fun ProfileHeaderCard(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.width(14.dp))
             Column {
                 Text(
-                    text = "Sven de Vries",
+                    text = workerName,
                     color = Color(0xFF17171B),
                     fontSize = 17.sp,
                     lineHeight = 20.sp,
@@ -6524,7 +6532,7 @@ private fun ProfileHeaderCard(modifier: Modifier = Modifier) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "sven@email.nl",
+                    text = workerEmail,
                     color = Color(0xFF73737A),
                     fontSize = 13.sp,
                     lineHeight = 16.sp,
