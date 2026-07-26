@@ -123,6 +123,9 @@ fun AloworkApp() {
     val selectedEmployerHourlyRate = selectedEmployer.hourlyRateValue()
     val currentWorkerEmail = workerAccountApproval?.email ?: pendingWorkerEmail
     val currentWorkerName = workerAccountApproval?.name ?: "Sven de Vries"
+    val currentWorkerChatMessages = workerChatMessages.filter { message ->
+        message.workerName == currentWorkerName
+    }
 
     fun openWorkerTab(tab: WorkerTab) {
         screen = when (tab) {
@@ -328,7 +331,7 @@ fun AloworkApp() {
 
         AppScreen.WorkerNotifications -> WorkerNotificationsScreen(
             language = workerLanguage,
-            sentMessages = workerChatMessages,
+            sentMessages = currentWorkerChatMessages,
             adminRequests = loadWorkerAdminHoursRequests(context),
             accountApproval = workerAccountApproval,
             manualSubmission = manualHoursSubmission,
@@ -437,7 +440,7 @@ fun AloworkApp() {
             dayDetail = selectedWorkerDayDetail,
             employerName = selectedEmployer.name,
             workerName = currentWorkerName,
-            sentMessages = workerChatMessages,
+            sentMessages = currentWorkerChatMessages,
             onBack = {
                 screen = AppScreen.WorkerDayViewAdjusted
             },
