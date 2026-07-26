@@ -637,7 +637,9 @@ fun AloworkApp() {
             settings = weekendPremiumSettings,
             onSettingsChanged = {
                 weekendPremiumSettings = it
-                saveWeekendPremiumSettings(context, it)
+                if (validateWeekendPremiumSettings(it) == null) {
+                    saveWeekendPremiumSettings(context, it)
+                }
             },
             onBack = {
                 openAdminHome()
