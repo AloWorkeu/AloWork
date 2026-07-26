@@ -2171,9 +2171,15 @@ fun AdminTeamScreen(
     var selectedWorker by remember { mutableStateOf("Sven de Vries") }
     var inviteOpen by remember { mutableStateOf(false) }
     var workers by remember {
-        mutableStateOf(loadAdminWorkers(context))
+        mutableStateOf(loadAdminWorkers(context).ifEmpty(::defaultAdminWorkers))
     }
-    val selectedWorkerDetails = workers.firstOrNull { it.name == selectedWorker } ?: workers.first()
+    val visibleWorkers = workers.ifEmpty(::defaultAdminWorkers)
+    val selectedWorkerDetails = visibleWorkers.firstOrNull { it.name == selectedWorker } ?: visibleWorkers.first()
+    LaunchedEffect(selectedWorkerDetails.name) {
+        if (selectedWorker != selectedWorkerDetails.name) {
+            selectedWorker = selectedWorkerDetails.name
+        }
+    }
     val role = selectedWorkerDetails.role
     val email = selectedWorkerDetails.email
     val location = selectedWorkerDetails.location
@@ -2246,7 +2252,7 @@ fun AdminTeamScreen(
             Spacer(modifier = Modifier.height(18.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
-                    workers.forEachIndexed { index, worker ->
+                    visibleWorkers.forEachIndexed { index, worker ->
                         AdminWorkerListItem(
                             name = worker.name,
                             detail = "${worker.role} - ${worker.status.lowercase(Locale.US)}",
@@ -2254,7 +2260,7 @@ fun AdminTeamScreen(
                             status = worker.status,
                             onClick = { selectedWorker = worker.name },
                         )
-                        if (index < workers.lastIndex) {
+                        if (index < visibleWorkers.lastIndex) {
                             Spacer(modifier = Modifier.height(10.dp))
                         }
                     }
