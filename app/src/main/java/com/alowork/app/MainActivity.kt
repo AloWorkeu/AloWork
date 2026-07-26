@@ -1964,17 +1964,32 @@ fun AdminWorkLocationsScreen(
                             Spacer(modifier = Modifier.height(14.dp))
                             Button(
                                 onClick = {
+                                    val trimmedName = locationName.trim()
+                                    val trimmedAddress = address.trim()
+                                    val trimmedRadius = radius.trim()
+                                    val message = validateAdminLocationFields(
+                                        name = trimmedName,
+                                        address = trimmedAddress,
+                                        radius = trimmedRadius,
+                                    )
+                                    if (message != null) {
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        return@Button
+                                    }
                                     val updatedLocation = AdminLocation(
-                                        name = locationName,
-                                        address = address,
-                                        radius = radius,
+                                        name = trimmedName,
+                                        address = trimmedAddress,
+                                        radius = trimmedRadius,
                                     )
                                     locations = locations.map { location ->
                                         if (location.name == selectedLocation) updatedLocation else location
                                     }
                                     saveAdminWorkLocations(context, locations)
-                                    selectedLocation = locationName
-                                    Toast.makeText(context, "$locationName saved", Toast.LENGTH_SHORT).show()
+                                    selectedLocation = trimmedName
+                                    locationName = trimmedName
+                                    address = trimmedAddress
+                                    radius = trimmedRadius
+                                    Toast.makeText(context, "$trimmedName saved", Toast.LENGTH_SHORT).show()
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -2027,9 +2042,27 @@ private fun AdminAddLocationDialog(
     onDismiss: () -> Unit,
     onSaveLocation: (String, String, String) -> Unit,
 ) {
+    val context = LocalContext.current
     var locationName by remember { mutableStateOf("New shop") }
     var address by remember { mutableStateOf("Coolsingel 10") }
     var radius by remember { mutableStateOf("100") }
+
+    fun saveLocation() {
+        val trimmedName = locationName.trim()
+        val trimmedAddress = address.trim()
+        val trimmedRadius = radius.trim()
+        val message = validateAdminLocationFields(
+            name = trimmedName,
+            address = trimmedAddress,
+            radius = trimmedRadius,
+        )
+        if (message != null) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        onSaveLocation(trimmedName, trimmedAddress, trimmedRadius)
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -2097,7 +2130,7 @@ private fun AdminAddLocationDialog(
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     Button(
-                        onClick = { onSaveLocation(locationName, address, radius) },
+                        onClick = ::saveLocation,
                         modifier = Modifier
                             .width(122.dp)
                             .height(42.dp),
@@ -9813,6 +9846,17 @@ private fun saveAdminWorkLocations(context: Context, locations: List<AdminLocati
         .edit()
         .putString("locations", locations.joinToString("\n") { "${it.name}|${it.address}|${it.radius}" })
         .apply()
+}
+
+private fun validateAdminLocationFields(name: String, address: String, radius: String): String? {
+    val radiusValue = radius.toIntOrNull()
+    return when {
+        name.isBlank() -> "Enter the location name"
+        address.isBlank() -> "Enter the location address"
+        radiusValue == null -> "Enter a valid radius"
+        radiusValue !in 25..500 -> "Use a radius from 25 to 500 metres"
+        else -> null
+    }
 }
 
 private data class AdminWorker(
