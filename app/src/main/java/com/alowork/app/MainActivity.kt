@@ -7867,14 +7867,33 @@ private fun loadWorkerEmployers(context: Context): List<WorkerEmployer> {
         ?: return defaultWorkerEmployers()
     return stored.lineSequence().mapNotNull { row ->
         val parts = row.split('|')
-        if (parts.size == 4) WorkerEmployer(parts[0], parts[1], parts[2], parts[3]) else null
+        if (parts.size == 4) {
+            WorkerEmployer(
+                name = Uri.decode(parts[0]),
+                role = Uri.decode(parts[1]),
+                rate = Uri.decode(parts[2]),
+                status = Uri.decode(parts[3]),
+            )
+        } else {
+            null
+        }
     }.toList().ifEmpty(::defaultWorkerEmployers)
 }
 
 private fun saveWorkerEmployers(context: Context, employers: List<WorkerEmployer>) {
     context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
         .edit()
-        .putString("companies", employers.joinToString("\n") { "${it.name}|${it.role}|${it.rate}|${it.status}" })
+        .putString(
+            "companies",
+            employers.joinToString("\n") { employer ->
+                listOf(
+                    employer.name,
+                    employer.role,
+                    employer.rate,
+                    employer.status,
+                ).joinToString("|") { value -> Uri.encode(value) }
+            },
+        )
         .apply()
 }
 
