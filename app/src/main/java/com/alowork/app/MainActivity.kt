@@ -734,17 +734,23 @@ fun WorkerSignUpScreen(
         ) {
             Button(
                 onClick = {
+                    val normalizedCompanyCode = companyCode
+                        .filter { it.isLetterOrDigit() }
+                        .uppercase(Locale.US)
+                        .take(6)
                     val message = when {
                         fullName.isBlank() -> copy.enterFullName
                         email.isBlank() -> copy.enterEmailAddress
                         !email.trim().isValidEmailAddress() -> copy.enterValidEmailAddress
                         companyCode.isBlank() -> copy.enterCompanyCode
+                        normalizedCompanyCode.length != 6 -> copy.enterSixCharacterCompanyCode
                         password.isBlank() -> copy.enterPassword
                         password.length < 6 -> copy.useAtLeastSixPasswordCharacters
                         else -> null
                     }
                     if (message == null) {
-                        onAccountCreated(fullName.trim(), email.trim(), companyCode.trim(), password)
+                        companyCode = normalizedCompanyCode
+                        onAccountCreated(fullName.trim(), email.trim(), normalizedCompanyCode, password)
                     } else {
                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
@@ -7945,6 +7951,7 @@ private data class WorkerAuthCopy(
     val enterEmailAddress: String,
     val enterValidEmailAddress: String,
     val enterCompanyCode: String,
+    val enterSixCharacterCompanyCode: String,
     val enterPassword: String,
     val useAtLeastSixPasswordCharacters: String,
     val emailOrPasswordIncorrect: String,
@@ -7972,6 +7979,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             enterEmailAddress = "Enter your email address",
             enterValidEmailAddress = "Enter a valid email address",
             enterCompanyCode = "Enter your company code",
+            enterSixCharacterCompanyCode = "Enter the 6-character company code",
             enterPassword = "Enter your password",
             useAtLeastSixPasswordCharacters = "Use at least 6 password characters",
             emailOrPasswordIncorrect = "Email or password is incorrect",
@@ -7996,6 +8004,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             enterEmailAddress = "Vul je e-mailadres in",
             enterValidEmailAddress = "Vul een geldig e-mailadres in",
             enterCompanyCode = "Vul je bedrijfscode in",
+            enterSixCharacterCompanyCode = "Voer de 6-tekens bedrijfscode in",
             enterPassword = "Vul je wachtwoord in",
             useAtLeastSixPasswordCharacters = "Gebruik minimaal 6 wachtwoordtekens",
             emailOrPasswordIncorrect = "E-mail of wachtwoord is onjuist",
@@ -8020,6 +8029,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             enterEmailAddress = "Gib deine E-Mail-Adresse ein",
             enterValidEmailAddress = "Gib eine gultige E-Mail-Adresse ein",
             enterCompanyCode = "Gib deinen Firmencode ein",
+            enterSixCharacterCompanyCode = "Gib den 6-stelligen Firmencode ein",
             enterPassword = "Gib dein Passwort ein",
             useAtLeastSixPasswordCharacters = "Nutze mindestens 6 Passwortzeichen",
             emailOrPasswordIncorrect = "E-Mail oder Passwort ist falsch",
@@ -8044,6 +8054,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             enterEmailAddress = "Saisissez votre adresse e-mail",
             enterValidEmailAddress = "Saisissez une adresse e-mail valide",
             enterCompanyCode = "Saisissez votre code entreprise",
+            enterSixCharacterCompanyCode = "Saisissez le code entreprise a 6 caracteres",
             enterPassword = "Saisissez votre mot de passe",
             useAtLeastSixPasswordCharacters = "Utilisez au moins 6 caracteres de mot de passe",
             emailOrPasswordIncorrect = "E-mail ou mot de passe incorrect",
