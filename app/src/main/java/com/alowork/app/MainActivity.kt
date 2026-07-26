@@ -122,6 +122,7 @@ fun AloworkApp() {
     }
     val selectedEmployerHourlyRate = selectedEmployer.hourlyRateValue()
     val currentWorkerEmail = workerAccountApproval?.email ?: pendingWorkerEmail
+    val currentWorkerName = workerAccountApproval?.name ?: "Sven de Vries"
 
     fun openWorkerTab(tab: WorkerTab) {
         screen = when (tab) {
@@ -431,6 +432,8 @@ fun AloworkApp() {
         AppScreen.WorkerChatWithEmployer -> WorkerChatWithEmployerScreen(
             language = workerLanguage,
             dayDetail = selectedWorkerDayDetail,
+            employerName = selectedEmployer.name,
+            workerName = currentWorkerName,
             sentMessages = workerChatMessages,
             onBack = {
                 screen = AppScreen.WorkerDayViewAdjusted
@@ -5491,6 +5494,8 @@ fun WorkerChatWithEmployerScreen(
     modifier: Modifier = Modifier,
     language: WorkerLanguage = WorkerLanguage.English,
     dayDetail: WorkerDayDetail = defaultAdjustedWorkerDayDetail(),
+    employerName: String = "Bakkerij Jansen",
+    workerName: String = "Sven de Vries",
     sentMessages: List<WorkerShiftMessage> = emptyList(),
     onBack: () -> Unit = {},
     onSendMessage: (WorkerShiftMessage) -> Unit = {},
@@ -5526,7 +5531,7 @@ fun WorkerChatWithEmployerScreen(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Bakkerij Jansen",
+                        text = employerName,
                         color = Color(0xFF17171B),
                         fontSize = 20.sp,
                         lineHeight = 24.sp,
@@ -5544,7 +5549,7 @@ fun WorkerChatWithEmployerScreen(
                     color = Color(0xFFDFF1E6),
                 ) {
                     Text(
-                        text = "BJ",
+                        text = initialsForName(employerName),
                         color = Color(0xFF247347),
                         fontSize = 12.sp,
                         lineHeight = 16.sp,
@@ -5663,7 +5668,7 @@ fun WorkerChatWithEmployerScreen(
                         if (message.isNotEmpty()) {
                             onSendMessage(
                                 WorkerShiftMessage(
-                                    workerName = "Sven de Vries",
+                                    workerName = workerName,
                                     shiftTitle = dayDetail.title,
                                     shiftStatus = language.localizedWeekStatusChatLabel(dayDetail.status),
                                     shiftSummary = dayDetail.chatSummary,
@@ -9803,6 +9808,16 @@ private fun generateCompanyCode(companyName: String): String {
         ?.padEnd(4, 'X')
         ?: "COMP"
     return "${codePrefix}26"
+}
+
+private fun initialsForName(name: String): String {
+    val initials = name
+        .split(Regex("\\s+"))
+        .mapNotNull { word -> word.firstOrNull { it.isLetterOrDigit() } }
+        .take(2)
+        .joinToString("")
+        .uppercase(Locale.US)
+    return initials.ifBlank { "CO" }
 }
 
 data class AdminHoursRequest(
