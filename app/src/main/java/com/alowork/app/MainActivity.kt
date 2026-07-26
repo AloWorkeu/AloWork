@@ -158,6 +158,7 @@ fun AloworkApp() {
     }
 
     fun openAdminWeekendPremium() {
+        weekendPremiumSettings = loadWeekendPremiumSettings(context)
         screen = AppScreen.AdminWeekendPremiumSettings
     }
 
@@ -7827,6 +7828,20 @@ private data class WeekendPremiumEmployee(val name: String, val initials: String
 private data class WeekendPremiumSettings(val enabled: Boolean, val mode: PremiumMode, val value: String, val employees: List<WeekendPremiumEmployee>)
 private fun defaultWeekendPremiumSettings() = WeekendPremiumSettings(true, PremiumMode.Multiplier, "1.5", listOf(WeekendPremiumEmployee("Sven de Vries", "SV", EmployeePremiumMode.Default), WeekendPremiumEmployee("Anke Jansen", "AJ", EmployeePremiumMode.FixedAmount), WeekendPremiumEmployee("Mo El Amrani", "ME", EmployeePremiumMode.Default), WeekendPremiumEmployee("Lotte Bakker", "LB", EmployeePremiumMode.None)))
 
+private fun weekendPremiumEmployeesFromWorkers(context: Context): List<WeekendPremiumEmployee> {
+    return loadAdminWorkers(context).map { worker ->
+        WeekendPremiumEmployee(
+            name = worker.name,
+            initials = initialsForName(worker.name),
+            mode = EmployeePremiumMode.Default,
+        )
+    }
+}
+
+private fun premiumEmployeeModeKey(employeeName: String): String {
+    return "employee_${Uri.encode(employeeName)}"
+}
+
 private fun validateWeekendPremiumSettings(settings: WeekendPremiumSettings): String? {
     if (!settings.enabled) return null
 
@@ -7844,14 +7859,16 @@ private const val WeekendPremiumPreferences = "weekend_premium"
 private fun loadWeekendPremiumSettings(context: Context): WeekendPremiumSettings {
     val defaults = defaultWeekendPremiumSettings()
     val preferences = context.getSharedPreferences(WeekendPremiumPreferences, Context.MODE_PRIVATE)
+    val employees = weekendPremiumEmployeesFromWorkers(context).ifEmpty { defaults.employees }
     return defaults.copy(
         enabled = preferences.getBoolean("enabled", defaults.enabled),
         mode = preferences.getString("mode", defaults.mode.name)
             ?.let { runCatching { PremiumMode.valueOf(it) }.getOrNull() }
             ?: defaults.mode,
         value = preferences.getString("value", defaults.value) ?: defaults.value,
-        employees = defaults.employees.map { employee ->
-            val storedMode = preferences.getString("employee_${employee.initials}", employee.mode.name)
+        employees = employees.map { employee ->
+            val storedMode = (preferences.getString(premiumEmployeeModeKey(employee.name), null)
+                ?: preferences.getString("employee_${employee.initials}", employee.mode.name))
                 ?.let { runCatching { EmployeePremiumMode.valueOf(it) }.getOrNull() }
                 ?: employee.mode
             employee.copy(mode = storedMode)
@@ -7867,6 +7884,7 @@ private fun saveWeekendPremiumSettings(context: Context, settings: WeekendPremiu
         .putString("value", settings.value)
         .apply {
             settings.employees.forEach { employee ->
+                putString(premiumEmployeeModeKey(employee.name), employee.mode.name)
                 putString("employee_${employee.initials}", employee.mode.name)
             }
         }
