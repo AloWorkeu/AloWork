@@ -6043,10 +6043,15 @@ fun WorkerAddEmployerScreen(
 
         Button(
             onClick = {
-                if (companyCode.length < 6) {
+                val normalizedCode = companyCode
+                    .filter { it.isLetterOrDigit() }
+                    .uppercase(Locale.US)
+                    .take(6)
+                if (normalizedCode.length != 6) {
                     Toast.makeText(context, copy.enterSixCharacterCode, Toast.LENGTH_SHORT).show()
                 } else {
-                    onCompanyAdded(companyCode)
+                    companyCode = normalizedCode
+                    onCompanyAdded(normalizedCode)
                 }
             },
             modifier = Modifier
