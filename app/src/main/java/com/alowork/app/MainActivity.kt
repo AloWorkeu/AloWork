@@ -740,6 +740,7 @@ fun WorkerSignUpScreen(
                         !email.trim().isValidEmailAddress() -> copy.enterValidEmailAddress
                         companyCode.isBlank() -> copy.enterCompanyCode
                         password.isBlank() -> copy.enterPassword
+                        password.length < 6 -> copy.useAtLeastSixPasswordCharacters
                         else -> null
                     }
                     if (message == null) {
@@ -7945,6 +7946,7 @@ private data class WorkerAuthCopy(
     val enterValidEmailAddress: String,
     val enterCompanyCode: String,
     val enterPassword: String,
+    val useAtLeastSixPasswordCharacters: String,
     val emailOrPasswordIncorrect: String,
 )
 
@@ -7971,6 +7973,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             enterValidEmailAddress = "Enter a valid email address",
             enterCompanyCode = "Enter your company code",
             enterPassword = "Enter your password",
+            useAtLeastSixPasswordCharacters = "Use at least 6 password characters",
             emailOrPasswordIncorrect = "Email or password is incorrect",
         )
         WorkerLanguage.Dutch -> WorkerAuthCopy(
@@ -7994,6 +7997,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             enterValidEmailAddress = "Vul een geldig e-mailadres in",
             enterCompanyCode = "Vul je bedrijfscode in",
             enterPassword = "Vul je wachtwoord in",
+            useAtLeastSixPasswordCharacters = "Gebruik minimaal 6 wachtwoordtekens",
             emailOrPasswordIncorrect = "E-mail of wachtwoord is onjuist",
         )
         WorkerLanguage.German -> WorkerAuthCopy(
@@ -8017,6 +8021,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             enterValidEmailAddress = "Gib eine gultige E-Mail-Adresse ein",
             enterCompanyCode = "Gib deinen Firmencode ein",
             enterPassword = "Gib dein Passwort ein",
+            useAtLeastSixPasswordCharacters = "Nutze mindestens 6 Passwortzeichen",
             emailOrPasswordIncorrect = "E-Mail oder Passwort ist falsch",
         )
         WorkerLanguage.French -> WorkerAuthCopy(
@@ -8040,6 +8045,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             enterValidEmailAddress = "Saisissez une adresse e-mail valide",
             enterCompanyCode = "Saisissez votre code entreprise",
             enterPassword = "Saisissez votre mot de passe",
+            useAtLeastSixPasswordCharacters = "Utilisez au moins 6 caracteres de mot de passe",
             emailOrPasswordIncorrect = "E-mail ou mot de passe incorrect",
         )
     }
