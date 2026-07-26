@@ -9837,12 +9837,12 @@ private fun loadAdminHoursRequests(context: Context): List<AdminHoursRequest> {
         val parts = row.split('|')
         if (parts.size == 5 || parts.size == 6) {
             AdminHoursRequest(
-                name = parts[0],
-                period = parts[1],
-                hours = parts[2],
-                pay = parts[3],
-                status = parts[4],
-                proofLabel = parts.getOrNull(5).orEmpty(),
+                name = Uri.decode(parts[0]),
+                period = Uri.decode(parts[1]),
+                hours = Uri.decode(parts[2]),
+                pay = Uri.decode(parts[3]),
+                status = Uri.decode(parts[4]),
+                proofLabel = parts.getOrNull(5)?.let(Uri::decode).orEmpty(),
             )
         } else {
             null
@@ -9856,7 +9856,14 @@ private fun saveAdminHoursRequests(context: Context, requests: List<AdminHoursRe
         .putString(
             "requests",
             requests.joinToString("\n") {
-                "${it.name}|${it.period}|${it.hours}|${it.pay}|${it.status}|${it.proofLabel}"
+                listOf(
+                    it.name,
+                    it.period,
+                    it.hours,
+                    it.pay,
+                    it.status,
+                    it.proofLabel,
+                ).joinToString("|") { value -> Uri.encode(value) }
             },
         )
         .apply()
