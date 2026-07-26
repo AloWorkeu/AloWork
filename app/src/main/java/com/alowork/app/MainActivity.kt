@@ -9931,13 +9931,13 @@ private fun loadAdminWorkers(context: Context): List<AdminWorker> {
         val parts = row.split('|')
         if (parts.size >= 7) {
             AdminWorker(
-                name = parts[0],
-                role = parts[1],
-                email = parts[2],
-                location = parts[3],
-                rate = parts[4],
-                thisMonthHours = parts[5],
-                status = parts[6],
+                name = Uri.decode(parts[0]),
+                role = Uri.decode(parts[1]),
+                email = Uri.decode(parts[2]),
+                location = Uri.decode(parts[3]),
+                rate = Uri.decode(parts[4]),
+                thisMonthHours = Uri.decode(parts[5]),
+                status = Uri.decode(parts[6]),
                 reminderSent = parts.getOrNull(7)?.toBooleanStrictOrNull() ?: false,
             )
         } else {
@@ -9952,7 +9952,16 @@ private fun saveAdminWorkers(context: Context, workers: List<AdminWorker>) {
         .putString(
             "workers",
             workers.joinToString("\n") {
-                "${it.name}|${it.role}|${it.email}|${it.location}|${it.rate}|${it.thisMonthHours}|${it.status}|${it.reminderSent}"
+                listOf(
+                    it.name,
+                    it.role,
+                    it.email,
+                    it.location,
+                    it.rate,
+                    it.thisMonthHours,
+                    it.status,
+                    it.reminderSent.toString(),
+                ).joinToString("|") { value -> Uri.encode(value) }
             },
         )
         .apply()
