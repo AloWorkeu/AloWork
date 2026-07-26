@@ -2579,7 +2579,7 @@ private fun AdminWeekendPremiumSettingsScreen(
             Spacer(Modifier.height(8.dp))
             Surface(shape = RoundedCornerShape(14.dp), color = Color.White, border = BorderStroke(1.dp, Color(0xFFE4E4DF))) { Column { settings.employees.forEachIndexed { index, employee -> PremiumEmployeeRow(employee, settings, { editing = employee }); if (index < settings.employees.lastIndex) ProfileDivider() } } }
         }
-        Button(onClick = { Toast.makeText(context, "Weekend premium saved", Toast.LENGTH_SHORT).show(); onSave() }, modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF111116), contentColor = Color.White), elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)) { Text("Save", fontSize = 13.sp, fontWeight = FontWeight.Medium) }
+        Button(onClick = { val message = validateWeekendPremiumSettings(settings); if (message == null) { Toast.makeText(context, "Weekend premium saved", Toast.LENGTH_SHORT).show(); onSave() } else { Toast.makeText(context, message, Toast.LENGTH_SHORT).show() } }, modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF111116), contentColor = Color.White), elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)) { Text("Save", fontSize = 13.sp, fontWeight = FontWeight.Medium) }
     }
     editing?.let { employee -> PremiumOverrideDialog(employee, settings) { updated -> onSettingsChanged(settings.copy(employees = settings.employees.map { if (it.name == updated.name) updated else it })); editing = null } }
 }
@@ -7749,6 +7749,18 @@ private data class WeekendPremiumEmployee(val name: String, val initials: String
 }
 private data class WeekendPremiumSettings(val enabled: Boolean, val mode: PremiumMode, val value: String, val employees: List<WeekendPremiumEmployee>)
 private fun defaultWeekendPremiumSettings() = WeekendPremiumSettings(true, PremiumMode.Multiplier, "1.5", listOf(WeekendPremiumEmployee("Sven de Vries", "SV", EmployeePremiumMode.Default), WeekendPremiumEmployee("Anke Jansen", "AJ", EmployeePremiumMode.FixedAmount), WeekendPremiumEmployee("Mo El Amrani", "ME", EmployeePremiumMode.Default), WeekendPremiumEmployee("Lotte Bakker", "LB", EmployeePremiumMode.None)))
+
+private fun validateWeekendPremiumSettings(settings: WeekendPremiumSettings): String? {
+    if (!settings.enabled) return null
+
+    val value = settings.value.toDoubleOrNull()
+    return when {
+        value == null -> "Enter a valid premium value"
+        settings.mode == PremiumMode.Multiplier && value !in 1.0..3.0 -> "Use a multiplier from 1.0 to 3.0"
+        settings.mode == PremiumMode.FixedAmount && value !in 0.5..25.0 -> "Use a fixed amount from 0.5 to 25"
+        else -> null
+    }
+}
 
 private const val WeekendPremiumPreferences = "weekend_premium"
 
