@@ -9649,8 +9649,9 @@ private fun saveWorkerSubmittedHoursForAdmin(
     pay: String,
     proofLabel: String = "",
 ) {
+    val workerName = loadWorkerAccountApproval(context)?.name ?: "Sven de Vries"
     val submittedRequest = AdminHoursRequest(
-        name = "Sven de Vries",
+        name = workerName,
         period = period,
         hours = hours,
         pay = pay,
@@ -9863,7 +9864,8 @@ private fun employerReplyNotificationBody(message: WorkerShiftMessage): String {
 }
 
 private fun loadWorkerAdminHoursRequests(context: Context): List<AdminHoursRequest> {
-    return loadAdminHoursRequests(context).filter { it.name == "Sven de Vries" }
+    val workerName = loadWorkerAccountApproval(context)?.name ?: "Sven de Vries"
+    return loadAdminHoursRequests(context).filter { it.name == workerName }
 }
 
 private fun String.workerChatLabel(): String {
