@@ -2211,10 +2211,13 @@ fun AdminTeamScreen(
     onOpenWeekendPremium: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    var selectedWorker by remember { mutableStateOf("Sven de Vries") }
+    val initialWorkers = remember { loadAdminWorkers(context).ifEmpty(::defaultAdminWorkers) }
+    var selectedWorker by remember {
+        mutableStateOf(initialWorkers.firstOrNull()?.name ?: "Sven de Vries")
+    }
     var inviteOpen by remember { mutableStateOf(false) }
     var workers by remember {
-        mutableStateOf(loadAdminWorkers(context).ifEmpty(::defaultAdminWorkers))
+        mutableStateOf(initialWorkers)
     }
     val visibleWorkers = workers.ifEmpty(::defaultAdminWorkers)
     val selectedWorkerDetails = visibleWorkers.firstOrNull { it.name == selectedWorker } ?: visibleWorkers.first()
