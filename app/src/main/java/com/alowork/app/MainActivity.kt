@@ -500,7 +500,7 @@ fun AloworkApp() {
                 onEmployerSelected = { employer ->
                     if (employer.status == "Active") {
                         selectedEmployerName = employer.name
-                        saveSelectedEmployerName(context, selectedEmployerName)
+                        saveSelectedEmployerName(context, employer.name)
                     } else {
                         Toast.makeText(context, copy.employerApprovalPending, Toast.LENGTH_SHORT).show()
                     }
