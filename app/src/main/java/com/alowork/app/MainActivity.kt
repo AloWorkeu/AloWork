@@ -1849,10 +1849,11 @@ fun AdminWorkLocationsScreen(
     var locations by remember {
         mutableStateOf(loadAdminWorkLocations(context))
     }
-    var selectedLocation by remember { mutableStateOf("Bakery floor") }
-    var locationName by remember { mutableStateOf("Bakery floor") }
-    var address by remember { mutableStateOf("Lijnbaan 24") }
-    var radius by remember { mutableStateOf("120") }
+    val initialLocation = locations.first()
+    var selectedLocation by remember { mutableStateOf(initialLocation.name) }
+    var locationName by remember { mutableStateOf(initialLocation.name) }
+    var address by remember { mutableStateOf(initialLocation.address) }
+    var radius by remember { mutableStateOf(initialLocation.radius) }
     var addLocationOpen by remember { mutableStateOf(false) }
 
     Row(
