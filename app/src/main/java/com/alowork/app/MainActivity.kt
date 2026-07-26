@@ -638,6 +638,7 @@ fun AloworkApp() {
         )
 
         AppScreen.AdminTeam -> AdminTeamScreen(
+            companyName = adminCompanyProfile.companyName,
             onWorkerApproved = { name, email ->
                 val approval = WorkerAccountApproval(name = name, email = email)
                 workerAccountApproval = approval
@@ -2200,6 +2201,7 @@ private fun AdminAddLocationDialog(
 @Composable
 fun AdminTeamScreen(
     modifier: Modifier = Modifier,
+    companyName: String = "Bakkerij Jansen",
     onWorkerApproved: (String, String) -> Unit = { _, _ -> },
     onOpenHome: () -> Unit = {},
     onOpenHours: () -> Unit = {},
@@ -2425,6 +2427,7 @@ fun AdminTeamScreen(
 
     if (inviteOpen) {
         AdminInviteWorkerDialog(
+            companyName = companyName,
             onDismiss = { inviteOpen = false },
             onSendInvite = { fullName, inviteEmail, inviteRole, inviteLocation ->
                 val newWorker = AdminWorker(
@@ -2452,6 +2455,7 @@ fun AdminTeamScreen(
 
 @Composable
 private fun AdminInviteWorkerDialog(
+    companyName: String = "Bakkerij Jansen",
     onDismiss: () -> Unit,
     onSendInvite: (String, String, String, String) -> Unit,
 ) {
@@ -2503,7 +2507,7 @@ private fun AdminInviteWorkerDialog(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Send an invite to join Bakkerij Jansen",
+                    text = "Send an invite to join $companyName",
                     color = Color(0xFF73737A),
                     fontSize = 11.sp,
                     lineHeight = 14.sp,
