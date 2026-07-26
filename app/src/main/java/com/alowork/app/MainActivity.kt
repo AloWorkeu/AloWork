@@ -371,8 +371,6 @@ fun AloworkApp() {
                 clearWorkerGpsShiftSubmission(context)
                 pendingGpsShiftSeconds = null
                 selectedWorkerDayDetail = defaultAdjustedWorkerDayDetail()
-                workerChatMessages = emptyList()
-                clearWorkerChatMessages(context)
                 workerShiftPhotoUris = emptyList()
                 workerAccountApproval = null
                 clearWorkerAccountApproval(context)
