@@ -121,6 +121,7 @@ fun AloworkApp() {
         }
     }
     val selectedEmployerHourlyRate = selectedEmployer.hourlyRateValue()
+    val currentWorkerEmail = workerAccountApproval?.email ?: pendingWorkerEmail
 
     fun openWorkerTab(tab: WorkerTab) {
         screen = when (tab) {
@@ -357,6 +358,7 @@ fun AloworkApp() {
                 workerShiftPhotoUris = emptyList()
                 workerAccountApproval = null
                 clearWorkerAccountApproval(context)
+                pendingWorkerEmail = ""
                 selectedEmployerName = "Bakkerij Jansen"
                 workerEmployers = defaultWorkerEmployers()
                 clearWorkerEmployers(context)
@@ -383,7 +385,7 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerProfile
             },
             onPasswordChanged = { currentPassword, newPassword ->
-                if (updateWorkerPassword(context, pendingWorkerEmail, currentPassword, newPassword)) {
+                if (updateWorkerPassword(context, currentWorkerEmail, currentPassword, newPassword)) {
                     screen = AppScreen.WorkerProfile
                     true
                 } else {
