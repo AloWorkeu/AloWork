@@ -737,6 +737,7 @@ fun WorkerSignUpScreen(
                     val message = when {
                         fullName.isBlank() -> copy.enterFullName
                         email.isBlank() -> copy.enterEmailAddress
+                        !email.trim().isValidEmailAddress() -> copy.enterValidEmailAddress
                         companyCode.isBlank() -> copy.enterCompanyCode
                         password.isBlank() -> copy.enterPassword
                         else -> null
@@ -868,6 +869,7 @@ fun WorkerLoginScreen(
                 onClick = {
                     val message = when {
                         email.isBlank() -> copy.enterEmailAddress
+                        !email.trim().isValidEmailAddress() -> copy.enterValidEmailAddress
                         password.isBlank() -> copy.enterPassword
                         else -> null
                     }
@@ -7935,6 +7937,7 @@ private data class WorkerAuthCopy(
     val newToAlowork: String,
     val enterFullName: String,
     val enterEmailAddress: String,
+    val enterValidEmailAddress: String,
     val enterCompanyCode: String,
     val enterPassword: String,
     val emailOrPasswordIncorrect: String,
@@ -7960,6 +7963,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             newToAlowork = "New to Alowork?",
             enterFullName = "Enter your full name",
             enterEmailAddress = "Enter your email address",
+            enterValidEmailAddress = "Enter a valid email address",
             enterCompanyCode = "Enter your company code",
             enterPassword = "Enter your password",
             emailOrPasswordIncorrect = "Email or password is incorrect",
@@ -7982,6 +7986,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             newToAlowork = "Nieuw bij Alowork?",
             enterFullName = "Vul je volledige naam in",
             enterEmailAddress = "Vul je e-mailadres in",
+            enterValidEmailAddress = "Vul een geldig e-mailadres in",
             enterCompanyCode = "Vul je bedrijfscode in",
             enterPassword = "Vul je wachtwoord in",
             emailOrPasswordIncorrect = "E-mail of wachtwoord is onjuist",
@@ -8004,6 +8009,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             newToAlowork = "Neu bei Alowork?",
             enterFullName = "Gib deinen vollstandigen Namen ein",
             enterEmailAddress = "Gib deine E-Mail-Adresse ein",
+            enterValidEmailAddress = "Gib eine gultige E-Mail-Adresse ein",
             enterCompanyCode = "Gib deinen Firmencode ein",
             enterPassword = "Gib dein Passwort ein",
             emailOrPasswordIncorrect = "E-Mail oder Passwort ist falsch",
@@ -8026,6 +8032,7 @@ private fun WorkerLanguage.authCopy(): WorkerAuthCopy {
             newToAlowork = "Nouveau sur Alowork ?",
             enterFullName = "Saisissez votre nom complet",
             enterEmailAddress = "Saisissez votre adresse e-mail",
+            enterValidEmailAddress = "Saisissez une adresse e-mail valide",
             enterCompanyCode = "Saisissez votre code entreprise",
             enterPassword = "Saisissez votre mot de passe",
             emailOrPasswordIncorrect = "E-mail ou mot de passe incorrect",
