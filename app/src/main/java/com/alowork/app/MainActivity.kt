@@ -111,8 +111,15 @@ fun AloworkApp() {
     var workerEmployers by remember {
         mutableStateOf(loadWorkerEmployers(context))
     }
-    val selectedEmployer = workerEmployers.firstOrNull { it.name == selectedEmployerName }
-        ?: defaultWorkerEmployers().first()
+    val visibleWorkerEmployers = workerEmployers.ifEmpty(::defaultWorkerEmployers)
+    val selectedEmployer = visibleWorkerEmployers.firstOrNull { it.name == selectedEmployerName }
+        ?: visibleWorkerEmployers.first()
+    LaunchedEffect(selectedEmployer.name) {
+        if (selectedEmployerName != selectedEmployer.name) {
+            selectedEmployerName = selectedEmployer.name
+            saveSelectedEmployerName(context, selectedEmployer.name)
+        }
+    }
     val selectedEmployerHourlyRate = selectedEmployer.hourlyRateValue()
 
     fun openWorkerTab(tab: WorkerTab) {
@@ -458,10 +465,11 @@ fun AloworkApp() {
                     if (invitedEmployer == null) {
                         Toast.makeText(context, copy.companyCodeNotFound, Toast.LENGTH_SHORT).show()
                     } else {
-                        val existingEmployer = workerEmployers.firstOrNull { it.name == invitedEmployer.name }
+                        val existingEmployer = visibleWorkerEmployers.firstOrNull { it.name == invitedEmployer.name }
                         if (existingEmployer == null) {
-                            workerEmployers = workerEmployers + invitedEmployer.copy(status = "Pending")
-                            saveWorkerEmployers(context, workerEmployers)
+                            val updatedEmployers = visibleWorkerEmployers + invitedEmployer.copy(status = "Pending")
+                            workerEmployers = updatedEmployers
+                            saveWorkerEmployers(context, updatedEmployers)
                             Toast.makeText(context, copy.approvalRequestSent, Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(
@@ -480,7 +488,7 @@ fun AloworkApp() {
             val copy = workerLanguage.employerFlowCopy()
             WorkerSwitchEmployerScreen(
                 language = workerLanguage,
-                employers = workerEmployers,
+                employers = visibleWorkerEmployers,
                 selectedEmployerName = selectedEmployerName,
                 onBack = {
                     screen = AppScreen.WorkerProfile
