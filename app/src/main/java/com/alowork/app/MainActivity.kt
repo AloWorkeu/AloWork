@@ -1993,10 +1993,11 @@ fun AdminWorkLocationsScreen(
                                         address = trimmedAddress,
                                         radius = trimmedRadius,
                                     )
-                                    locations = locations.map { location ->
+                                    val updatedLocations = locations.map { location ->
                                         if (location.name == selectedLocation) updatedLocation else location
                                     }
-                                    saveAdminWorkLocations(context, locations)
+                                    locations = updatedLocations
+                                    saveAdminWorkLocations(context, updatedLocations)
                                     selectedLocation = trimmedName
                                     locationName = trimmedName
                                     address = trimmedAddress
@@ -2036,8 +2037,9 @@ fun AdminWorkLocationsScreen(
                     address = newAddress,
                     radius = newRadius,
                 )
-                locations = locations.filterNot { it.name == newName } + newLocation
-                saveAdminWorkLocations(context, locations)
+                val updatedLocations = locations.filterNot { it.name == newName } + newLocation
+                locations = updatedLocations
+                saveAdminWorkLocations(context, updatedLocations)
                 selectedLocation = newName
                 locationName = newName
                 address = newAddress
