@@ -2654,6 +2654,7 @@ private fun AdminAdjustHoursModal(
     onSave: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     var clockIn by remember(workerName, period) { mutableStateOf("09:00") }
     var clockOut by remember(workerName, period) { mutableStateOf("17:30") }
     var breakMinutes by remember(workerName, period) { mutableStateOf("30") }
@@ -2666,6 +2667,26 @@ private fun AdminAdjustHoursModal(
             onSendReply(trimmedReply)
             reply = ""
         }
+    }
+    fun saveAdjustment() {
+        val start = parseTimeMinutes(clockIn)
+        val end = parseTimeMinutes(clockOut)
+        val breakValue = breakMinutes.toIntOrNull()
+        val message = when {
+            start == null -> "Enter a valid clock-in time"
+            end == null -> "Enter a valid clock-out time"
+            breakValue == null || breakValue < 0 -> "Enter valid break minutes"
+            end <= start -> "Clock-out must be after clock-in"
+            end - start - breakValue <= 0 -> "Adjusted hours must be above zero"
+            else -> null
+        }
+        if (message != null) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val adjustedHours = calculateManualHours(clockIn, clockOut, breakMinutes)
+        onSave(formatHours(adjustedHours), formatEuro(adjustedHours * submittedHourlyRate))
     }
 
     Box(
@@ -2836,10 +2857,7 @@ private fun AdminAdjustHoursModal(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
-                        onClick = {
-                            val adjustedHours = calculateManualHours(clockIn, clockOut, breakMinutes)
-                            onSave(formatHours(adjustedHours), formatEuro(adjustedHours * submittedHourlyRate))
-                        },
+                        onClick = ::saveAdjustment,
                         modifier = Modifier
                             .width(112.dp)
                             .height(42.dp),
