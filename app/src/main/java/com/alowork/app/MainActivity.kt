@@ -5877,7 +5877,17 @@ fun WorkerLogHoursDayDetailScreen(
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = {
-                    if (totalHours <= 0.0) {
+                    val start = parseTimeMinutes(clockIn)
+                    val end = parseTimeMinutes(clockOut)
+                    val breakValue = breakMinutes.toIntOrNull()
+                    if (
+                        start == null ||
+                        end == null ||
+                        breakValue == null ||
+                        breakValue < 0 ||
+                        end <= start ||
+                        end - start - breakValue <= 0
+                    ) {
                         Toast.makeText(context, copy.checkStartEndTime, Toast.LENGTH_SHORT).show()
                     } else {
                         onSubmitted(formatHours(totalHours), formatEuro(estimatedPay))
@@ -7658,7 +7668,7 @@ private fun calculateManualHours(
 ): Double {
     val start = parseTimeMinutes(clockIn) ?: return 0.0
     val end = parseTimeMinutes(clockOut) ?: return 0.0
-    val breakValue = breakMinutes.toIntOrNull()?.coerceAtLeast(0) ?: 0
+    val breakValue = breakMinutes.toIntOrNull()?.takeIf { it >= 0 } ?: return 0.0
     val workedMinutes = (end - start - breakValue).coerceAtLeast(0)
     return workedMinutes / 60.0
 }
