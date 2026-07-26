@@ -2334,7 +2334,7 @@ fun AdminTeamScreen(
                         Row(modifier = Modifier.fillMaxWidth()) {
                             Button(
                                 onClick = {
-                                    val updatedWorkers = workers.map { worker ->
+                                    val updatedWorkers = visibleWorkers.map { worker ->
                                         if (worker.name == selectedWorker) {
                                             worker.copy(status = "Active")
                                         } else {
@@ -2368,7 +2368,7 @@ fun AdminTeamScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             TextButton(
                                 onClick = {
-                                    val updatedWorkers = workers.map { worker ->
+                                    val updatedWorkers = visibleWorkers.map { worker ->
                                         if (worker.name == selectedWorker) {
                                             worker.copy(reminderSent = true)
                                         } else {
@@ -2410,7 +2410,9 @@ fun AdminTeamScreen(
                     status = "Pending",
                     reminderSent = false,
                 )
-                val updatedWorkers = workers.filterNot { it.email == inviteEmail } + newWorker
+                val updatedWorkers = visibleWorkers.filterNot { worker ->
+                    worker.email.equals(inviteEmail, ignoreCase = true)
+                } + newWorker
                 workers = updatedWorkers
                 saveAdminWorkers(context, updatedWorkers)
                 selectedWorker = fullName
