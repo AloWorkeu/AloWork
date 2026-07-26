@@ -1409,6 +1409,9 @@ fun AdminDashboardHomeScreen(
     val pendingRequests = hourRequests.filter { it.status != "Approved" }
     val activeWorkerCount = adminWorkers.count { it.status == "Active" }
     val workerMessages = loadWorkerChatMessages(context)
+    val companyCode = remember(companyProfile.companyName) {
+        generateCompanyCode(companyProfile.companyName)
+    }
 
     Row(
         modifier = modifier
@@ -1446,7 +1449,7 @@ fun AdminDashboardHomeScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "${companyProfile.companyName} · ${companyProfile.plan}",
+                        text = "${companyProfile.companyName} - ${companyProfile.plan} - $companyCode",
                         color = Color(0xFF73737A),
                         fontSize = 11.sp,
                         lineHeight = 14.sp,
