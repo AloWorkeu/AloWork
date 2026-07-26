@@ -423,8 +423,9 @@ fun AloworkApp() {
                 screen = AppScreen.WorkerDayViewAdjusted
             },
             onSendMessage = { message ->
-                workerChatMessages = workerChatMessages + message
-                saveWorkerChatMessages(context, workerChatMessages)
+                val updatedMessages = workerChatMessages + message
+                workerChatMessages = updatedMessages
+                saveWorkerChatMessages(context, updatedMessages)
             },
             onTabSelected = ::openWorkerTab,
         )
@@ -1798,9 +1799,10 @@ fun AdminHoursApprovalQueueScreen(
                         message = reply,
                         isWorker = false,
                     )
-                    workerMessages = workerMessages + replyMessage
-                    saveWorkerChatMessages(context, workerMessages)
-                    onWorkerMessagesChanged(workerMessages)
+                    val updatedMessages = workerMessages + replyMessage
+                    workerMessages = updatedMessages
+                    saveWorkerChatMessages(context, updatedMessages)
+                    onWorkerMessagesChanged(updatedMessages)
                     Toast.makeText(context, "Reply sent to ${requestToReview.name}", Toast.LENGTH_SHORT).show()
                 },
                 onApprove = {
