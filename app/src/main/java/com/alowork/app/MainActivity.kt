@@ -160,6 +160,16 @@ fun AloworkApp() {
         screen = AppScreen.AdminWeekendPremiumSettings
     }
 
+    fun saveCurrentWorkerApprovalIfReady(): Boolean {
+        val worker = findAdminWorkerByEmail(context, currentWorkerEmail)
+            ?.takeIf { it.status == "Active" }
+            ?: return false
+        val approval = WorkerAccountApproval(name = worker.name, email = worker.email)
+        workerAccountApproval = approval
+        saveWorkerAccountApproval(context, approval)
+        return true
+    }
+
     when (screen) {
         AppScreen.WorkerSignUp -> WorkerSignUpScreen(
             language = workerLanguage,
@@ -210,11 +220,12 @@ fun AloworkApp() {
 
         AppScreen.WorkerAwaitingApproval -> WorkerAwaitingApprovalScreen(
             language = workerLanguage,
-            isApproved = isWorkerApproved(context, pendingWorkerEmail),
+            isApproved = isWorkerApproved(context, currentWorkerEmail),
             onCheckApproval = {
-                isWorkerApproved(context, pendingWorkerEmail)
+                saveCurrentWorkerApprovalIfReady()
             },
             onApprovalReceived = {
+                saveCurrentWorkerApprovalIfReady()
                 screen = AppScreen.WorkerLocationPermission
             },
         )
