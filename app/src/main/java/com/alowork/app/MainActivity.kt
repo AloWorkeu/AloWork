@@ -96,13 +96,17 @@ fun AloworkApp() {
     var screen by remember { mutableStateOf(AppScreen.WorkerSignUp) }
     var pendingAdminReviewWorker by remember { mutableStateOf<String?>(null) }
     var pendingAdminReviewPeriod by remember { mutableStateOf<String?>(null) }
-    var manualHoursSubmission by remember { mutableStateOf(loadManualHoursSubmission(context)) }
-    var gpsShiftSubmission by remember { mutableStateOf(loadWorkerGpsShiftSubmission(context)) }
+    var workerAccountApproval by remember { mutableStateOf(loadWorkerAccountApproval(context)) }
+    var manualHoursSubmission by remember {
+        mutableStateOf(loadManualHoursSubmission(context, workerAccountApproval?.name))
+    }
+    var gpsShiftSubmission by remember {
+        mutableStateOf(loadWorkerGpsShiftSubmission(context, workerAccountApproval?.name))
+    }
     var pendingGpsShiftSeconds by remember { mutableStateOf<Long?>(null) }
     var selectedWorkerDayDetail by remember { mutableStateOf(defaultAdjustedWorkerDayDetail()) }
     var workerChatMessages by remember { mutableStateOf(loadWorkerChatMessages(context)) }
     var workerShiftPhotoUris by remember { mutableStateOf(emptyList<Uri>()) }
-    var workerAccountApproval by remember { mutableStateOf(loadWorkerAccountApproval(context)) }
     var weekendPremiumSettings by remember { mutableStateOf(loadWeekendPremiumSettings(context)) }
     var workerLanguage by remember { mutableStateOf(loadWorkerLanguage(context)) }
     var adminCompanyProfile by remember { mutableStateOf(loadAdminCompanyProfile(context)) }
@@ -172,6 +176,8 @@ fun AloworkApp() {
         val approval = WorkerAccountApproval(name = worker.name, email = worker.email)
         workerAccountApproval = approval
         saveWorkerAccountApproval(context, approval)
+        manualHoursSubmission = loadManualHoursSubmission(context, worker.name)
+        gpsShiftSubmission = loadWorkerGpsShiftSubmission(context, worker.name)
         return true
     }
 
@@ -207,6 +213,8 @@ fun AloworkApp() {
                         val approval = WorkerAccountApproval(name = worker.name, email = worker.email)
                         workerAccountApproval = approval
                         saveWorkerAccountApproval(context, approval)
+                        manualHoursSubmission = loadManualHoursSubmission(context, worker.name)
+                        gpsShiftSubmission = loadWorkerGpsShiftSubmission(context, worker.name)
                         screen = AppScreen.WorkerGpsClockIn
                     } else {
                         screen = AppScreen.WorkerAwaitingApproval
@@ -289,7 +297,7 @@ fun AloworkApp() {
                     photoUris = workerShiftPhotoUris,
                 )
                 gpsShiftSubmission = submission
-                saveWorkerGpsShiftSubmission(context, submission)
+                saveWorkerGpsShiftSubmission(context, submission, currentWorkerName)
                 saveWorkerSubmittedHoursForAdmin(
                     context = context,
                     period = "Today",
@@ -366,9 +374,9 @@ fun AloworkApp() {
             },
             onLogout = {
                 manualHoursSubmission = null
-                clearManualHoursSubmission(context)
+                clearManualHoursSubmission(context, currentWorkerName)
                 gpsShiftSubmission = null
-                clearWorkerGpsShiftSubmission(context)
+                clearWorkerGpsShiftSubmission(context, currentWorkerName)
                 pendingGpsShiftSeconds = null
                 selectedWorkerDayDetail = defaultAdjustedWorkerDayDetail()
                 workerShiftPhotoUris = emptyList()
@@ -462,7 +470,7 @@ fun AloworkApp() {
                     pay = pay,
                 )
                 manualHoursSubmission = submission
-                saveManualHoursSubmission(context, submission)
+                saveManualHoursSubmission(context, submission, currentWorkerName)
                 saveWorkerSubmittedHoursForAdmin(
                     context = context,
                     period = "17 Jun",
@@ -9624,34 +9632,70 @@ private data class WorkerSummaryEntry(
 private const val ManualHoursPreferences = "manual_hours"
 private const val WorkerGpsShiftPreferences = "gps_shift"
 
-private fun loadManualHoursSubmission(context: Context): WorkerManualHoursSubmission? {
+private fun workerScopedPreferenceKey(key: String, workerName: String?): String {
+    val normalizedName = workerName
+        ?.trim()
+        ?.takeIf { it.isNotBlank() }
+        ?: return key
+    return "${key}_${Uri.encode(normalizedName)}"
+}
+
+private fun shouldReadLegacyWorkerSubmission(workerName: String?): Boolean {
+    return workerName.isNullOrBlank() || workerName == "Sven de Vries"
+}
+
+private fun loadManualHoursSubmission(context: Context, workerName: String? = null): WorkerManualHoursSubmission? {
     val preferences = context.getSharedPreferences(ManualHoursPreferences, Context.MODE_PRIVATE)
-    val hours = preferences.getString("hours", null) ?: return null
-    val pay = preferences.getString("pay", null) ?: return null
+    val hoursKey = workerScopedPreferenceKey("hours", workerName)
+    val payKey = workerScopedPreferenceKey("pay", workerName)
+    val hours = preferences.getString(hoursKey, null)
+        ?: (if (shouldReadLegacyWorkerSubmission(workerName)) preferences.getString("hours", null) else null)
+        ?: return null
+    val pay = preferences.getString(payKey, null)
+        ?: (if (shouldReadLegacyWorkerSubmission(workerName)) preferences.getString("pay", null) else null)
+        ?: return null
     return WorkerManualHoursSubmission(hours = hours, pay = pay)
 }
 
-private fun saveManualHoursSubmission(context: Context, submission: WorkerManualHoursSubmission) {
+private fun saveManualHoursSubmission(context: Context, submission: WorkerManualHoursSubmission, workerName: String? = null) {
     context.getSharedPreferences(ManualHoursPreferences, Context.MODE_PRIVATE)
         .edit()
-        .putString("hours", submission.hours)
-        .putString("pay", submission.pay)
+        .putString(workerScopedPreferenceKey("hours", workerName), submission.hours)
+        .putString(workerScopedPreferenceKey("pay", workerName), submission.pay)
         .apply()
 }
 
-private fun clearManualHoursSubmission(context: Context) {
-    context.getSharedPreferences(ManualHoursPreferences, Context.MODE_PRIVATE)
-        .edit()
-        .clear()
-        .apply()
+private fun clearManualHoursSubmission(context: Context, workerName: String? = null) {
+    val editor = context.getSharedPreferences(ManualHoursPreferences, Context.MODE_PRIVATE).edit()
+    if (workerName.isNullOrBlank()) {
+        editor.clear()
+    } else {
+        editor
+            .remove(workerScopedPreferenceKey("hours", workerName))
+            .remove(workerScopedPreferenceKey("pay", workerName))
+    }
+    editor.apply()
 }
 
-private fun loadWorkerGpsShiftSubmission(context: Context): WorkerGpsShiftSubmission? {
+private fun loadWorkerGpsShiftSubmission(context: Context, workerName: String? = null): WorkerGpsShiftSubmission? {
     val preferences = context.getSharedPreferences(WorkerGpsShiftPreferences, Context.MODE_PRIVATE)
-    val hours = preferences.getString("hours", null) ?: return null
-    val pay = preferences.getString("pay", null) ?: return null
-    val photoCount = preferences.getInt("photo_count", 0)
-    val photoUris = preferences.getString("photo_uris", null)
+    val readLegacy = shouldReadLegacyWorkerSubmission(workerName)
+    val hours = preferences.getString(workerScopedPreferenceKey("hours", workerName), null)
+        ?: (if (readLegacy) preferences.getString("hours", null) else null)
+        ?: return null
+    val pay = preferences.getString(workerScopedPreferenceKey("pay", workerName), null)
+        ?: (if (readLegacy) preferences.getString("pay", null) else null)
+        ?: return null
+    val photoCount = if (workerName.isNullOrBlank()) {
+        preferences.getInt("photo_count", 0)
+    } else {
+        preferences.getInt(
+            workerScopedPreferenceKey("photo_count", workerName),
+            if (readLegacy) preferences.getInt("photo_count", 0) else 0,
+        )
+    }
+    val photoUris = (preferences.getString(workerScopedPreferenceKey("photo_uris", workerName), null)
+        ?: if (readLegacy) preferences.getString("photo_uris", null) else null)
         ?.lineSequence()
         ?.mapNotNull { row -> runCatching { Uri.parse(row) }.getOrNull() }
         ?.toList()
@@ -9664,21 +9708,28 @@ private fun loadWorkerGpsShiftSubmission(context: Context): WorkerGpsShiftSubmis
     )
 }
 
-private fun saveWorkerGpsShiftSubmission(context: Context, submission: WorkerGpsShiftSubmission) {
+private fun saveWorkerGpsShiftSubmission(context: Context, submission: WorkerGpsShiftSubmission, workerName: String? = null) {
     context.getSharedPreferences(WorkerGpsShiftPreferences, Context.MODE_PRIVATE)
         .edit()
-        .putString("hours", submission.hours)
-        .putString("pay", submission.pay)
-        .putInt("photo_count", submission.photoCount)
-        .putString("photo_uris", submission.photoUris.joinToString("\n") { it.toString() })
+        .putString(workerScopedPreferenceKey("hours", workerName), submission.hours)
+        .putString(workerScopedPreferenceKey("pay", workerName), submission.pay)
+        .putInt(workerScopedPreferenceKey("photo_count", workerName), submission.photoCount)
+        .putString(workerScopedPreferenceKey("photo_uris", workerName), submission.photoUris.joinToString("\n") { it.toString() })
         .apply()
 }
 
-private fun clearWorkerGpsShiftSubmission(context: Context) {
-    context.getSharedPreferences(WorkerGpsShiftPreferences, Context.MODE_PRIVATE)
-        .edit()
-        .clear()
-        .apply()
+private fun clearWorkerGpsShiftSubmission(context: Context, workerName: String? = null) {
+    val editor = context.getSharedPreferences(WorkerGpsShiftPreferences, Context.MODE_PRIVATE).edit()
+    if (workerName.isNullOrBlank()) {
+        editor.clear()
+    } else {
+        editor
+            .remove(workerScopedPreferenceKey("hours", workerName))
+            .remove(workerScopedPreferenceKey("pay", workerName))
+            .remove(workerScopedPreferenceKey("photo_count", workerName))
+            .remove(workerScopedPreferenceKey("photo_uris", workerName))
+    }
+    editor.apply()
 }
 
 private fun saveWorkerSubmittedHoursForAdmin(
