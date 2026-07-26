@@ -9889,14 +9889,31 @@ private fun loadAdminWorkLocations(context: Context): List<AdminLocation> {
         ?: return defaultAdminWorkLocations()
     return stored.lineSequence().mapNotNull { row ->
         val parts = row.split('|')
-        if (parts.size == 3) AdminLocation(parts[0], parts[1], parts[2]) else null
+        if (parts.size == 3) {
+            AdminLocation(
+                name = Uri.decode(parts[0]),
+                address = Uri.decode(parts[1]),
+                radius = Uri.decode(parts[2]),
+            )
+        } else {
+            null
+        }
     }.toList().ifEmpty(::defaultAdminWorkLocations)
 }
 
 private fun saveAdminWorkLocations(context: Context, locations: List<AdminLocation>) {
     context.getSharedPreferences(AdminLocationsPreferences, Context.MODE_PRIVATE)
         .edit()
-        .putString("locations", locations.joinToString("\n") { "${it.name}|${it.address}|${it.radius}" })
+        .putString(
+            "locations",
+            locations.joinToString("\n") { location ->
+                listOf(
+                    location.name,
+                    location.address,
+                    location.radius,
+                ).joinToString("|") { value -> Uri.encode(value) }
+            },
+        )
         .apply()
 }
 
