@@ -2214,7 +2214,7 @@ fun AdminTeamScreen(
                     workers.forEachIndexed { index, worker ->
                         AdminWorkerListItem(
                             name = worker.name,
-                            detail = "${worker.role} · ${worker.status.lowercase(Locale.US)}",
+                            detail = "${worker.role} - ${worker.status.lowercase(Locale.US)}",
                             active = selectedWorker == worker.name,
                             status = worker.status,
                             onClick = { selectedWorker = worker.name },
@@ -2372,10 +2372,32 @@ private fun AdminInviteWorkerDialog(
     onDismiss: () -> Unit,
     onSendInvite: (String, String, String, String) -> Unit,
 ) {
+    val context = LocalContext.current
     var fullName by remember { mutableStateOf("Lotte Smit") }
     var email by remember { mutableStateOf("lotte@email.nl") }
     var role by remember { mutableStateOf("Baker") }
     var location by remember { mutableStateOf("Bakery floor") }
+
+    fun sendInvite() {
+        val trimmedFullName = fullName.trim()
+        val trimmedEmail = email.trim()
+        val trimmedRole = role.trim()
+        val trimmedLocation = location.trim()
+        val message = when {
+            trimmedFullName.isBlank() -> "Enter the worker name"
+            trimmedEmail.isBlank() -> "Enter the worker email"
+            !trimmedEmail.isValidEmailAddress() -> "Enter a valid worker email"
+            trimmedRole.isBlank() -> "Enter the worker role"
+            trimmedLocation.isBlank() -> "Enter the work location"
+            else -> null
+        }
+        if (message != null) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        onSendInvite(trimmedFullName, trimmedEmail, trimmedRole, trimmedLocation)
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -2452,7 +2474,7 @@ private fun AdminInviteWorkerDialog(
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     Button(
-                        onClick = { onSendInvite(fullName, email, role, location) },
+                        onClick = ::sendInvite,
                         modifier = Modifier
                             .width(112.dp)
                             .height(42.dp),
