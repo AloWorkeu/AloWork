@@ -110,18 +110,20 @@ fun AloworkApp() {
     var weekendPremiumSettings by remember { mutableStateOf(loadWeekendPremiumSettings(context)) }
     var workerLanguage by remember { mutableStateOf(loadWorkerLanguage(context)) }
     var adminCompanyProfile by remember { mutableStateOf(loadAdminCompanyProfile(context)) }
-    var selectedEmployerName by remember { mutableStateOf(loadSelectedEmployerName(context)) }
+    var selectedEmployerName by remember {
+        mutableStateOf(loadSelectedEmployerName(context, workerAccountApproval?.email))
+    }
     var pendingWorkerEmail by remember { mutableStateOf("") }
     var workerEmployers by remember {
-        mutableStateOf(loadWorkerEmployers(context))
+        mutableStateOf(loadWorkerEmployers(context, workerAccountApproval?.email))
     }
     val visibleWorkerEmployers = workerEmployers.ifEmpty(::defaultWorkerEmployers)
     val selectedEmployer = visibleWorkerEmployers.firstOrNull { it.name == selectedEmployerName }
         ?: visibleWorkerEmployers.first()
-    LaunchedEffect(selectedEmployer.name) {
+    LaunchedEffect(selectedEmployer.name, workerAccountApproval?.email) {
         if (selectedEmployerName != selectedEmployer.name) {
             selectedEmployerName = selectedEmployer.name
-            saveSelectedEmployerName(context, selectedEmployer.name)
+            saveSelectedEmployerName(context, selectedEmployer.name, workerAccountApproval?.email)
         }
     }
     val selectedEmployerHourlyRate = selectedEmployer.hourlyRateValue()
@@ -178,6 +180,8 @@ fun AloworkApp() {
         saveWorkerAccountApproval(context, approval)
         manualHoursSubmission = loadManualHoursSubmission(context, worker.name)
         gpsShiftSubmission = loadWorkerGpsShiftSubmission(context, worker.name)
+        workerEmployers = loadWorkerEmployers(context, worker.email)
+        selectedEmployerName = loadSelectedEmployerName(context, worker.email)
         return true
     }
 
@@ -215,6 +219,8 @@ fun AloworkApp() {
                         saveWorkerAccountApproval(context, approval)
                         manualHoursSubmission = loadManualHoursSubmission(context, worker.name)
                         gpsShiftSubmission = loadWorkerGpsShiftSubmission(context, worker.name)
+                        workerEmployers = loadWorkerEmployers(context, worker.email)
+                        selectedEmployerName = loadSelectedEmployerName(context, worker.email)
                         screen = AppScreen.WorkerGpsClockIn
                     } else {
                         screen = AppScreen.WorkerAwaitingApproval
@@ -383,7 +389,6 @@ fun AloworkApp() {
                 pendingWorkerEmail = ""
                 selectedEmployerName = "Bakkerij Jansen"
                 workerEmployers = defaultWorkerEmployers()
-                clearWorkerEmployers(context)
                 screen = AppScreen.WorkerSignUp
             },
             onTabSelected = ::openWorkerTab,
@@ -496,7 +501,7 @@ fun AloworkApp() {
                         if (existingEmployer == null) {
                             val updatedEmployers = visibleWorkerEmployers + invitedEmployer.copy(status = "Pending")
                             workerEmployers = updatedEmployers
-                            saveWorkerEmployers(context, updatedEmployers)
+                            saveWorkerEmployers(context, updatedEmployers, currentWorkerEmail)
                             Toast.makeText(context, copy.approvalRequestSent, Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(
@@ -526,7 +531,7 @@ fun AloworkApp() {
                 onEmployerSelected = { employer ->
                     if (employer.status == "Active") {
                         selectedEmployerName = employer.name
-                        saveSelectedEmployerName(context, employer.name)
+                        saveSelectedEmployerName(context, employer.name, currentWorkerEmail)
                     } else {
                         Toast.makeText(context, copy.employerApprovalPending, Toast.LENGTH_SHORT).show()
                     }
@@ -7933,9 +7938,14 @@ private fun findKnownWorkerEmployerByCode(companyCode: String): WorkerEmployer? 
 
 private const val WorkerEmployersPreferences = "worker_employers"
 
-private fun loadWorkerEmployers(context: Context): List<WorkerEmployer> {
-    val stored = context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
-        .getString("companies", null)
+private fun shouldReadLegacyWorkerEmployers(workerEmail: String?): Boolean {
+    return workerEmail.isNullOrBlank() || workerEmail.equals("sven@email.nl", ignoreCase = true)
+}
+
+private fun loadWorkerEmployers(context: Context, workerEmail: String? = null): List<WorkerEmployer> {
+    val preferences = context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
+    val stored = preferences.getString(workerScopedPreferenceKey("companies", workerEmail), null)
+        ?: (if (shouldReadLegacyWorkerEmployers(workerEmail)) preferences.getString("companies", null) else null)
         ?: return defaultWorkerEmployers()
     return stored.lineSequence().mapNotNull { row ->
         val parts = row.split('|')
@@ -7952,11 +7962,15 @@ private fun loadWorkerEmployers(context: Context): List<WorkerEmployer> {
     }.toList().ifEmpty(::defaultWorkerEmployers)
 }
 
-private fun saveWorkerEmployers(context: Context, employers: List<WorkerEmployer>) {
+private fun saveWorkerEmployers(
+    context: Context,
+    employers: List<WorkerEmployer>,
+    workerEmail: String? = null,
+) {
     context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
         .edit()
         .putString(
-            "companies",
+            workerScopedPreferenceKey("companies", workerEmail),
             employers.joinToString("\n") { employer ->
                 listOf(
                     employer.name,
@@ -7969,16 +7983,17 @@ private fun saveWorkerEmployers(context: Context, employers: List<WorkerEmployer
         .apply()
 }
 
-private fun loadSelectedEmployerName(context: Context): String {
-    return context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
-        .getString("selected", "Bakkerij Jansen")
+private fun loadSelectedEmployerName(context: Context, workerEmail: String? = null): String {
+    val preferences = context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
+    return preferences.getString(workerScopedPreferenceKey("selected", workerEmail), null)
+        ?: (if (shouldReadLegacyWorkerEmployers(workerEmail)) preferences.getString("selected", null) else null)
         ?: "Bakkerij Jansen"
 }
 
-private fun saveSelectedEmployerName(context: Context, name: String) {
+private fun saveSelectedEmployerName(context: Context, name: String, workerEmail: String? = null) {
     context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
         .edit()
-        .putString("selected", name)
+        .putString(workerScopedPreferenceKey("selected", workerEmail), name)
         .apply()
 }
 
@@ -9370,13 +9385,6 @@ private fun clearWorkerAccountApproval(context: Context) {
         .edit()
         .remove("approved_name")
         .remove("approved_email")
-        .apply()
-}
-
-private fun clearWorkerEmployers(context: Context) {
-    context.getSharedPreferences(WorkerEmployersPreferences, Context.MODE_PRIVATE)
-        .edit()
-        .clear()
         .apply()
 }
 
