@@ -374,9 +374,7 @@ fun AloworkApp() {
             },
             onLogout = {
                 manualHoursSubmission = null
-                clearManualHoursSubmission(context, currentWorkerName)
                 gpsShiftSubmission = null
-                clearWorkerGpsShiftSubmission(context, currentWorkerName)
                 pendingGpsShiftSeconds = null
                 selectedWorkerDayDetail = defaultAdjustedWorkerDayDetail()
                 workerShiftPhotoUris = emptyList()
