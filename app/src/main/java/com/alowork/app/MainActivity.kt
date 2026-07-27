@@ -103,6 +103,9 @@ fun AloworkApp() {
     var gpsShiftSubmission by remember {
         mutableStateOf(loadWorkerGpsShiftSubmission(context, workerAccountApproval?.name))
     }
+    var activeGpsShiftStartedAt by remember {
+        mutableStateOf(loadActiveGpsShiftStartedAt(context, workerAccountApproval?.name))
+    }
     var pendingGpsShiftSeconds by remember { mutableStateOf<Long?>(null) }
     var selectedWorkerDayDetail by remember { mutableStateOf(defaultAdjustedWorkerDayDetail()) }
     var workerChatMessages by remember { mutableStateOf(loadWorkerChatMessages(context)) }
@@ -180,6 +183,7 @@ fun AloworkApp() {
         saveWorkerAccountApproval(context, approval)
         manualHoursSubmission = loadManualHoursSubmission(context, worker.name)
         gpsShiftSubmission = loadWorkerGpsShiftSubmission(context, worker.name)
+        activeGpsShiftStartedAt = loadActiveGpsShiftStartedAt(context, worker.name)
         workerEmployers = loadWorkerEmployers(context, worker.email)
         selectedEmployerName = loadSelectedEmployerName(context, worker.email)
         return true
@@ -219,9 +223,14 @@ fun AloworkApp() {
                         saveWorkerAccountApproval(context, approval)
                         manualHoursSubmission = loadManualHoursSubmission(context, worker.name)
                         gpsShiftSubmission = loadWorkerGpsShiftSubmission(context, worker.name)
+                        activeGpsShiftStartedAt = loadActiveGpsShiftStartedAt(context, worker.name)
                         workerEmployers = loadWorkerEmployers(context, worker.email)
                         selectedEmployerName = loadSelectedEmployerName(context, worker.email)
-                        screen = AppScreen.WorkerGpsClockIn
+                        screen = if (activeGpsShiftStartedAt == null) {
+                            AppScreen.WorkerGpsClockIn
+                        } else {
+                            AppScreen.WorkerShiftInProgress
+                        }
                     } else {
                         screen = AppScreen.WorkerAwaitingApproval
                     }
@@ -262,6 +271,9 @@ fun AloworkApp() {
         AppScreen.WorkerGpsClockIn -> GpsClockInScreen(
             language = workerLanguage,
             onClockIn = {
+                val startedAt = System.currentTimeMillis()
+                activeGpsShiftStartedAt = startedAt
+                saveActiveGpsShiftStartedAt(context, startedAt, currentWorkerName)
                 pendingGpsShiftSeconds = null
                 workerShiftPhotoUris = emptyList()
                 screen = AppScreen.WorkerShiftInProgress
@@ -275,6 +287,7 @@ fun AloworkApp() {
         AppScreen.WorkerShiftInProgress -> GpsShiftInProgressScreen(
             language = workerLanguage,
             hourlyRate = selectedEmployerHourlyRate,
+            startedAtMillis = activeGpsShiftStartedAt ?: System.currentTimeMillis(),
             onClockOut = { elapsedSeconds ->
                 pendingGpsShiftSeconds = elapsedSeconds
                 screen = AppScreen.WorkerShiftPhotos
@@ -312,6 +325,8 @@ fun AloworkApp() {
                     proofLabel = proofLabelForPhotoCount(submission.photoCount),
                 )
                 pendingGpsShiftSeconds = null
+                activeGpsShiftStartedAt = null
+                clearActiveGpsShiftStartedAt(context, currentWorkerName)
                 workerShiftPhotoUris = emptyList()
                 screen = AppScreen.WorkerGpsClockIn
             },
@@ -381,6 +396,7 @@ fun AloworkApp() {
             onLogout = {
                 manualHoursSubmission = null
                 gpsShiftSubmission = null
+                activeGpsShiftStartedAt = null
                 pendingGpsShiftSeconds = null
                 selectedWorkerDayDetail = defaultAdjustedWorkerDayDetail()
                 workerShiftPhotoUris = emptyList()
@@ -7257,16 +7273,19 @@ fun GpsShiftInProgressScreen(
     modifier: Modifier = Modifier,
     language: WorkerLanguage = WorkerLanguage.English,
     hourlyRate: Double = 13.05,
+    startedAtMillis: Long = System.currentTimeMillis(),
     onClockOut: (Long) -> Unit = {},
 ) {
     val copy = language.workerShiftFlowCopy()
-    var elapsedSeconds by remember { mutableStateOf(3.hours + 24.minutes + 11.seconds) }
+    var elapsedSeconds by remember(startedAtMillis) {
+        mutableStateOf(((System.currentTimeMillis() - startedAtMillis) / 1000).coerceAtLeast(0))
+    }
     val earnings = elapsedSeconds / 3600.0 * hourlyRate
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(startedAtMillis) {
         while (true) {
             delay(1000)
-            elapsedSeconds += 1
+            elapsedSeconds = ((System.currentTimeMillis() - startedAtMillis) / 1000).coerceAtLeast(0)
         }
     }
 
@@ -9736,6 +9755,37 @@ private fun clearWorkerGpsShiftSubmission(context: Context, workerName: String? 
             .remove(workerScopedPreferenceKey("photo_uris", workerName))
     }
     editor.apply()
+}
+
+private fun loadActiveGpsShiftStartedAt(context: Context, workerName: String? = null): Long? {
+    val preferences = context.getSharedPreferences(WorkerGpsShiftPreferences, Context.MODE_PRIVATE)
+    val key = workerScopedPreferenceKey("started_at", workerName)
+    val startedAt = preferences.getLong(key, 0L)
+        .takeIf { it > 0L }
+        ?: if (shouldReadLegacyWorkerSubmission(workerName)) {
+            preferences.getLong("started_at", 0L).takeIf { it > 0L }
+        } else {
+            null
+        }
+    return startedAt?.takeIf { it <= System.currentTimeMillis() }
+}
+
+private fun saveActiveGpsShiftStartedAt(
+    context: Context,
+    startedAtMillis: Long,
+    workerName: String? = null,
+) {
+    context.getSharedPreferences(WorkerGpsShiftPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .putLong(workerScopedPreferenceKey("started_at", workerName), startedAtMillis)
+        .apply()
+}
+
+private fun clearActiveGpsShiftStartedAt(context: Context, workerName: String? = null) {
+    context.getSharedPreferences(WorkerGpsShiftPreferences, Context.MODE_PRIVATE)
+        .edit()
+        .remove(workerScopedPreferenceKey("started_at", workerName))
+        .apply()
 }
 
 private fun saveWorkerSubmittedHoursForAdmin(
