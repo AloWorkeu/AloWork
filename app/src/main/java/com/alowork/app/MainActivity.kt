@@ -7316,7 +7316,9 @@ fun GpsShiftInProgressScreen(
                 .padding(top = 286.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            ShiftStatusPill(status = copy.shiftInProgressStatus)
+            ShiftStatusPill(
+                status = copy.shiftInProgressStatus(formatClockTime(startedAtMillis)),
+            )
             Spacer(modifier = Modifier.height(12.dp))
             Surface(
                 modifier = Modifier
@@ -7870,6 +7872,12 @@ private fun weekendPremiumEmployeesFromWorkers(context: Context): List<WeekendPr
             mode = EmployeePremiumMode.Default,
         )
     }
+}
+
+private fun formatClockTime(timestampMillis: Long): String {
+    return java.time.Instant.ofEpochMilli(timestampMillis)
+        .atZone(java.time.ZoneId.systemDefault())
+        .format(DateTimeFormatter.ofPattern("HH:mm"))
 }
 
 private fun premiumEmployeeModeKey(employeeName: String): String {
@@ -8930,7 +8938,7 @@ private fun WorkerLanguage.workerTimeEntryCopy(): WorkerTimeEntryCopy {
 }
 
 private data class WorkerShiftFlowCopy(
-    val shiftInProgressStatus: String,
+    val shiftInProgressStatus: (String) -> String,
     val timeWorked: String,
     val earningSoFarPrefix: String,
     val clockOut: String,
@@ -8944,7 +8952,7 @@ private data class WorkerShiftFlowCopy(
 private fun WorkerLanguage.workerShiftFlowCopy(): WorkerShiftFlowCopy {
     return when (this) {
         WorkerLanguage.English -> WorkerShiftFlowCopy(
-            shiftInProgressStatus = "Shift in progress - clocked in at 08:00",
+            shiftInProgressStatus = { time -> "Shift in progress - clocked in at $time" },
             timeWorked = "Time worked",
             earningSoFarPrefix = "Earning so far",
             clockOut = "Clock out",
@@ -8955,7 +8963,7 @@ private fun WorkerLanguage.workerShiftFlowCopy(): WorkerShiftFlowCopy {
             save = "Save",
         )
         WorkerLanguage.Dutch -> WorkerShiftFlowCopy(
-            shiftInProgressStatus = "Dienst bezig - ingeklokt om 08:00",
+            shiftInProgressStatus = { time -> "Dienst bezig - ingeklokt om $time" },
             timeWorked = "Gewerkte tijd",
             earningSoFarPrefix = "Verdienste tot nu toe",
             clockOut = "Uitklokken",
@@ -8966,7 +8974,7 @@ private fun WorkerLanguage.workerShiftFlowCopy(): WorkerShiftFlowCopy {
             save = "Opslaan",
         )
         WorkerLanguage.German -> WorkerShiftFlowCopy(
-            shiftInProgressStatus = "Schicht lauft - eingestempelt um 08:00",
+            shiftInProgressStatus = { time -> "Schicht lauft - eingestempelt um $time" },
             timeWorked = "Gearbeitete Zeit",
             earningSoFarPrefix = "Bisher verdient",
             clockOut = "Ausstempeln",
@@ -8977,7 +8985,7 @@ private fun WorkerLanguage.workerShiftFlowCopy(): WorkerShiftFlowCopy {
             save = "Speichern",
         )
         WorkerLanguage.French -> WorkerShiftFlowCopy(
-            shiftInProgressStatus = "Service en cours - pointe a 08:00",
+            shiftInProgressStatus = { time -> "Service en cours - pointe a $time" },
             timeWorked = "Temps travaille",
             earningSoFarPrefix = "Gain jusqu'ici",
             clockOut = "Pointer depart",
