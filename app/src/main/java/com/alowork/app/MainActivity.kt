@@ -2,10 +2,12 @@ package com.alowork.app
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -262,6 +264,9 @@ fun AloworkApp() {
             language = workerLanguage,
             onLocationAllowed = {
                 screen = AppScreen.WorkerGpsClockIn
+            },
+            onLocationDenied = {
+                screen = AppScreen.WorkerLocationDenied
             },
             onManualEntry = {
                 screen = AppScreen.WorkerLogHoursDayDetail
@@ -3827,6 +3832,7 @@ fun WorkerLocationPermissionScreen(
     modifier: Modifier = Modifier,
     language: WorkerLanguage = WorkerLanguage.English,
     onLocationAllowed: () -> Unit = {},
+    onLocationDenied: () -> Unit = {},
     onManualEntry: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -3849,6 +3855,7 @@ fun WorkerLocationPermissionScreen(
                 copy.locationRequired,
                 Toast.LENGTH_SHORT,
             ).show()
+            onLocationDenied()
         }
     }
 
@@ -7163,17 +7170,10 @@ fun GpsLocationDeniedScreen(
 ) {
     val context = LocalContext.current
     val copy = language.workerAccessCopy()
-    val permissions = remember {
-        arrayOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-        )
-    }
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions(),
-    ) { grants ->
-        val granted = grants.values.any { it }
-        if (granted) {
+    val settingsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) {
+        if (hasAnyLocationPermission(context)) {
             onLocationEnabled()
         } else {
             Toast.makeText(
@@ -7229,7 +7229,12 @@ fun GpsLocationDeniedScreen(
                     if (hasAnyLocationPermission(context)) {
                         onLocationEnabled()
                     } else {
-                        permissionLauncher.launch(permissions)
+                        settingsLauncher.launch(
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", context.packageName, null),
+                            ),
+                        )
                     }
                 },
                 modifier = Modifier
